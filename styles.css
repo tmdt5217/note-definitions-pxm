@@ -3436,3 +3436,18 @@ body.is-mobile .ndw-review-settings {
   stroke: currentColor !important;
   fill: none !important;
 }
+
+/* Smear pointer button: keep the outer frame a true circle on every platform. */
+.nd-ency-smear-btn {
+  inline-size: 28px !important;
+  block-size: 28px !important;
+  min-inline-size: 28px !important;
+  min-block-size: 28px !important;
+  max-inline-size: 28px !important;
+  max-block-size: 28px !important;
+  flex: 0 0 28px !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
