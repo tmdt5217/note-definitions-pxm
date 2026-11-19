@@ -1,7 +1,7 @@
 {
   "id": "note-definitions-pxm",
   "name": "note-definitions_PXM",
-  "version": "0.36.15",
+  "version": "0.36.16",
   "minAppVersion": "1.5.12",
   "description": "Personal dictionary for your notes with a persistent local lookup index (PXM fork, suffix-block index)",
   "author": "Dominic Let / PXM",
