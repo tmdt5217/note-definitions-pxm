@@ -5966,6 +5966,16 @@ ${issues.join("\n")}`);
         const modal = new import_obsidian112.Modal(this.app);
         modal.contentEl.addClass("nd-mobile-layout-diagnostics");
         modal.contentEl.createEl("h3", { text: "\u624B\u673A\u5E03\u5C40\u8BCA\u65AD" });
+        const iconSels = [".ndw-ency-entry", ".ndw-ency-all-terms", ".ndw-ency-cards", ".nd-ency-clear-btn", ".nd-ency-smear-btn", ".ndw-review-settings"];
+        const iconLines = iconSels.map((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return `${sel}: MISSING`;
+          const svg = el.querySelector("svg");
+          const r = el.getBoundingClientRect();
+          return `${sel}: svg=${el.querySelectorAll("svg").length} w=${Math.round(r.width)} h=${Math.round(r.height)} text=${JSON.stringify((el.textContent || "").trim().slice(0, 30))} html=${(el.innerHTML || "").slice(0, 180)}`;
+        });
+        iconLines.unshift(`plugin=${this.app.plugins.plugins["note-definitions-pxm"]?.manifest?.version || "?"} platform=${__ndw_obsidian.Platform?.isMobile ? "mobile" : "desktop"}/${__ndw_obsidian.Platform?.isTablet ? "tablet" : "phone?"}`);
+        modal.contentEl.createEl("pre", { text: `ICON DIAGNOSTICS\n${iconLines.join("\n")}` });
         modal.contentEl.createEl("p", { text: "\u4EC5\u8BB0\u5F55\u5C3A\u5BF8\uFF0C\u4E0D\u542B\u7B14\u8BB0\u5185\u5BB9\u3002\u8BF7\u622A\u53D6\u4E0B\u9762\u7684\u62A5\u544A\uFF1B\u6253\u5F00\u6B64\u7A97\u53E3\u524D\u7684\u952E\u76D8\u72B6\u6001\u5DF2\u4FDD\u7559\u3002" });
         const reports = [["\u5217\u8868\u6700\u77ED\u65F6", constrained], ["\u6253\u5F00\u8BCA\u65AD\u524D", samples[samples.length - 1]]];
         for (const [label, entry] of reports) {
