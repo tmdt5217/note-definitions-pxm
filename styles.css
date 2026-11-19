@@ -1,0 +1,3417 @@
+.definition-popover {
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border-hover);
+	border-radius: var(--radius-m);
+	position: absolute;
+	padding: 12px 14px 14px;
+	box-shadow: var(--shadow-s);
+	min-height: 100px;
+	min-width: 150px;
+	overflow: visible auto;
+}
+
+.definition-popover-filename {
+	color: var(--text-faint);
+	opacity: 0.5;
+	font-size: 0.7em;
+	float: right;
+}
+
+.note-definitions-pxm-shared-definition {
+	border-top: 1px solid var(--background-modifier-border);
+	padding-top: 10px;
+}
+
+.note-definitions-pxm-shared-definition
+	+ .note-definitions-pxm-shared-definition {
+	margin-top: 12px;
+}
+
+.note-definitions-pxm-shared-definition-title {
+	font-size: 1.05em;
+	margin: 0 0 6px;
+}
+
+.note-definitions-pxm-shared-definition-link {
+	cursor: pointer;
+}
+
+.note-definitions-pxm-shared-definition-aliases {
+	display: block;
+	color: var(--text-muted);
+	margin-bottom: 8px;
+	user-select: text;
+	-webkit-user-select: text;
+}
+
+body.note-definitions-pxm-aliases-normal .note-definitions-pxm-alias,
+body.note-definitions-pxm-aliases-normal
+	.note-definitions-pxm-shared-definition-aliases,
+body.note-definitions-pxm-aliases-normal .def-autocomplete-alias,
+body.note-definitions-pxm-aliases-normal .nd-dict-item-alias,
+body.note-definitions-pxm-aliases-normal .nd-ency-result-alias,
+body.note-definitions-pxm-aliases-normal .nd-ency-def-aliases {
+	font-style: normal !important;
+}
+
+.note-definitions-pxm-shared-definition-content {
+	user-select: text;
+	-webkit-user-select: text;
+}
+
+.note-definitions-pxm-shared-definition-content > :first-child {
+	margin-top: 0;
+}
+
+.note-definitions-pxm-shared-definition-content > :last-child {
+	margin-bottom: 0;
+}
+
+.def-decoration {
+	text-decoration: underline var(--color-red) dotted;
+	-webkit-text-decoration: underline var(--color-red) dotted;
+	text-decoration-thickness: 1.5px;
+	text-underline-offset: 2px;
+}
+
+.def-link-decoration {
+	text-decoration: underline var(--color-green) dotted;
+	-webkit-text-decoration: underline var(--color-green) dotted;
+	cursor: pointer;
+}
+
+.potential-note-link-decoration {
+	text-decoration: underline var(--color-green) dotted;
+	-webkit-text-decoration: underline var(--color-green) dotted;
+	text-decoration-thickness: 1.5px;
+	text-underline-offset: 2px;
+}
+
+.note-definitions-pxm-index-status {
+	flex: 0 1 auto;
+	min-width: 0;
+}
+
+.note-definitions-pxm-index-status-label {
+	display: block;
+	white-space: normal;
+	word-break: keep-all;
+	overflow-wrap: normal;
+	line-height: 1.1;
+	text-align: center;
+}
+
+.note-definitions-pxm-scan-tasks {
+	margin: 0.5em 0 1em;
+}
+
+.note-definitions-pxm-scan-task {
+	display: grid;
+	grid-template-columns: minmax(8em, 12em) minmax(10em, 1fr) auto;
+	gap: 0.6em;
+	align-items: center;
+	margin: 0.5em 0;
+}
+
+.note-definitions-pxm-scan-task progress {
+	width: 100%;
+}
+
+.note-definitions-pxm-scan-task-detail {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.edit-modal-section-header {
+	margin-top: 5px;
+	margin-bottom: 5px;
+	color: var(--text-muted);
+}
+
+.nd-add-definition-view {
+	padding-bottom: calc(120px + env(safe-area-inset-bottom));
+}
+
+.nd-add-definition-title {
+	text-align: center;
+}
+
+.edit-modal-aliases {
+	width: 100%;
+	resize: none;
+	font-size: var(--font-ui-medium);
+	height: 2em;
+}
+
+.edit-modal-textarea {
+	width: 100%;
+	height: 20vh;
+	resize: none;
+	font-size: var(--font-ui-medium);
+	margin-bottom: 10px;
+}
+
+/* Bounded natural growth: title/aliases wrap, Markdown owns its own layout. */
+.nd-definition-form {
+	--nd-definition-min-height: min(20vh, 150px);
+	--nd-definition-max-height: min(45vh, 32em);
+	overflow-y: auto;
+}
+.nd-definition-form textarea.edit-modal-aliases {
+	height: auto;
+	min-height: 2.2em;
+	max-height: min(25vh, 12em);
+	box-sizing: border-box;
+	line-height: 1.5;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	overflow-y: auto;
+}
+.nd-definition-form textarea.edit-modal-textarea {
+	height: auto;
+	min-height: var(--nd-definition-min-height);
+	max-height: var(--nd-definition-max-height);
+	box-sizing: border-box;
+	overflow-y: auto;
+}
+
+/* 词条编辑/添加输入框统一使用白色背景，避免主题的灰色输入底色 */
+.edit-modal-aliases,
+.edit-modal-textarea,
+.modal .edit-modal-aliases,
+.modal .edit-modal-textarea {
+	background-color: #fff !important;
+}
+
+.nd-definition-markdown-editor {
+	width: 100%;
+	min-height: 20vh;
+	margin-bottom: 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: #fff;
+	overflow: auto;
+}
+
+.nd-definition-markdown-editor .markdown-source-view,
+.nd-definition-markdown-editor .cm-editor {
+	min-height: 20vh;
+}
+
+.nd-definition-markdown-editor .cm-editor,
+.nd-definition-markdown-editor .cm-scroller {
+	background: #fff;
+}
+
+.nd-definition-markdown-editor .cm-scroller {
+	min-height: 20vh;
+	box-sizing: border-box;
+}
+
+.nd-definition-markdown-editor .cm-sizer {
+	min-height: 100%;
+	padding-left: 14px;
+	padding-right: 14px;
+	box-sizing: border-box;
+}
+
+.nd-definition-markdown-editor .cm-content {
+	min-height: 20vh;
+	padding-left: 0;
+	padding-right: 0;
+	cursor: text;
+}
+
+.nd-definition-markdown-editor .markdown-embed-link,
+.nd-definition-markdown-editor .file-embed-link,
+.nd-definition-markdown-editor .embed-link {
+	display: none !important;
+}
+
+/* Obsidian's embedded Markdown editor injects an empty title surface. */
+.nd-definition-editor-chrome {
+	display: none !important;
+}
+
+@media (max-width: 768px) {
+	.nd-definition-markdown-editor,
+	.nd-definition-markdown-editor .markdown-source-view,
+	.nd-definition-markdown-editor .cm-editor {
+		height: 150px !important;
+		min-height: 150px !important;
+	}
+
+	.nd-definition-markdown-editor .cm-scroller {
+		height: 150px !important;
+		min-height: 150px !important;
+		align-items: flex-start !important;
+		padding: 0 !important;
+	}
+
+	.nd-definition-markdown-editor .cm-sizer {
+		padding: 0 !important;
+	}
+
+	.nd-definition-markdown-editor .cm-content {
+		min-height: 130px !important;
+		padding: 8px 10px !important;
+		line-height: var(--line-height-normal) !important;
+	}
+
+	.nd-definition-markdown-editor .cm-line {
+		padding: 0 !important;
+	}
+}
+
+/* Override the embedded editor's fixed theme/mobile heights at one root. */
+.nd-definition-form .nd-definition-markdown-editor {
+	height: auto !important;
+	min-height: var(--nd-definition-min-height) !important;
+	max-height: var(--nd-definition-max-height);
+	overflow: hidden;
+}
+.nd-definition-form .nd-definition-markdown-editor .markdown-source-view,
+.nd-definition-form .nd-definition-markdown-editor .cm-editor {
+	height: auto !important;
+	min-height: var(--nd-definition-min-height) !important;
+	max-height: none !important;
+}
+.nd-definition-form .nd-definition-markdown-editor .cm-scroller {
+	height: auto !important;
+	min-height: var(--nd-definition-min-height) !important;
+	max-height: var(--nd-definition-max-height) !important;
+	overflow-y: auto !important;
+}
+.nd-definition-form .nd-definition-markdown-editor .cm-sizer {
+	min-height: 0 !important;
+}
+.nd-definition-form .nd-definition-markdown-editor .cm-content {
+	min-height: var(--nd-definition-min-height) !important;
+}
+
+.edit-modal-save-button {
+	font-size: var(--font-ui-medium);
+	float: right;
+	background: #b7e4b7 !important;
+	background-color: #b7e4b7 !important;
+	border: 1px solid #78b878;
+	color: #1f1f1f;
+}
+
+.edit-modal-actions,
+.edit-modal-delete-actions {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.edit-modal-actions .edit-modal-save-button {
+	float: none;
+}
+.nd-definition-form .edit-modal-actions {
+	position: sticky;
+	bottom: 0;
+	z-index: 2;
+	background: #fff;
+	padding: 8px 0;
+}
+.is-mobile .nd-definition-form .edit-modal-actions {
+	/* Mobile actions belong to the form's scroll flow, not a bottom overlay. */
+	position: static !important;
+	bottom: auto;
+	z-index: auto;
+	padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+.edit-modal-actions button,
+.edit-modal-delete-actions button:not(:disabled) {
+	cursor: pointer;
+}
+
+.edit-modal-delete-button {
+	background: #f3a6a6 !important;
+	background-color: #f3a6a6 !important;
+	border: 1px solid #d96b6b;
+	color: #1f1f1f;
+}
+
+.popover-go-to-def-button {
+	position: absolute;
+	top: 1em;
+	right: 1em;
+
+	background-color: var(--interactive-normal);
+	opacity: 0.2;
+	transition-duration: 0.1s;
+}
+.popover-go-to-def-button:hover {
+	opacity: 1;
+}
+
+/* 手机端 modal：只隐藏 Note Definitions 插件弹窗的关闭按钮 */
+.modal:has(.mobile-def-header) .modal-close-button,
+.modal:has(.def-modal-content) .modal-close-button {
+	display: none !important;
+}
+
+/* 手机端 modal 内容区域 - 只作用于 Note Definitions 插件弹窗 */
+.modal:has(.mobile-def-header) .modal-content,
+.modal:has(.def-modal-content) .modal-content {
+	padding-top: 8px !important;
+}
+
+/* 手机端 modal 公式完整显示 */
+.modal:has(.def-modal-content) .math,
+.modal:has(.def-modal-content) mjx-container,
+.modal:has(.def-modal-content) .math-block,
+.modal:has(.def-modal-content) [data-katex],
+.modal:has(.def-modal-content) .katex {
+	padding-top: 4px !important;
+	margin-top: 4px !important;
+	overflow: visible !important;
+}
+
+/* ── 弹窗内表格边框修复 ── */
+/* JS 使用 background+border-spacing 方案，本 CSS 辅助确保间距和宽度 */
+.definition-popover table {
+	border-collapse: separate !important;
+	border-spacing: 1px !important;
+	width: 100% !important;
+}
+
+/* 电脑端：单元格背景改为白色，覆盖主题的灰色斑马纹 */
+.definition-popover table th,
+.definition-popover table td {
+	background-color: white !important;
+}
+
+/* 公式顶部遮挡：弹窗本身加顶部 padding + 恢复 overflow */
+.definition-popover {
+	padding-top: 14px !important;
+}
+
+/* 偶数行背景（JS 也设了白色背景，这里用 rgba 覆盖更好看） */
+.definition-popover tbody tr:nth-child(even) td {
+	background-color: white !important;
+}
+
+/* ========== 自动补全建议列表样式 ========== */
+.def-autocomplete-container {
+	position: fixed !important;
+	z-index: 9999 !important;
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border-hover);
+	border-radius: var(--radius-m);
+	box-shadow: var(--shadow-l);
+	min-width: 200px;
+	max-width: min(360px, calc(100vw - 20px));
+	max-height: min(280px, calc(50vh));
+	overflow-y: auto;
+	overflow-x: hidden;
+	font-size: var(--font-ui-small);
+	/* 确保触摸滚动流畅 */
+	-webkit-overflow-scrolling: touch;
+	/* 防止被输入法遮挡 */
+	transform: translateZ(0);
+	transform-origin: top left;
+}
+
+/* 移动端优化 - 整体缩小但保持比例 */
+@media (max-width: 768px) {
+	.def-autocomplete-container {
+		min-width: 160px;
+		max-width: calc(100vw - 20px);
+		max-height: 180px;
+		font-size: var(--font-ui-medium);
+		/* 整体缩小到85% */
+		transform: scale(0.85) translateZ(0);
+	}
+}
+
+.def-autocomplete-item {
+	padding: 10px 14px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	border-bottom: 1px solid var(--background-modifier-border);
+	/* 移动端增大触摸区域 */
+	min-height: 44px;
+}
+
+.def-autocomplete-item:last-child {
+	border-bottom: none;
+}
+
+.def-autocomplete-item {
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+}
+
+.def-autocomplete-item:hover,
+.def-autocomplete-item.selected {
+	background-color: var(--background-secondary) !important;
+	color: var(--text-normal) !important;
+}
+
+.def-autocomplete-term {
+	font-weight: 500;
+}
+
+.def-autocomplete-alias {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.def-autocomplete-item.selected .def-autocomplete-alias {
+	color: var(--text-muted);
+}
+
+.def-autocomplete-type {
+	font-size: var(--font-ui-smaller);
+	padding: 2px 6px;
+	border-radius: var(--radius-s);
+	background-color: var(--background-modifier-border);
+	margin-left: 8px;
+}
+
+.def-autocomplete-item.selected .def-autocomplete-type {
+	background-color: var(--background-modifier-border);
+}
+
+.def-autocomplete-empty {
+	padding: 12px;
+	color: var(--text-muted);
+	font-style: italic;
+	text-align: center;
+}
+
+/* 匹配高亮 */
+.def-autocomplete-match {
+	color: var(--interactive-accent);
+	font-weight: 600;
+}
+
+.def-autocomplete-item.selected .def-autocomplete-match {
+	color: var(--interactive-accent);
+}
+
+/* ========== 词典搜索弹窗 ========== */
+
+/* 半透明遮罩 */
+.nd-dict-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 10000;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding-top: 10vh;
+	background: rgba(0, 0, 0, 0.25);
+}
+
+/* 搜索面板 */
+.nd-dict-panel {
+	width: min(480px, calc(100vw - 32px));
+	background: var(--background-primary);
+	border: 2px solid var(--interactive-accent);
+	border-radius: 12px;
+	padding: 16px 16px 12px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+/* 标题 */
+.nd-dict-title {
+	text-align: center;
+	font-size: 1.1em;
+	font-weight: 600;
+	color: var(--text-normal);
+	letter-spacing: 0.03em;
+}
+
+/* 搜索输入框 */
+.nd-dict-input-wrap {
+	position: relative;
+	width: 100%;
+}
+.nd-dict-input {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 10px 44px 10px 14px;
+	font-size: 1em;
+	border: 2px solid var(--interactive-accent);
+	border-radius: 8px;
+	background: #fff !important;
+	background-color: #fff !important;
+	color: var(--text-normal);
+	outline: none;
+	transition: border-color 0.15s;
+	text-align: center;
+}
+.nd-dict-input:focus {
+	border-color: var(--interactive-accent-hover);
+}
+.nd-dict-input::placeholder {
+	color: var(--text-faint);
+}
+
+/* 加号按钮（添加词条） */
+.nd-dict-add-btn {
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: var(--interactive-normal);
+	border: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-muted);
+	opacity: 0.7;
+	transition:
+		opacity 0.15s,
+		color 0.15s,
+		background 0.15s;
+}
+.nd-dict-add-btn:hover {
+	opacity: 1;
+	color: var(--interactive-accent);
+	background: var(--interactive-hover);
+}
+.nd-dict-add-hidden {
+	display: none;
+}
+/* 移动端加号按钮稍大，方便触摸 */
+@media (max-width: 768px) {
+	.nd-dict-add-btn {
+		width: 34px;
+		height: 34px;
+		right: 6px;
+	}
+}
+
+/* 候选列表容器 */
+.nd-dict-list-wrap {
+	border: 2px solid var(--interactive-accent);
+	border-radius: 8px;
+	background: var(--background-primary);
+	max-height: 40vh;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.nd-dict-list-hidden {
+	display: none;
+}
+
+/* 候选列表项 */
+.nd-dict-item {
+	padding: 10px 14px;
+	cursor: pointer;
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	transition: background 0.1s;
+}
+.nd-dict-item:last-child {
+	border-bottom: none;
+}
+.nd-dict-item:hover,
+.nd-dict-item:active {
+	background: var(--background-secondary);
+}
+
+.nd-dict-item-name {
+	font-size: 1em;
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+.nd-dict-item-alias {
+	font-size: 0.82em;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* 无结果提示 */
+.nd-dict-empty {
+	padding: 14px;
+	text-align: center;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* ========== 词典搜索 - 词条浮窗（桌面端） ========== */
+.nd-dict-def-popover {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 10001;
+	width: min(560px, calc(100vw - 32px));
+	max-height: 70vh;
+	overflow-y: auto;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border-hover);
+	border-radius: var(--radius-m);
+	padding: 14px 16px 16px;
+	box-shadow: var(--shadow-l);
+	cursor: auto;
+}
+
+/* 弹窗内文字允许选中复制（覆盖所有平台/主题默认值） */
+.nd-dict-def-popover,
+.nd-dict-def-popover *,
+.def-modal-content,
+.def-modal-content *,
+[ctx="def-popup"],
+[ctx="def-popup"] * {
+	user-select: text !important;
+	-webkit-user-select: text !important;
+}
+
+/* iOS 允许长按弹出复制菜单 */
+.nd-dict-def-popover,
+.nd-dict-def-popover *,
+.def-modal-content,
+.def-modal-content *,
+[ctx="def-popup"],
+[ctx="def-popup"] * {
+	-webkit-touch-callout: default !important;
+}
+
+/* 词条标题 */
+.nd-dict-def-popover h2 {
+	margin: 0 0 6px;
+	font-size: 1.35em;
+	font-weight: 600;
+	padding-right: 60px; /* 留给两个按钮 */
+}
+
+/* 关闭按钮 */
+.nd-dict-def-close {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	background: var(--interactive-normal);
+	border: none;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	opacity: 0.3;
+	transition: opacity 0.12s;
+	padding: 4px 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.nd-dict-def-close:hover {
+	opacity: 1;
+}
+
+/* 跳转按钮 - 复用已有样式，但需要调整位置 */
+.nd-dict-def-goto {
+	position: absolute;
+	top: 10px;
+	right: 40px;
+}
+
+/* 移动端 - 缩小面板，撑满宽度 */
+@media (max-width: 768px) {
+	.nd-dict-overlay {
+		padding-top: max(44px, env(safe-area-inset-top));
+		align-items: flex-start;
+	}
+	.nd-dict-panel {
+		width: calc(100vw - 24px);
+		max-height: 70vh;
+	}
+	.nd-dict-list-wrap {
+		max-height: 40vh;
+	}
+}
+
+/* ========== Encyclopedia View 百科全书 ========== */
+
+.nd-mobile-layout-diagnostics pre {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	font-size: 12px;
+	line-height: 1.5;
+	-webkit-user-select: text;
+	user-select: text;
+}
+
+.nd-ency-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: 0;
+	overflow: hidden;
+	background: var(--background-primary);
+}
+
+/* This custom view owns its inner scroll areas. The iOS host already shrinks
+   for the keyboard; keyboard padding on view-content would reserve it twice.
+   Scope the override to this view, never Obsidian's Markdown editors. */
+body.is-mobile .view-content.nd-ency-container {
+	padding: 0 !important;
+}
+
+/* 移动端：让容器能跟随键盘收缩 */
+@media (max-width: 768px) {
+	.nd-ency-container {
+		min-height: 0 !important;
+	}
+}
+
+/* ── 搜索模式 ── */
+
+.nd-ency-search-wrap {
+	padding: 12px 20px;
+	flex-shrink: 0;
+	position: relative;
+}
+.nd-ency-search-surface {
+	display: grid;
+	grid-template-columns: 28px minmax(0, 1fr) 28px;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 8px;
+	border: 2px solid var(--interactive-accent);
+	border-radius: 8px;
+	background: #fff !important;
+	box-sizing: border-box;
+}
+.nd-ency-search-surface:focus-within {
+	border-color: var(--interactive-accent-hover);
+}
+
+.nd-ency-search-input {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 6px 0;
+	font-size: 1em;
+	border: 0 !important;
+	border-radius: 0;
+	background: #fff !important;
+	background-color: #fff !important;
+	color: var(--text-normal);
+	outline: none;
+	text-align: center;
+	grid-column: 2;
+	grid-row: 1;
+	min-width: 0;
+	height: auto;
+	min-height: 2.2em;
+	max-height: min(30vh, 12em);
+	resize: none;
+	line-height: 1.5;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	overflow-x: hidden;
+	overflow-y: auto;
+	box-shadow: none !important;
+}
+
+.nd-ency-search-input:focus {
+	border-color: var(--interactive-accent-hover);
+}
+
+.nd-ency-search-input::placeholder {
+	color: var(--text-faint);
+}
+
+/* Buttons occupy real grid columns, including when the add button is hidden. */
+.nd-ency-nav-btn.nd-ency-add-btn {
+	grid-column: 1;
+	grid-row: 1;
+	border-radius: 50%;
+	z-index: 2;
+	opacity: 0.7;
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 1;
+}
+.nd-ency-nav-btn.nd-ency-add-btn:hover {
+	opacity: 1;
+	color: var(--interactive-accent);
+	background: var(--interactive-hover);
+}
+.nd-ency-nav-btn.nd-ency-close-btn {
+	grid-column: 3;
+	grid-row: 1;
+	border-radius: 50%;
+	z-index: 2;
+	opacity: 0.7;
+	font-size: 18px;
+	font-weight: 400;
+	line-height: 1;
+}
+.nd-ency-nav-btn.nd-ency-close-btn:hover {
+	opacity: 1;
+	color: var(--interactive-accent);
+	background: var(--interactive-hover);
+}
+
+/* 搜索栏加号/关闭按钮：覆盖 JS inline style，固定桌面端和移动端的同款 SVG 圆形按钮 */
+.nd-ency-add-btn,
+.nd-ency-close-btn {
+	box-sizing: border-box !important;
+	position: static !important;
+	transform: none !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 28px !important;
+	height: 28px !important;
+	padding: 0 !important;
+	border-radius: 50% !important;
+	line-height: 1 !important;
+	text-align: center !important;
+}
+
+.nd-ency-add-btn .svg-icon,
+.nd-ency-close-btn .svg-icon {
+	width: 18px;
+	height: 18px;
+}
+
+.nd-ency-add-hidden {
+	display: none !important;
+}
+
+.nd-ency-results-wrap {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	padding: 0;
+}
+
+body.is-mobile .nd-ency-results-wrap,
+body.is-mobile .nd-ency-def-container {
+	box-sizing: border-box;
+	padding-bottom: calc(max(var(--nd-ency-bottom-obstruction, 0px), env(safe-area-inset-bottom, 0px)) + 16px) !important;
+	scroll-padding-bottom: calc(max(var(--nd-ency-bottom-obstruction, 0px), env(safe-area-inset-bottom, 0px)) + 16px);
+}
+
+/* 最近访问标题栏 */
+.nd-ency-history-columns {
+	display: grid;
+	height: 100%;
+	min-height: 0;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-rows: minmax(0, 1fr);
+	gap: 12px;
+}
+.nd-ency-results-wrap:has(> .nd-ency-history-columns) {
+	overflow: hidden;
+	padding-bottom: 0 !important;
+}
+/* History lists already own their 16px end spacing. Reserve only actual
+   obstruction here. The keyboard covers the home-indicator safe area, so that
+   inset must not continue reducing the list viewport while typing. */
+body.is-mobile .nd-ency-results-wrap:has(> .nd-ency-history-columns) {
+	padding-bottom: max(var(--nd-ency-bottom-obstruction, 0px), max(0px, calc(env(safe-area-inset-bottom, 0px) - var(--keyboard-height, 0px)))) !important;
+	scroll-padding-bottom: 0;
+}
+.nd-ency-visited-column,
+.nd-ency-created-column {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	min-width: 0;
+}
+.nd-ency-history-columns .nd-ency-recent-header {
+	flex-shrink: 0;
+}
+.nd-ency-history-list {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior-y: contain;
+	padding-bottom: 16px;
+}
+/* The results wrapper reserves keyboard/toolbar space once. Inner lists must
+   not repeat that reservation: padding would consume their flex viewport. */
+.nd-ency-history-list {
+	scroll-padding-bottom: 16px;
+}
+.nd-ency-created-filter {
+	height: 28px;
+	min-height: 28px;
+	padding: 0 8px;
+	box-sizing: border-box;
+	border-radius: 4px;
+	background: #fff;
+	border: 1px solid #1f1f1f;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+}
+.nd-ency-created-spacer {
+	position: relative;
+}
+.nd-ency-created-spacer .nd-ency-created-item {
+	position: absolute;
+	left: 0;
+	right: 0;
+	box-sizing: border-box;
+	align-items: center;
+}
+.nd-ency-created-item .nd-ency-result-name {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.nd-ency-history-list:focus-visible .nd-ency-created-item[aria-selected="true"] {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: -2px;
+}
+@media (max-width: 700px) {
+	.nd-ency-history-columns {
+		gap: 8px;
+	}
+	.nd-ency-history-columns .nd-ency-recent-header {
+		padding: 8px;
+		gap: 4px;
+	}
+	.nd-ency-history-columns .nd-ency-result-item {
+		padding-left: 8px;
+		padding-right: 8px;
+	}
+}
+.nd-ency-recent-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 20px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+.nd-ency-recent-label {
+	font-size: 1.1em;
+	color: var(--text-muted);
+	font-weight: 700 !important;
+}
+.nd-ency-history-columns .nd-ency-result-name {
+	font-weight: 400 !important;
+}
+.nd-ency-history-columns .nd-ency-result-item {
+	border-bottom: none !important;
+}
+.nd-ency-nav-btn.nd-ency-clear-btn {
+	opacity: 0.6;
+	font-size: 15px;
+	line-height: 1;
+}
+.nd-ency-nav-btn.nd-ency-clear-btn:hover {
+	opacity: 1;
+	color: var(--text-error);
+}
+
+.nd-ency-result-item {
+	padding: 12px 20px;
+	cursor: pointer;
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	transition: background 0.1s;
+}
+
+.nd-ency-result-item:last-child {
+	border-bottom: none;
+}
+
+.nd-ency-result-item:hover,
+.nd-ency-result-item:active {
+	background: var(--background-secondary);
+}
+
+.nd-ency-result-name {
+	font-size: 1em;
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+.nd-ency-result-alias {
+	font-size: 0.85em;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.nd-ency-empty {
+	padding: 24px;
+	text-align: center;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.nd-ency-stale-search-btn {
+	align-self: center;
+	margin: 0 auto;
+}
+
+/* ── 词条模式 ── */
+
+.nd-ency-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
+	flex-wrap: wrap;
+}
+
+.nd-ency-nav-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border: none;
+	border-radius: var(--radius-s);
+	background: var(--interactive-normal);
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 4px;
+	-webkit-tap-highlight-color: transparent;
+	-webkit-appearance: none;
+	appearance: none;
+	outline: none !important;
+	box-shadow: none !important;
+	touch-action: manipulation;
+}
+
+.nd-ency-nav-btn:hover:not(:disabled) {
+	color: var(--text-normal);
+	background: var(--interactive-hover);
+}
+
+.nd-ency-nav-btn:active:not(:disabled) {
+	color: var(--text-normal);
+	background: var(--interactive-hover);
+}
+
+.nd-ency-nav-btn:focus:not(:disabled) {
+	color: var(--text-muted);
+	background: var(--interactive-normal);
+}
+
+.nd-ency-nav-btn:disabled {
+	opacity: 0.3;
+	cursor: default;
+	pointer-events: none;
+}
+
+.nd-ency-search-btn {
+	margin-right: 4px;
+}
+
+.nd-ency-goto-src {
+	margin-left: auto;
+}
+
+.nd-ency-history-label {
+	font-size: 0.8em;
+	color: var(--text-faint);
+	padding: 0 6px;
+	user-select: none;
+}
+
+.nd-ency-def-container {
+	flex: 1;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	padding: 16px 24px 32px;
+	line-height: 1.6;
+}
+
+.nd-ency-def-title {
+	margin: 0 0 6px;
+	font-size: 1.4em;
+	font-weight: 600;
+	color: var(--text-normal);
+	text-align: center;
+}
+
+.nd-ency-def-aliases {
+	display: block;
+	color: var(--text-muted);
+	font-style: italic;
+	margin-bottom: 4px;
+	text-align: center;
+}
+
+.nd-ency-def-filename {
+	color: var(--text-faint);
+	opacity: 0.5;
+	font-size: 0.75em;
+	text-align: right;
+	margin-bottom: 12px;
+}
+
+/* 百科内词条链接样式 */
+.nd-ency-def-container .def-link-decoration {
+	text-decoration: underline var(--interactive-accent) dotted;
+	cursor: pointer;
+	transition: color 0.1s;
+}
+
+.nd-ency-def-container .def-link-decoration:hover {
+	color: var(--interactive-accent);
+}
+
+/* 百科内表格边框修复（与 DefinitionPopover 一致） */
+.nd-ency-def-container table {
+	border-collapse: separate !important;
+	border-spacing: 1px !important;
+	width: 100% !important;
+}
+
+.nd-ency-def-container table th,
+.nd-ency-def-container table td {
+	background-color: white !important;
+	border: none !important;
+	padding: 5px 8px !important;
+}
+
+.nd-ency-def-container tbody tr:nth-child(even) td {
+	background-color: white !important;
+}
+
+/* 公式顶部遮挡修复：容器加顶部 padding */
+.nd-ency-def-container {
+	padding-top: 14px !important;
+}
+
+/* 手机端百科公式完整显示（与 modal 一致） */
+@media (max-width: 768px) {
+	.nd-ency-def-container .math,
+	.nd-ency-def-container mjx-container,
+	.nd-ency-def-container .math-block,
+	.nd-ency-def-container [data-katex],
+	.nd-ency-def-container .katex {
+		padding-top: 4px !important;
+		margin-top: 4px !important;
+		overflow: visible !important;
+	}
+}
+
+/* 反向引用 */
+.nd-ency-backlinks {
+	margin-top: 20px;
+	padding-top: 12px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.nd-ency-backlinks-label {
+	font-size: 0.85em;
+	color: var(--text-muted);
+	display: block;
+	margin-bottom: 6px;
+}
+
+.nd-ency-backlinks-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.nd-ency-backlink-item {
+	font-size: 0.85em;
+	color: var(--interactive-accent);
+	cursor: pointer;
+	padding: 2px 8px;
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	transition: background 0.1s;
+}
+
+.nd-ency-backlink-item:hover {
+	background: var(--interactive-hover);
+}
+
+.nd-related-terms-field {
+	position: relative;
+}
+
+.nd-related-terms-field > .edit-modal-aliases {
+	width: 100%;
+}
+
+.nd-related-terms-suggestions {
+	display: none;
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	z-index: var(--layer-popover, 30);
+	max-height: 240px;
+	overflow-y: auto;
+	padding: 4px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-primary);
+	box-shadow: var(--shadow-s);
+}
+
+.nd-related-terms-suggestions.is-open {
+	display: block;
+}
+
+.nd-related-terms-suggestion {
+	display: block;
+	width: 100%;
+	padding: 7px 10px;
+	border: 0;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-normal);
+	text-align: left;
+	cursor: pointer;
+}
+
+.nd-related-terms-suggestion:hover,
+.nd-related-terms-suggestion.is-selected {
+	background: var(--background-modifier-hover);
+}
+
+.nd-related-terms-suggestion-target {
+	color: var(--text-muted);
+}
+
+.nd-related-terms-suggestion-source {
+	margin-inline-start: auto;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: var(--background-secondary-alt);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	white-space: nowrap;
+}
+
+.nd-related-terms-suggestion-source.is-note,
+.nd-related-terms-suggestion-source.is-both {
+	color: var(--text-accent);
+}
+
+.nd-related-term-note-link {
+	color: inherit;
+	text-decoration: underline var(--color-green) dotted;
+	-webkit-text-decoration: underline var(--color-green) dotted;
+	text-decoration-thickness: 1.5px;
+	text-underline-offset: 2px;
+	cursor: pointer;
+}
+
+.nd-related-term-note-link:hover {
+	color: inherit;
+}
+
+.nd-related-term-dictionary-link,
+.nd-ency-def-container .nd-related-term-dictionary-link {
+	text-decoration: underline var(--color-red) dotted;
+	-webkit-text-decoration: underline var(--color-red) dotted;
+	text-decoration-thickness: 1.5px;
+	text-underline-offset: 2px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+	.nd-ency-search-wrap {
+		padding: 8px 16px;
+	}
+	.nd-ency-nav-btn.nd-ency-add-btn {
+		left: 24px;
+	}
+	.nd-ency-nav-btn.nd-ency-close-btn {
+		right: 24px;
+	}
+	.nd-ency-result-item {
+		padding: 12px 16px;
+		min-height: 44px;
+	}
+	.nd-ency-recent-header {
+		padding: 8px 16px;
+	}
+	.nd-ency-toolbar {
+		padding: 6px 12px;
+	}
+	.nd-ency-nav-btn {
+		width: 36px;
+		height: 36px;
+	}
+	.nd-ency-def-container {
+		padding: 12px 16px 100px;
+	}
+	.nd-ency-def-title {
+		font-size: 1.25em;
+	}
+}
+.definition-same-name-note-link {
+	display: block;
+	width: fit-content;
+	margin: 10px 0 2px;
+	margin-left: auto;
+	color: var(--link-color);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+[ctx="def-popup"] .footnotes > hr {
+	/* dictionary-footnote-divider */
+	display: none !important;
+}
+
+/* Compact source display; Markdown's required block separator is not visual spacing. */
+[ctx="def-popup"] .footnotes,
+[ctx="def-popup"] .footnotes ol,
+[ctx="def-popup"] .footnotes li,
+[ctx="def-popup"] .footnotes li > p {
+	margin-top: 0 !important;
+	margin-bottom: 0 !important;
+}
+[ctx="def-popup"] p:has(+ .footnotes) {
+	margin-bottom: 0 !important;
+}
+
+.nd-definition-insert-citation {
+	margin-left: 12px;
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+}
+.nd-definition-citation-actions .nd-definition-insert-citation {
+	margin-left: 0;
+}
+.nd-citation-source-modal {
+	max-height: var(--nd-citation-viewport-height, calc(100dvh - 32px));
+	transform: translateY(var(--nd-citation-viewport-offset, 0px));
+	padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.nd-citation-source-modal .modal-content {
+	min-height: 0;
+	overflow-y: auto;
+}
+.nd-citation-source-input {
+	width: 100%;
+	min-height: 2.5em;
+	max-height: calc(var(--nd-citation-viewport-height, 70vh) * 0.4);
+	resize: none;
+	overflow-y: auto;
+	overflow-wrap: anywhere;
+	background-color: #fff !important;
+}
+.nd-citation-source-modal textarea.nd-citation-source-input,
+.nd-citation-source-modal textarea.nd-citation-source-input:hover,
+.nd-citation-source-modal textarea.nd-citation-source-input:focus,
+.nd-citation-source-modal textarea.nd-citation-source-input:focus-visible {
+	/* citation-input-theme-isolation */
+	-webkit-appearance: none !important;
+	appearance: none !important;
+	box-shadow: none !important;
+	outline: none !important;
+	border: 1px solid #dedede !important;
+	border-radius: 10px !important;
+	background: #fff !important;
+	color: var(--text-normal);
+	padding: 10px 12px;
+	box-sizing: border-box;
+}
+.nd-citation-source-modal textarea.nd-citation-source-input:focus,
+.nd-citation-source-modal textarea.nd-citation-source-input:focus-visible {
+	border-color: var(--interactive-accent) !important;
+}
+.nd-citation-source-suggestions button {
+	display: block;
+	width: 100%;
+	height: auto;
+	white-space: normal;
+	text-align: left;
+	overflow-wrap: anywhere;
+	margin: 6px 0;
+	cursor: pointer;
+}
+.nd-citation-source-suggestions button.is-selected {
+	background: var(--background-modifier-hover);
+}
+.nd-citation-source-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 12px;
+}
+
+.nd-book-search-source { color:var(--text-muted); font-size:var(--font-ui-small); overflow-wrap:anywhere; }
+
+/* WeRead -> ND entry (appended patch) */
+.ndw-modal { width: min(760px, 94vw); }
+.ndw-hint { color: var(--text-muted); font-size: var(--font-ui-smaller); }
+.ndw-source-card { padding: 2px 0 6px; border-bottom: 1px solid var(--background-modifier-border); margin-bottom: 8px; }
+.ndw-source { margin: 0 0 4px; font-weight: 600; }
+.ndw-body, .ndw-list { max-height: 56vh; overflow: auto; }
+.ndw-units { display: flex; flex-wrap: wrap; gap: 2px; padding: 10px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s); user-select: none; touch-action: none; max-height: 28vh; overflow: auto; background: var(--background-primary); }
+.ndw-unit { padding: 1px 3px; min-width: 16px; min-height: 25px; border: 0; background: transparent; color: var(--text-normal); font: inherit; line-height: 1.5; cursor: crosshair; border-radius: 3px; }
+.ndw-unit:hover { background: var(--background-modifier-hover); }
+.ndw-unit.is-selected { background: var(--interactive-accent); color: var(--text-on-accent); }
+.ndw-gap { min-width: 8px; }
+.ndw-selection-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; margin: 8px 0; padding: 8px 0; }
+.ndw-selection-actions[hidden] { display: flex; visibility: hidden; pointer-events: none; }
+.ndw-selection-actions button { background: var(--interactive-accent); color: var(--text-on-accent); border: 0; border-radius: var(--radius-s); padding: 5px 10px; }
+.ndw-selection-actions button:hover { background: var(--interactive-accent-hover); }
+.ndw-selected { margin: 4px 0 2px; min-height: 20px; color: var(--text-accent); font-size: var(--font-ui-smaller); }
+.ndw-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+/* WeRead tab + encyclopedia entry */
+.ndw-ency-host { position: relative; }
+.ndw-ency-entry { position: absolute; right: 18px; bottom: 18px; z-index: 30; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--interactive-accent); color: var(--text-on-accent); box-shadow: var(--shadow-s); cursor: pointer; }
+.ndw-ency-entry:hover { background: var(--interactive-accent-hover); }
+.ndw-ency-entry svg { width: 16px; height: 16px; }
+.ndw-weread-view { height: 100%; overflow-y: auto; padding: 18px 22px 80px; box-sizing: border-box; }
+.ndw-tab-head h2 { margin: 0 0 4px; }
+.ndw-tab-head p { margin: 0 0 12px; }
+.ndw-tab-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 14px; }
+.ndw-tab-toolbar input { flex: 1 1 240px; min-width: 180px; }
+.ndw-tab-toolbar select { min-width: 110px; }
+.ndw-count { color: var(--text-muted); font-size: var(--font-ui-smaller); }
+.ndw-book-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.ndw-book-card { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-primary); }
+.ndw-book-cover { flex: 0 0 46px; width: 46px; height: 64px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: var(--radius-s); background: var(--background-secondary); color: var(--text-muted); }
+.ndw-book-cover img { width: 100%; height: 100%; object-fit: cover; }
+.ndw-book-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ndw-book-title { font-weight: 600; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ndw-book-author { color: var(--text-muted); font-size: var(--font-ui-smaller); }
+.ndw-book-meta { color: var(--text-faint); font-size: var(--font-ui-smaller); }
+.ndw-book-card button { flex: 0 0 auto; align-self: center; }
+.ndw-back { margin-bottom: 8px; }
+.ndw-note-head { display: flex; gap: 14px; align-items: flex-start; margin: 6px 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--background-modifier-border); }
+.ndw-note-cover { flex: 0 0 92px; width: 92px; height: 128px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: var(--radius-s); background: var(--background-secondary); color: var(--text-muted); font-size: 30px; }
+.ndw-note-cover img { width: 100%; height: 100%; object-fit: cover; }
+.ndw-note-info { flex: 1; min-width: 0; }
+.ndw-note-info h2 { margin: 0 0 4px; }
+.ndw-note-author { margin: 0 0 4px; color: var(--text-muted); }
+@media (max-width: 640px) {
+  .ndw-weread-view { padding: 14px 14px 80px; }
+  .ndw-book-list { grid-template-columns: 1fr; }
+  .ndw-note-cover { flex-basis: 64px; width: 64px; height: 92px; }
+}
+
+/* WeRead tab performance */
+.ndw-book-list { contain: layout style; }
+.ndw-book-card { content-visibility: auto; contain-intrinsic-size: 96px; }
+.ndw-book-cover img { background: var(--background-secondary); }
+.ndw-highlight-row { content-visibility: auto; contain-intrinsic-size: 72px; }
+.ndw-more { grid-column: 1 / -1; padding: 8px 12px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-secondary); color: var(--text-normal); cursor: pointer; }
+.ndw-more:hover { background: var(--background-modifier-hover); }
+.ndw-weread-view { scrollbar-gutter: stable; overscroll-behavior: contain; }
+
+/* Infinite scroll sentinel */
+.ndw-load-sentinel { grid-column: 1 / -1; padding: 12px 8px; text-align: center; color: var(--text-muted); font-size: var(--font-ui-smaller); cursor: pointer; }
+.ndw-load-sentinel.is-done { cursor: default; opacity: 0.7; }
+
+/* Highlight row: content first, chapter quiet at bottom-right */
+.ndw-highlight-row { position: relative; display: flex; align-items: flex-start; gap: 10px; padding: 12px 70px 10px 4px; border-bottom: 1px solid var(--background-modifier-border); }
+.ndw-hl-check { flex: 0 0 auto; margin-top: 3px; }
+.ndw-hl-main { flex: 1; min-width: 0; }
+.ndw-hl-text { color: var(--text-normal); line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ndw-hl-foot { display: flex; justify-content: flex-end; margin-top: 4px; }
+.ndw-chapter { color: var(--text-faint); font-size: var(--font-ui-smaller); font-weight: 400; text-align: right; }
+.ndw-smear-btn { position: absolute; top: 10px; right: 0; padding: 4px 10px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s); background: var(--background-secondary); color: var(--text-muted); font-size: var(--font-ui-smaller); cursor: pointer; }
+.ndw-smear-btn:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
+
+/* Header back to book list + sticky fallback */
+.ndw-header-back { margin-left: 8px; padding: 3px 8px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s); background: var(--background-secondary); color: var(--text-muted); font-size: var(--font-ui-smaller); white-space: nowrap; cursor: pointer; }
+.ndw-header-back:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
+.ndw-header-back[hidden] { display: none; }
+.ndw-sticky-back { position: sticky; top: 0; z-index: 6; align-self: flex-start; margin: 0 0 8px; background: var(--background-secondary); }
+
+/* Same-name conflict resolution */
+.ndw-conflict-box { padding: 8px 10px; margin: 8px 0; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s); background: var(--background-secondary); }
+.ndw-conflict-label { color: var(--text-muted); font-size: var(--font-ui-smaller); margin-bottom: 4px; }
+.ndw-conflict-def, .ndw-conflict-quote { max-height: 120px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ndw-conflict-source { font-weight: 600; margin-bottom: 4px; }
+.ndw-conflict-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.ndw-conflict-actions button { padding: 5px 10px; }
+.ndw-conflict-new { border-top: 1px solid var(--background-modifier-border); padding-top: 8px; margin-top: 8px; }
+.ndw-conflict-footer { display: flex; justify-content: flex-end; margin-top: 10px; }
+
+/* Keep smear modal actions reachable on shorter screens */
+.ndw-modal .modal-content { max-height: calc(90vh - 96px); overflow-y: auto; scrollbar-gutter: stable; }
+
+/* Larger full-width definition editor */
+.ndw-definition-setting { flex-direction: column; align-items: stretch; gap: 6px; }
+.ndw-definition-setting .setting-item-control { width: 100%; }
+.ndw-definition-setting textarea { width: 100%; min-height: 240px; resize: vertical; }
+
+/* Wider word + alias inputs */
+.ndw-wide-setting .setting-item-info { flex: 0 0 34%; }
+.ndw-wide-setting .setting-item-control { flex: 1 1 auto; width: 66%; }
+.ndw-wide-setting .setting-item-control input { width: 100%; }
+@media (max-width: 640px) {
+  .ndw-wide-setting { flex-direction: column; align-items: stretch; }
+  .ndw-wide-setting .setting-item-info, .ndw-wide-setting .setting-item-control { flex-basis: auto; width: 100%; }
+}
+
+/* Highlight list without checkboxes */
+.ndw-highlight-head { padding: 6px 0 10px; }
+.ndw-highlight-count { font-weight: 600; margin-bottom: 2px; }
+.ndw-highlight-row { padding-left: 0; }
+
+.ndw-last { outline: none !important; }
+
+/* All terms view + encyclopedia entry */
+.ndw-ency-all-terms { position: absolute; right: 128px; bottom: 18px; z-index: 30; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-secondary); color: var(--text-normal); box-shadow: var(--shadow-s); cursor: pointer; }
+.ndw-ency-all-terms:hover { background: var(--background-modifier-hover); }
+.ndw-ency-all-terms svg { width: 16px; height: 16px; }
+.ndw-all-terms-view { height: 100%; overflow-y: auto; padding: 18px 22px 80px; box-sizing: border-box; scrollbar-gutter: stable; }
+.ndw-all-terms-head h2 { margin: 0 0 4px; }
+.ndw-all-terms-head p { margin: 0 0 10px; }
+.ndw-all-terms-toolbar { display: flex; align-items: center; gap: 10px; margin: 8px 0 12px; }
+.ndw-all-terms-list { display: flex; flex-direction: column; gap: 8px; }
+.ndw-term-row { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-primary); content-visibility: auto; contain-intrinsic-size: 78px; }
+.ndw-term-main { flex: 1; min-width: 0; }
+.ndw-term-name { font-weight: 600; margin-bottom: 3px; }
+.ndw-term-def { color: var(--text-muted); font-size: var(--font-ui-smaller); line-height: 1.5; overflow-wrap: anywhere; }
+.ndw-term-aliases { color: var(--text-faint); font-size: var(--font-ui-smaller); margin-top: 3px; }
+.ndw-term-date { flex: 0 0 auto; color: var(--text-faint); font-size: var(--font-ui-smaller); white-space: nowrap; }
+@media (max-width: 640px) {
+  .ndw-all-terms-view { padding: 14px 14px 80px; }
+  .ndw-ency-all-terms { right: 16px; bottom: 58px; }
+}
+
+/* All terms filters */
+.ndw-all-terms-toolbar { flex-wrap: wrap; }
+.ndw-all-terms-toolbar input[type="search"] { flex: 1 1 260px; min-width: 180px; }
+.ndw-filter-check { display: inline-flex; align-items: center; gap: 5px; color: var(--text-muted); font-size: var(--font-ui-smaller); white-space: nowrap; }
+.ndw-filter-reset { padding: 3px 8px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s); background: var(--background-secondary); color: var(--text-muted); font-size: var(--font-ui-smaller); cursor: pointer; }
+.ndw-filter-reset:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
+
+/* Term list selection/detail/delete */
+.ndw-term-clickable { cursor: pointer; }
+.ndw-term-clickable:hover { background: var(--background-modifier-hover); }
+.ndw-term-check { flex: 0 0 auto; margin-top: 3px; }
+.ndw-selection-count { color: var(--text-accent); font-size: var(--font-ui-smaller); white-space: nowrap; }
+.ndw-all-terms-toolbar .mod-warning:disabled { opacity: 0.45; cursor: default; }
+.ndw-term-detail-modal .ndw-term-detail-meta { color: var(--text-muted); font-size: var(--font-ui-smaller); margin-bottom: 6px; }
+.ndw-term-detail-rule { border-top: 1px solid var(--background-modifier-border); margin: 8px 0 12px; }
+.ndw-term-detail-def { max-height: 55vh; overflow: auto; line-height: 1.65; }
+.ndw-confirm-list { max-height: 30vh; overflow: auto; padding: 8px 10px; margin: 8px 0; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s); background: var(--background-secondary); }
+.ndw-confirm-name { padding: 2px 0; }
+
+/* Hide Obsidian back/forward arrows on the All Terms tab */
+.workspace-leaf-content[data-type="ndw-all-terms"] .view-header-nav-buttons {
+  display: none !important;
+}
+
+/* Encyclopedia delete-current-term button */
+.ndw-ency-delete { position: absolute; left: 18px; bottom: 18px; z-index: 31; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--background-modifier-error); border-radius: var(--radius-m); background: var(--background-secondary); color: var(--text-error); cursor: pointer; box-shadow: var(--shadow-s); }
+.ndw-ency-delete:hover { background: var(--background-modifier-error); color: var(--text-on-accent); }
+.ndw-ency-delete[hidden] { display: none; }
+.ndw-ency-delete svg { width: 16px; height: 16px; }
+@media (max-width: 640px) { .ndw-ency-delete { left: 16px; bottom: 58px; } }
+
+.ndw-undo-button { margin-left: 10px; }
+
+/* White cancel-selection button */
+.ndw-selection-actions button.ndw-clear-selection {
+  background: #ffffff;
+  color: #333333;
+  border: 1px solid var(--background-modifier-border);
+}
+.ndw-selection-actions button.ndw-clear-selection:hover {
+  background: #f2f2f2;
+  color: #111111;
+}
+
+/* Markdown-rendered conflict definition */
+.ndw-conflict-def { white-space: normal; }
+.ndw-conflict-def ul, .ndw-conflict-def ol { margin: 0.25em 0; padding-left: 1.4em; }
+.ndw-conflict-def p { margin: 0.25em 0; }
+
+/* Hide Obsidian back/forward arrows on the WeRead tab, keep the custom back button */
+.workspace-leaf-content[data-type="ndw-weread-view"] .view-header-nav-buttons > .clickable-icon {
+  display: none !important;
+}
+
+.ndw-delete-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.ndw-delete-actions button { min-width: 84px; }
+.ndw-undo-notice .ndw-undo-button { margin-left: 0; }
+
+/* Keep encyclopedia floating buttons above the Obsidian mobile toolbar */
+.ndw-ency-entry,
+.ndw-ency-all-terms,
+.ndw-ency-delete {
+  bottom: calc(var(--nd-ency-bottom-obstruction, 0px) + 18px);
+}
+@media (max-width: 640px) {
+  .ndw-ency-entry { right: 16px; }
+  .ndw-ency-all-terms { right: 132px; }
+  .ndw-ency-delete { left: 16px; }
+}
+
+/* Mobile: keep floating buttons above the keyboard toolbar */
+@media (max-width: 640px) {
+  .ndw-ency-entry,
+  .ndw-ency-all-terms,
+  .ndw-ency-delete {
+    bottom: max(calc(100px + env(safe-area-inset-bottom, 0px)), calc(var(--nd-ency-bottom-obstruction, 0px) + 100px)) !important;
+  }
+}
+
+/* Mobile floating buttons: fixed above the keyboard toolbar */
+body.is-mobile .ndw-ency-entry,
+body.is-mobile .ndw-ency-all-terms,
+body.is-mobile .ndw-ency-delete {
+  position: fixed !important;
+  bottom: calc(132px + env(safe-area-inset-bottom, 0px)) !important;
+  z-index: 100 !important;
+}
+body.is-mobile .ndw-ency-entry { right: 16px !important; }
+body.is-mobile .ndw-ency-all-terms { right: 132px !important; }
+body.is-mobile .ndw-ency-delete { left: 16px !important; }
+
+/* Mobile: sit above keyboard + Obsidian toolbar */
+body.is-mobile .ndw-ency-entry,
+body.is-mobile .ndw-ency-all-terms,
+body.is-mobile .ndw-ency-delete {
+  position: fixed !important;
+  bottom: calc(var(--keyboard-height, 0px) + var(--mobile-toolbar-height, 48px) + 18px + env(safe-area-inset-bottom, 0px)) !important;
+  z-index: 100 !important;
+}
+
+body.is-mobile .ndw-ency-entry,
+body.is-mobile .ndw-ency-all-terms,
+body.is-mobile .ndw-ency-delete {
+  bottom: var(--ndw-mobile-actions-bottom, 66px) !important;
+}
+
+/* Mobile modal: fit above keyboard and keep unit text visible */
+body.is-mobile .modal.ndw-modal {
+  top: var(--ndw-mobile-modal-top, 10px) !important;
+  max-height: var(--ndw-mobile-modal-height, 90vh) !important;
+  transform: none !important;
+}
+body.is-mobile .modal.ndw-modal .modal-content {
+  max-height: calc(var(--ndw-mobile-modal-height, 90vh) - 68px) !important;
+  overflow-y: auto !important;
+}
+body.is-mobile .ndw-units {
+  min-height: 64px;
+  max-height: 20vh;
+}
+body.is-mobile .ndw-unit {
+  color: var(--text-normal) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+body.is-mobile .ndw-unit.is-selected {
+  color: var(--text-on-accent) !important;
+}
+
+body.is-mobile .ndw-unit {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px !important;
+  min-height: 30px;
+  color: var(--text-normal) !important;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+body.is-mobile .ndw-unit.is-selected {
+  background: var(--interactive-accent) !important;
+  color: var(--text-on-accent) !important;
+}
+
+/* Mobile modal must be a real viewport-height flex column */
+body.is-mobile .modal.ndw-modal {
+  top: var(--ndw-mobile-modal-top, 46px) !important;
+  height: var(--ndw-mobile-modal-height, 80vh) !important;
+  max-height: none !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 0 auto !important;
+  overflow: hidden !important;
+}
+body.is-mobile .modal.ndw-modal .modal-title {
+  flex: 0 0 auto;
+}
+body.is-mobile .modal.ndw-modal .modal-content {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  padding-bottom: 88px;
+}
+body.is-mobile .ndw-units {
+  max-height: 150px;
+}
+
+/* Mobile Smear modal: never extend under the keyboard */
+body.is-mobile .modal.ndw-modal {
+  height: min(55vh, var(--ndw-mobile-modal-height, 55vh)) !important;
+  max-height: min(55vh, var(--ndw-mobile-modal-height, 55vh)) !important;
+  min-height: 0 !important;
+}
+body.is-mobile .modal.ndw-modal .modal-content {
+  max-height: calc(min(55vh, var(--ndw-mobile-modal-height, 55vh)) - 68px) !important;
+  overflow-y: auto !important;
+}
+body.is-mobile .ndw-units {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  max-height: 96px !important;
+  min-height: 0 !important;
+}
+
+/* Mobile modal: fixed top, 50vh max, content handles scrolling */
+body.is-mobile .modal.ndw-modal {
+  top: 46px !important;
+  height: min(50vh, var(--ndw-mobile-modal-height, 50vh)) !important;
+  max-height: min(50vh, var(--ndw-mobile-modal-height, 50vh)) !important;
+}
+body.is-mobile .modal.ndw-modal .modal-content {
+  max-height: calc(min(50vh, var(--ndw-mobile-modal-height, 50vh)) - 68px) !important;
+  overflow-y: auto !important;
+}
+/* Let the smear strip grow with the selected text */
+body.is-mobile .ndw-units {
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+  flex: 0 0 auto !important;
+}
+
+/* Mobile modal: taller when keyboard is closed, compact while typing */
+body.is-mobile .modal.ndw-modal {
+  top: 32px !important;
+  height: 72vh !important;
+  max-height: 72vh !important;
+}
+body.is-mobile .modal.ndw-modal:has(input:focus, textarea:focus) {
+  top: 46px !important;
+  height: 50vh !important;
+  max-height: 50vh !important;
+}
+body.is-mobile .modal.ndw-modal .modal-content {
+  max-height: none !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+/* Mobile modal: bottom-anchored above keyboard/nav, auto height */
+body.is-mobile .modal.ndw-modal {
+  top: auto !important;
+  bottom: 72px !important;
+  height: auto !important;
+  max-height: calc(100vh - 96px) !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 0 auto !important;
+}
+body.is-mobile .modal.ndw-modal:has(input:focus, textarea:focus) {
+  bottom: 37vh !important;
+  max-height: 55vh !important;
+}
+body.is-mobile .modal.ndw-modal .modal-content {
+  max-height: none !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+/* Match the two requested mobile layouts */
+body.is-mobile .modal.ndw-modal {
+  top: auto !important;
+  bottom: 72px !important;
+  height: 70vh !important;
+  max-height: 70vh !important;
+}
+body.is-mobile .modal.ndw-modal:has(input:focus, textarea:focus) {
+  bottom: 37vh !important;
+  height: 28vh !important;
+  max-height: 28vh !important;
+}
+
+/* Keyboard open: use the usable area above the keyboard, not only 28vh */
+body.is-mobile .modal.ndw-modal:has(input:focus, textarea:focus) {
+  bottom: 37vh !important;
+  height: 55vh !important;
+  max-height: 55vh !important;
+}
+
+/* Use detected keyboard edge when available */
+body.is-mobile .modal.ndw-modal:has(input:focus, textarea:focus) {
+  bottom: var(--ndw-mobile-keyboard-bottom, 37vh) !important;
+  height: var(--ndw-mobile-keyboard-height, 55vh) !important;
+  max-height: var(--ndw-mobile-keyboard-height, 55vh) !important;
+}
+
+/* Fill all available space between the top and keyboard */
+body.is-mobile .modal.ndw-modal {
+  position: fixed !important;
+  top: 46px !important;
+  bottom: 72px !important;
+  height: auto !important;
+  max-height: none !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 0 auto !important;
+  overflow: hidden !important;
+}
+body.is-mobile .modal.ndw-modal:has(input:focus, textarea:focus) {
+  top: 46px !important;
+  bottom: var(--ndw-mobile-keyboard-bottom, 37vh) !important;
+  height: auto !important;
+  max-height: none !important;
+}
+body.is-mobile .modal.ndw-modal .modal-content {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+}
+
+/* Mobile smear cells: near-square, compact */
+body.is-mobile .ndw-unit {
+  width: 1.7em !important;
+  height: 1.7em !important;
+  min-width: 1.7em !important;
+  min-height: 1.7em !important;
+  max-width: 1.7em !important;
+  max-height: 1.7em !important;
+  flex: 0 0 1.7em !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+  aspect-ratio: 1 / 1;
+  font-size: 16px;
+}
+body.is-mobile .ndw-units {
+  gap: 2px;
+  padding: 8px;
+}
+.ndw-kbd-debug {
+  position: fixed;
+  top: 42px;
+  left: 8px;
+  z-index: 9999;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  font: 11px/1.4 monospace;
+  white-space: pre;
+  pointer-events: none;
+}
+
+/* iPhone 16 Pro Max calibration: keyboard top at ~617pt, keyboard height ~339pt */
+body.is-mobile .nd-ency-host:has(.nd-ency-search-input:focus) .ndw-ency-entry,
+body.is-mobile .nd-ency-host:has(.nd-ency-search-input:focus) .ndw-ency-all-terms {
+  bottom: calc(35.5vh + 8px) !important;
+}
+
+/* Keyboard-open class is set from the search field focus/tap, not :focus */
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-entry,
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-all-terms {
+  bottom: calc(35.5vh + 8px) !important;
+}
+
+/* No keyboard: measured iPhone 16 Pro Max bottom toolbar height ~92pt + 8pt */
+body.is-mobile .ndw-ency-entry,
+body.is-mobile .ndw-ency-all-terms,
+body.is-mobile .ndw-ency-delete {
+  bottom: 100px !important;
+}
+/* Keyboard-open calibrated offset must still win */
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-entry,
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-all-terms {
+  bottom: calc(35.5vh + 8px) !important;
+}
+
+/* Keyboard open: anchor directly to the measured keyboard line (505/782 = 64.58%) */
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-entry,
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-all-terms {
+  position: fixed !important;
+  top: calc(64.58% - 8px) !important;
+  bottom: auto !important;
+  transform: translateY(-100%) !important;
+}
+
+/* Keyboard open: use the user-marked fixed position, not the bottom edge */
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-entry,
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-all-terms {
+  position: fixed !important;
+  top: 36.6% !important;
+  bottom: auto !important;
+  transform: none !important;
+}
+
+/* When the mobile keyboard is open, hide both encyclopedia floating buttons */
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-entry,
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-all-terms {
+  display: none !important;
+}
+
+/* Buttons remain visible when keyboard is open so they can be dragged together */
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-entry,
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-all-terms {
+  display: inline-flex !important;
+}
+body.is-mobile .ndw-ency-entry,
+body.is-mobile .ndw-ency-all-terms {
+  touch-action: none;
+}
+body.is-mobile .ndw-ency-entry.is-dragging,
+body.is-mobile .ndw-ency-all-terms.is-dragging {
+  opacity: 0.85;
+}
+
+body.is-mobile .ndw-ency-entry.is-dragging,
+body.is-mobile .ndw-ency-all-terms.is-dragging {
+  touch-action: none !important;
+  user-select: none !important;
+}
+
+/* Final rule: hide both floating buttons whenever the mobile keyboard state is active */
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-entry,
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-all-terms {
+  display: none !important;
+}
+
+/* Hide encyclopedia floating buttons while any modal is open (including Edit Definition) */
+body.is-mobile:has(.modal) .ndw-ency-entry,
+body.is-mobile:has(.modal) .ndw-ency-all-terms {
+  display: none !important;
+}
+
+/* Hide floating buttons while any modal is open; do not depend on body.is-mobile */
+body:has(.modal) .ndw-ency-entry,
+body:has(.modal) .ndw-ency-all-terms,
+body:has(.modal-container) .ndw-ency-entry,
+body:has(.modal-container) .ndw-ency-all-terms {
+  display: none !important;
+}
+
+/* Mobile Edit Definition: reserve keyboard area and scroll the form instead of shrinking fields */
+.is-mobile .modal-content.nd-definition-form {
+  max-height: 62vh !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  padding-bottom: 18px;
+}
+.is-mobile .nd-definition-form .nd-definition-markdown-editor {
+  min-height: 120px !important;
+  max-height: 26vh !important;
+}
+.is-mobile .nd-definition-form .nd-definition-markdown-editor .cm-scroller {
+  max-height: 26vh !important;
+  overflow-y: auto !important;
+}
+
+/* Mobile Edit Definition: keep every element at its natural height; scroll the whole form */
+.is-mobile .modal-content.nd-definition-form {
+  display: block !important;
+  max-height: 62vh !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  padding-bottom: 18px;
+}
+.is-mobile .modal-content.nd-definition-form > * {
+  flex: 0 0 auto !important;
+  min-height: 0;
+}
+.is-mobile .nd-definition-form textarea,
+.is-mobile .nd-definition-form .nd-definition-markdown-editor,
+.is-mobile .nd-definition-form .edit-modal-actions,
+.is-mobile .nd-definition-form .nd-related-terms-field {
+  flex-shrink: 0 !important;
+}
+
+/* Give mobile Edit Definition content breathing room from both screen edges */
+.modal-content.nd-definition-form {
+  padding-left: max(16px, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(16px, env(safe-area-inset-right, 0px)) !important;
+  box-sizing: border-box !important;
+}
+
+/* Desktop encyclopedia view: force the host to fill its pane before first paint */
+.workspace-leaf-content[data-type="nd-encyclopedia"] .view-content.nd-ency-container,
+.view-content.nd-ency-container {
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+/* Mobile WeRead highlights: always provide a visible back button */
+.ndw-mobile-back {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  align-self: flex-start;
+  margin: 0 0 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+
+/* Mobile WeRead highlights: keep the last row above the bottom toolbar */
+@media (max-width: 768px) {
+  .ndw-weread-view {
+    padding-bottom: calc(128px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* Concept cards */
+.ndw-ency-cards {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  box-shadow: var(--shadow-s);
+  cursor: pointer;
+}
+.ndw-ency-cards:hover { background: var(--background-modifier-hover); }
+.ndw-ency-cards svg { width: 16px; height: 16px; }
+
+.ndw-cards-view {
+  height: 100%;
+  overflow-y: auto;
+  padding: 18px 20px 128px;
+  box-sizing: border-box;
+}
+.ndw-cards-head h2 { margin: 0 0 4px; }
+.ndw-cards-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
+}
+.ndw-cards-toolbar input { min-width: 180px; flex: 1 1 220px; }
+.ndw-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.ndw-concept-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 132px;
+  padding: 14px 14px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
+  cursor: pointer;
+}
+.ndw-concept-card:hover { border-color: var(--interactive-accent); }
+.ndw-card-star {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.ndw-card-star.is-starred { color: #e0a800; }
+.ndw-card-word { padding-right: 28px; font-weight: 700; font-size: var(--font-ui-medium); }
+.ndw-card-aliases { margin-top: 3px; color: var(--text-muted); font-size: var(--font-ui-smaller); }
+.ndw-card-def { margin-top: 8px; color: var(--text-normal); font-size: var(--font-ui-small); line-height: 1.5; flex: 1; }
+.ndw-card-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+.ndw-cards-empty { margin-top: 12px; }
+@media (max-width: 600px) {
+  .ndw-cards-view { padding: 14px 10px 128px; }
+  .ndw-cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .ndw-concept-card { padding: 10px 9px 8px; }
+  .ndw-card-word { font-size: var(--font-ui-small); }
+  .ndw-card-def { font-size: var(--font-ui-smaller); }
+}
+
+/* Prevent concept cards from exceeding the pane width */
+.ndw-cards-view { max-width: 100%; overflow-x: hidden; }
+.ndw-cards-grid { width: 100%; min-width: 0; }
+.ndw-concept-card { min-width: 0; max-width: 100%; overflow: hidden; box-sizing: border-box; }
+.ndw-card-word, .ndw-card-aliases, .ndw-card-def, .ndw-card-footer {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Concept card review modal */
+.ndw-review-modal { width: min(560px, 94vw); }
+.ndw-review-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.ndw-review-star { border: 0; background: transparent; color: var(--text-muted); font-size: 24px; cursor: pointer; padding: 2px 6px; }
+.ndw-review-star.is-starred { color: #e0a800; }
+.ndw-review-card {
+  min-height: 260px;
+  padding: 18px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
+  touch-action: none;
+  user-select: none;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.ndw-review-word { font-size: var(--font-ui-large); font-weight: 700; padding-right: 32px; }
+.ndw-review-aliases { color: var(--text-muted); font-size: var(--font-ui-small); margin-top: 4px; }
+.ndw-review-def { margin-top: 12px; line-height: 1.6; max-height: 46vh; overflow-y: auto; }
+.ndw-review-hint { color: var(--text-faint); font-size: var(--font-ui-smaller); text-align: center; margin: 8px 0; }
+.ndw-review-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ndw-review-actions button { flex: 1 1 auto; }
+.ndw-review-stats-list { max-height: 55vh; overflow-y: auto; margin-top: 10px; }
+.ndw-review-stats-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--background-modifier-border); }
+.ndw-review-stats-row small { color: var(--text-muted); }
+
+/* Long review cards: vertical swipes scroll first, only boundary swipes navigate */
+.ndw-review-card { touch-action: pan-y !important; }
+.ndw-review-def { touch-action: pan-y !important; -webkit-overflow-scrolling: touch; }
+
+.ndw-review-card, .ndw-review-def { touch-action: none !important; }
+
+/* Card toolbar: only text/search inputs stretch; checkbox stays a normal checkbox */
+.ndw-cards-toolbar input[type="search"],
+.ndw-cards-toolbar input[type="text"] {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+.ndw-cards-toolbar input[type="checkbox"] {
+  flex: 0 0 auto !important;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 0 !important;
+  max-width: 16px !important;
+  margin: 0;
+  accent-color: var(--interactive-accent);
+}
+.ndw-cards-toolbar .ndw-filter-check { flex: 0 0 auto; gap: 6px; }
+
+/* Mobile review uses gestures only; desktop keeps explicit buttons */
+.ndw-review-mobile .ndw-review-actions { display: none !important; }
+
+/* Concept cards header with exit button */
+.ndw-cards-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.ndw-cards-title { min-width: 0; }
+.ndw-cards-exit {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  cursor: pointer;
+}
+.ndw-cards-exit:hover { background: var(--background-modifier-hover); }
+
+.ndw-tab-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.ndw-tab-head .ndw-cards-title { min-width: 0; }
+
+.ndw-all-terms-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.ndw-all-terms-head .ndw-cards-title { min-width: 0; }
+
+.ndw-book-card { cursor: pointer; }
+.ndw-book-card:hover { border-color: var(--interactive-accent); }
+.ndw-book-card:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
+
+.ndw-days-filter { gap: 4px; flex: 0 0 auto; }
+.ndw-days-input { width: 58px !important; min-width: 0 !important; flex: 0 0 58px !important; padding: 2px 4px; }
+
+.ndw-toolbar-label { flex: 0 0 auto; color: var(--text-muted); font-size: var(--font-ui-smaller); }
+
+/* Desktop review: fixed footer buttons, card content scrolls above it */
+.ndw-review-modal:not(.ndw-review-mobile) .modal-content {
+  display: flex;
+  flex-direction: column;
+  height: min(760px, calc(100vh - 120px));
+  max-height: calc(100vh - 120px);
+}
+.ndw-review-modal:not(.ndw-review-mobile) .ndw-review-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ndw-review-modal:not(.ndw-review-mobile) .ndw-review-def {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+.ndw-review-modal:not(.ndw-review-mobile) .ndw-review-actions {
+  flex: 0 0 auto;
+  margin-top: 12px;
+}
+.ndw-order-toggle {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+.ndw-order-toggle:hover { background: var(--background-modifier-hover); }
+
+/* Confine the review pane to its own Obsidian tab instead of covering the whole app */
+.modal-container.ndw-review-container {
+  background: transparent !important;
+  pointer-events: none !important;
+  backdrop-filter: none !important;
+}
+.modal-container.ndw-review-container .modal-bg { display: none !important; }
+.modal.ndw-review-pane {
+  pointer-events: auto !important;
+  display: flex !important;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-l);
+}
+.ndw-review-pane .modal-title { flex: 0 0 auto; }
+.ndw-review-pane .modal-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Plain, frameless star controls */
+.ndw-card-star {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  appearance: none !important;
+  color: var(--text-muted);
+  font-size: 22px !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ndw-card-star:hover,
+.ndw-card-star:focus,
+.ndw-card-star:active {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.ndw-card-star.is-starred { color: #d99a00; }
+.ndw-card-word { padding-right: 32px; }
+.ndw-review-star {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  font-size: 26px !important;
+  font-weight: 400 !important;
+}
+
+/* Thin outline star icons */
+.ndw-card-star svg,
+.ndw-review-star svg {
+  width: 22px !important;
+  height: 22px !important;
+  stroke-width: 1.2 !important;
+  fill: none !important;
+}
+.ndw-review-star svg { width: 26px !important; height: 26px !important; }
+.ndw-card-star.is-starred svg,
+.ndw-review-star.is-starred svg { fill: none !important; }
+
+/* Muted gray star outlines */
+.ndw-card-star { color: var(--text-faint) !important; }
+.ndw-card-star:hover { color: var(--text-muted) !important; }
+.ndw-card-star.is-starred { color: #b9a06a !important; }
+.ndw-review-star { color: var(--text-faint) !important; }
+.ndw-review-star:hover { color: var(--text-muted) !important; }
+.ndw-review-star.is-starred { color: #b9a06a !important; }
+
+/* Starred: filled gold, not just a colored outline */
+.ndw-card-star.is-starred,
+.ndw-review-star.is-starred { color: #d4a017 !important; }
+.ndw-card-star.is-starred svg,
+.ndw-review-star.is-starred svg {
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  stroke-width: 1 !important;
+}
+
+/* Brighter gold for starred cards */
+.ndw-card-star.is-starred,
+.ndw-review-star.is-starred { color: #ffd700 !important; }
+.ndw-card-star.is-starred svg,
+.ndw-review-star.is-starred svg {
+  fill: #ffd700 !important;
+  stroke: #ffd700 !important;
+}
+
+/* Keep aliases clear of the star; mobile star sits slightly higher */
+.ndw-card-star { top: 8px !important; }
+.ndw-card-aliases { padding-right: 32px; }
+@media (max-width: 600px) {
+  .ndw-card-star { top: 4px !important; }
+}
+
+/* Markdown preview inside card list */
+.ndw-card-def { max-height: 8.5em; overflow: hidden; }
+.ndw-card-def > :first-child { margin-top: 0; }
+.ndw-card-def > :last-child { margin-bottom: 0; }
+.ndw-card-def p { margin: 0 0 4px; }
+.ndw-card-def ul, .ndw-card-def ol { margin: 0 0 4px 1.15em; padding-left: 0; }
+.ndw-card-def li { margin: 0 0 2px; }
+.ndw-card-def h1, .ndw-card-def h2, .ndw-card-def h3 {
+  margin: 0 0 4px;
+  font-size: var(--font-ui-small);
+  line-height: 1.35;
+}
+.ndw-card-def img { max-width: 100%; height: auto; }
+.ndw-card-def table { display: block; max-width: 100%; overflow-x: auto; }
+
+/* Markdown preview in term management rows */
+.ndw-term-def { max-height: 8.5em; overflow: hidden; }
+.ndw-term-def > :first-child { margin-top: 0; }
+.ndw-term-def > :last-child { margin-bottom: 0; }
+.ndw-term-def p { margin: 0 0 4px; }
+.ndw-term-def ul, .ndw-term-def ol { margin: 0 0 4px 1.15em; padding-left: 0; }
+.ndw-term-def li { margin: 0 0 2px; }
+.ndw-term-def h1, .ndw-term-def h2, .ndw-term-def h3 {
+  margin: 0 0 4px;
+  font-size: var(--font-ui-small);
+  line-height: 1.35;
+}
+.ndw-term-def img { max-width: 100%; height: auto; }
+
+/* Two-column term management on phones */
+@media (max-width: 600px) {
+  .ndw-all-terms-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .ndw-term-row {
+    display: block;
+    padding: 9px;
+    contain-intrinsic-size: 150px;
+  }
+  .ndw-term-check { margin: 0 0 4px; }
+  .ndw-term-main { min-width: 0; }
+  .ndw-term-name { font-size: var(--font-ui-small); }
+  .ndw-term-def { max-height: 7em; font-size: var(--font-ui-smaller); }
+  .ndw-term-aliases { font-size: var(--font-ui-smaller); }
+  .ndw-term-date { margin-top: 5px; font-size: var(--font-ui-smaller); }
+}
+
+/* Keep Markdown list markers and other block styles inside narrow cards */
+.ndw-card-def ul,
+.ndw-card-def ol,
+.ndw-term-def ul,
+.ndw-term-def ol {
+  margin: 0 0 4px !important;
+  padding-left: 1.6em !important;
+  list-style-position: outside;
+}
+.ndw-card-def li,
+.ndw-term-def li {
+  margin: 0 0 2px !important;
+  overflow-wrap: anywhere;
+}
+.ndw-card-def li > ul,
+.ndw-card-def li > ol,
+.ndw-term-def li > ul,
+.ndw-term-def li > ol {
+  margin: 2px 0 2px !important;
+  padding-left: 1.2em !important;
+}
+.ndw-card-def input[type="checkbox"],
+.ndw-term-def input[type="checkbox"] {
+  margin: 0 4px 0 0 !important;
+}
+.ndw-card-def blockquote,
+.ndw-term-def blockquote {
+  margin: 4px 0 !important;
+  padding-left: 8px !important;
+  border-left: 2px solid var(--background-modifier-border) !important;
+}
+.ndw-card-def pre,
+.ndw-term-def pre {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  white-space: pre !important;
+}
+.ndw-card-def code,
+.ndw-term-def code {
+  overflow-wrap: anywhere;
+}
+.ndw-card-def table,
+.ndw-term-def table {
+  display: block !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+}
+.ndw-card-def hr,
+.ndw-term-def hr {
+  margin: 6px 0 !important;
+}
+
+/* Mobile review card: fit content instead of forcing a full pane-height frame */
+.ndw-review-pane.ndw-review-mobile {
+  height: auto !important;
+  max-height: calc(100vh - 16px) !important;
+}
+.ndw-review-mobile .modal-content {
+  height: auto !important;
+  max-height: calc(100vh - 16px);
+}
+.ndw-review-mobile .ndw-review-card {
+  min-height: 0;
+  flex: 0 1 auto;
+}
+.ndw-review-mobile .ndw-review-def {
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+/* Clicking outside the review pane closes it, but only inside its own tab */
+.ndw-review-pane-backdrop {
+  position: fixed;
+  z-index: 0;
+  background: rgba(0, 0, 0, 0.04);
+  pointer-events: auto;
+}
+.modal.ndw-review-pane { z-index: 1 !important; }
+
+.ndw-cards-head-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ndw-review-top { justify-content: flex-start; gap: 4px; }
+.ndw-review-top .ndw-hint { margin-right: auto; }
+.ndw-review-settings {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.ndw-review-settings:hover { color: var(--text-muted); background: transparent !important; }
+.ndw-review-settings svg { width: 18px; height: 18px; stroke-width: 1.5; }
+
+/* Term management: columns on desktop/tablet, two columns on phones */
+.ndw-all-terms-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+
+/* Review settings is confined to its own concept-card tab */
+.modal-container.ndw-settings-container {
+  background: transparent !important;
+  pointer-events: none !important;
+  backdrop-filter: none !important;
+}
+.modal-container.ndw-settings-container .modal-bg { display: none !important; }
+.modal.ndw-settings-pane {
+  pointer-events: auto !important;
+  z-index: 2 !important;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-l);
+}
+.ndw-settings-backdrop {
+  position: fixed;
+  z-index: 0;
+  background: rgba(0, 0, 0, 0.04);
+  pointer-events: auto;
+}
+.ndw-settings-pane .modal-content { overflow-y: auto; }
+
+/* Enforce two-column term management on all screen sizes */
+.ndw-all-terms-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+/* Spacious review settings form */
+.ndw-settings-pane .modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ndw-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ndw-settings-field label { color: var(--text-muted); font-size: var(--font-ui-smaller); }
+.ndw-settings-field select { width: 100%; }
+.ndw-settings-pane .ndw-settings-auto {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: normal;
+}
+.ndw-settings-pane .ndw-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* Responsive term-management columns: more columns on wider panes */
+.ndw-all-terms-list {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+}
+@media (max-width: 600px) {
+  .ndw-all-terms-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Put the date over the card's top-right, aligned with the text edge */
+.ndw-term-row { position: relative; }
+.ndw-term-date {
+  position: absolute !important;
+  top: 10px !important;
+  right: 12px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  white-space: nowrap;
+}
+.ndw-term-name { padding-right: 96px; }
+
+/* Make term-management cards follow the concept-card visual layout */
+.ndw-term-row {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 132px;
+  padding: 14px 14px 10px 36px;
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+}
+.ndw-term-check {
+  position: absolute !important;
+  top: 14px !important;
+  left: 12px !important;
+  margin: 0 !important;
+}
+.ndw-term-main {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+.ndw-term-name {
+  padding-right: 0;
+  font-size: var(--font-ui-medium);
+  font-weight: 700;
+}
+.ndw-term-aliases {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+.ndw-term-def {
+  flex: 1;
+  margin-top: 8px;
+  max-height: 8.5em;
+  overflow: hidden;
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+}
+.ndw-term-date {
+  position: static !important;
+  align-self: flex-end;
+  margin-top: 10px !important;
+  padding-top: 8px !important;
+  padding-right: 0 !important;
+  border-top: 1px solid var(--background-modifier-border);
+  width: 100%;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  text-align: right;
+}
+.ndw-term-row:hover { border-color: var(--interactive-accent); }
+@media (max-width: 600px) {
+  .ndw-term-row {
+    display: flex;
+    min-height: 132px;
+    padding: 10px 9px 8px 30px;
+  }
+  .ndw-term-check { top: 10px !important; left: 8px !important; }
+  .ndw-term-name { font-size: var(--font-ui-small); }
+  .ndw-term-def { max-height: 7em; }
+  .ndw-term-date { margin-top: 6px !important; padding-top: 6px !important; }
+}
+
+/* Term-management cards: same layout as concept cards, checkbox replaces the star */
+.ndw-term-row {
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative;
+  min-height: 132px;
+  padding: 14px 14px 10px !important;
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+}
+.ndw-term-check {
+  position: absolute !important;
+  top: 10px !important;
+  right: 12px !important;
+  left: auto !important;
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+}
+.ndw-term-main {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100%;
+  min-width: 0;
+}
+.ndw-term-name {
+  padding-right: 32px !important;
+  font-size: var(--font-ui-medium);
+  font-weight: 700;
+}
+.ndw-term-aliases {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+.ndw-term-def {
+  flex: 1;
+  margin-top: 8px;
+  max-height: 8.5em;
+  overflow: hidden;
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+}
+.ndw-term-date {
+  position: static !important;
+  align-self: stretch !important;
+  width: 100% !important;
+  margin: 10px 0 0 !important;
+  padding: 8px 0 0 !important;
+  border-top: 1px solid var(--background-modifier-border);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  text-align: left !important;
+  white-space: normal;
+}
+.ndw-term-row:hover { border-color: var(--interactive-accent); }
+@media (max-width: 600px) {
+  .ndw-term-row {
+    min-height: 132px;
+    padding: 10px 9px 8px !important;
+  }
+  .ndw-term-check { top: 8px !important; right: 8px !important; }
+  .ndw-term-name { padding-right: 26px !important; font-size: var(--font-ui-small); }
+  .ndw-term-def { max-height: 7em; }
+  .ndw-term-date { margin-top: 6px !important; padding-top: 6px !important; }
+}
+
+.ndw-term-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+.ndw-term-date {
+  position: static !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  text-align: left !important;
+  white-space: normal;
+}
+.ndw-term-stats { white-space: nowrap; }
+@media (max-width: 600px) {
+  .ndw-term-footer { margin-top: 6px; padding-top: 6px; }
+}
+
+/* Keep at least two term columns on normal desktop panes */
+.ndw-all-terms-list {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+}
+
+/* Term cards keep their normal background on hover */
+.ndw-term-row.ndw-term-clickable:hover {
+  background: var(--background-primary) !important;
+}
+
+/* Equal-height term cards, matching the concept-card grid */
+.ndw-all-terms-list { align-items: stretch !important; }
+.ndw-term-row { height: 100%; }
+.ndw-term-main { flex: 1 1 auto !important; }
+.ndw-term-footer { margin-top: auto !important; }
+
+/* WeRead highlight card browser */
+.ndw-hl-card-actions { display: flex; justify-content: flex-end; margin: 6px 0 10px; }
+.ndw-wr-card-modal { width: min(700px, 94vw); }
+.ndw-wr-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ndw-wr-card-top .ndw-hint { margin-right: auto; }
+.ndw-hl-card-star {
+  width: 32px; height: 32px; padding: 0;
+  border: 0 !important; background: transparent !important;
+  box-shadow: none !important; color: var(--text-faint);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.ndw-hl-card-star svg { width: 24px; height: 24px; stroke-width: 1.2; fill: none; }
+.ndw-hl-card-star.is-starred { color: #ffd700 !important; }
+.ndw-hl-card-star.is-starred svg { fill: #ffd700 !important; stroke: #ffd700 !important; }
+.ndw-wr-card {
+  padding: 18px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
+}
+.ndw-wr-card-text { font-size: var(--font-ui-medium); line-height: 1.7; max-height: 48vh; overflow-y: auto; }
+.ndw-wr-card-meta { margin-top: 14px; color: var(--text-muted); font-size: var(--font-ui-smaller); }
+.ndw-wr-card-source { margin-top: 6px; color: var(--text-faint); font-size: var(--font-ui-smaller); }
+.ndw-wr-fav-list { max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.ndw-wr-fav-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m); background: var(--background-primary);
+}
+.ndw-wr-fav-main { flex: 1; min-width: 0; }
+.ndw-wr-fav-book { font-weight: 700; }
+.ndw-wr-fav-text { margin-top: 4px; line-height: 1.5; overflow-wrap: anywhere; }
+.ndw-wr-fav-meta { margin-top: 4px; color: var(--text-muted); font-size: var(--font-ui-smaller); }
+
+.ndw-hl-browse { align-self: flex-start; margin: 4px 0 8px; }
+
+.ndw-weread-top-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 4px 0 6px;
+  background: var(--background-primary);
+}
+.ndw-weread-top-actions .ndw-mobile-back { position: static; margin: 0; }
+.ndw-weread-top-actions .ndw-hl-browse { margin: 0; }
+
+.ndw-hl-card-star { transition: transform 0.12s ease, color 0.12s ease; }
+.ndw-hl-card-star:hover {
+  color: var(--text-muted) !important;
+  transform: scale(1.15);
+  background: transparent !important;
+}
+.ndw-hl-card-star.is-starred:hover { color: #ffd700 !important; }
+
+/* Fixed WeRead card-browser height so navigation buttons never move */
+.ndw-wr-card-modal .modal-content {
+  display: flex;
+  flex-direction: column;
+  height: min(640px, calc(100vh - 100px));
+  max-height: calc(100vh - 100px);
+}
+.ndw-wr-card-modal .ndw-wr-card-top { flex: 0 0 auto; }
+.ndw-wr-card-modal .ndw-wr-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ndw-wr-card-modal .ndw-wr-card-text {
+  flex: 1 1 auto;
+  max-height: none;
+  overflow-y: auto;
+}
+.ndw-wr-card-modal .ndw-actions {
+  flex: 0 0 auto;
+  margin-top: 12px;
+}
+
+.modal-container.ndw-pane-container {
+  background: transparent !important;
+  pointer-events: none !important;
+  backdrop-filter: none !important;
+}
+.modal-container.ndw-pane-container .modal-bg { display: none !important; }
+.modal.ndw-pane-modal {
+  position: fixed !important;
+  z-index: 2 !important;
+  pointer-events: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-l);
+}
+.ndw-pane-backdrop {
+  position: fixed;
+  z-index: 0;
+  background: rgba(0, 0, 0, 0.04);
+  pointer-events: auto;
+}
+
+.ndw-wr-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin-top: 12px;
+}
+.ndw-wr-card-nav { display: flex; gap: 8px; }
+
+.ndw-hl-clickable { cursor: pointer; }
+.ndw-hl-clickable:hover .ndw-hl-text { color: var(--text-accent); }
+
+/* Mobile parity for the latest card / term / WeRead UI */
+@media (max-width: 600px) {
+  .ndw-term-footer { flex-wrap: wrap; row-gap: 2px; }
+  .ndw-term-check {
+    width: 20px !important;
+    height: 20px !important;
+    top: 8px !important;
+    right: 8px !important;
+  }
+  .ndw-wr-card-actions { gap: 6px; }
+  .ndw-wr-card-actions > button { flex: 1 1 auto; }
+  .ndw-wr-card-nav { flex: 1 1 auto; }
+  .ndw-wr-card-nav button { flex: 1; }
+  .ndw-wr-card-text { font-size: var(--font-ui-small); }
+  .ndw-settings-pane .modal-content { max-height: calc(100vh - 180px); }
+  .ndw-hl-browse, .ndw-weread-top-actions .ndw-mobile-back { min-height: 34px; }
+}
+
+.ndw-hl-main, .ndw-hl-text {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -webkit-touch-callout: default;
+}
+.ndw-hl-text { cursor: text; }
+
+.ndw-hl-card-settings {
+  width: 30px; height: 30px; padding: 0;
+  border: 0 !important; background: transparent !important;
+  box-shadow: none !important; color: var(--text-faint);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.ndw-hl-card-settings:hover { color: var(--text-muted); background: transparent !important; }
+.ndw-hl-card-settings svg { width: 18px; height: 18px; stroke-width: 1.5; }
+.ndw-random-book-list {
+  max-height: 45vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 0 12px;
+  padding-right: 4px;
+}
+.ndw-random-book-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.ndw-random-book-row:hover { background: var(--background-modifier-hover); }
+.ndw-random-book-main { display: flex; flex-direction: column; min-width: 0; }
+.ndw-random-book-title { font-weight: 600; }
+.ndw-random-book-meta { color: var(--text-faint); font-size: var(--font-ui-smaller); }
+
+.ndw-wr-card-locate {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text-accent);
+  font-size: var(--font-ui-smaller);
+  text-align: left;
+  cursor: pointer;
+}
+.ndw-wr-card-locate:hover { text-decoration: underline; background: transparent !important; }
+.ndw-hl-located {
+  background: var(--background-modifier-hover);
+  box-shadow: inset 3px 0 0 var(--interactive-accent);
+}
+
+.ndw-hl-located { scroll-margin-top: 64px; }
+
+/* Floating back/browse buttons: no full-width white strip */
+.ndw-weread-top-actions {
+  background: transparent !important;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 0 6px;
+  pointer-events: none;
+}
+.ndw-weread-top-actions > button { pointer-events: auto; }
+
+/* Located highlight: only the text gets a yellow background */
+.ndw-hl-located {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.ndw-hl-located .ndw-hl-text {
+  background: var(--text-highlight-bg, #fff3b0);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.ndw-random-book-current {
+  background: var(--background-modifier-hover);
+  box-shadow: inset 3px 0 0 var(--interactive-accent);
+}
+
+/* Thin, even border for the settings search field */
+.ndw-settings-pane input[type="search"] {
+  width: 100%;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border) !important;
+  border-radius: var(--radius-s);
+  box-shadow: none !important;
+  outline: none !important;
+  background: var(--background-primary);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.ndw-settings-pane input[type="search"]:focus {
+  border: 1px solid var(--interactive-accent) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Random settings: thin border, no thick focus ring */
+.ndw-random-settings input[type="search"] {
+  width: 100%;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border) !important;
+  border-radius: var(--radius-s);
+  box-shadow: none !important;
+  outline: none !important;
+  background: var(--background-primary);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.ndw-random-settings input[type="search"]:focus,
+.ndw-random-settings input[type="search"]:focus-visible {
+  border: 1px solid var(--interactive-accent) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.ndw-wr-fav-main { display: flex; flex-direction: column; gap: 4px; }
+.ndw-wr-fav-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+.ndw-wr-fav-author { color: var(--text-muted); font-size: var(--font-ui-smaller); }
+.ndw-wr-fav-source {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  text-align: right;
+}
+
+.ndw-wr-fav-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ndw-wr-fav-toolbar input[type="search"] {
+  flex: 1;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border) !important;
+  border-radius: var(--radius-s);
+  box-shadow: none !important;
+  outline: none !important;
+}
+.ndw-wr-fav-toolbar input[type="search"]:focus {
+  border-color: var(--interactive-accent) !important;
+  box-shadow: none !important;
+}
+.ndw-wr-fav-count { color: var(--text-muted); font-size: var(--font-ui-smaller); white-space: nowrap; }
+.ndw-wr-fav-more {
+  align-self: center;
+  margin: 8px auto;
+  padding: 6px 16px;
+}
+
+.ndw-wr-fav-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 4px;
+  padding: 9px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  text-align: left;
+  cursor: pointer;
+}
+.ndw-wr-fav-group:hover { border-color: var(--interactive-accent); }
+.ndw-wr-fav-group.is-expanded { border-color: var(--interactive-accent); }
+.ndw-wr-fav-group-title { font-weight: 700; overflow-wrap: anywhere; }
+.ndw-wr-fav-group-count { color: var(--text-muted); font-size: var(--font-ui-smaller); white-space: nowrap; }
+
+/* Hollow favorite star on each highlight row */
+.ndw-highlight-row { padding-right: 104px; }
+.ndw-highlight-star {
+  position: absolute;
+  top: 8px;
+  right: 58px;
+  z-index: 2;
+}
+.ndw-highlight-star svg { width: 22px; height: 22px; stroke-width: 1.2; fill: none; }
+.ndw-highlight-star.is-starred { color: #ffd700 !important; }
+.ndw-highlight-star.is-starred svg { fill: #ffd700 !important; stroke: #ffd700 !important; }
+
+/* Highlight row: smear button on the left, favorite star on the right */
+.ndw-smear-btn { right: 52px !important; }
+.ndw-highlight-star { right: 8px !important; }
+
+.ndw-smear-btn {
+  width: 32px;
+  height: 30px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ndw-smear-btn svg { width: 17px; height: 17px; stroke-width: 1.6; }
+
+/* Smear icon: no button frame */
+.ndw-smear-btn {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+.ndw-smear-btn:hover {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--text-accent) !important;
+}
+
+.ndw-wr-card-smear {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 30px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ndw-wr-card-smear svg { width: 18px; height: 18px; stroke-width: 1.6; }
+
+.nd-ency-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.ndw-citation-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+
+/* Definition control: citation checkbox above, right-aligned */
+.ndw-definition-setting .setting-item-control {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 100%;
+}
+.ndw-definition-setting .ndw-citation-toggle {
+  align-self: stretch;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+
+/* Citation checkbox sits in the definition header, not in a full-width row */
+.ndw-definition-setting { position: relative; }
+.ndw-definition-setting .ndw-citation-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  z-index: 2;
+}
+.ndw-definition-setting .setting-item-info { padding-right: 100px; }
+
+/* Align citation checkbox with the "定义" heading */
+.ndw-definition-setting .ndw-citation-toggle {
+  top: 17px;
+}
+
+/* Smear inputs: focus changes border color, never thickness/ring */
+.ndw-smear-modal input[type="text"],
+.ndw-smear-modal input[type="search"],
+.ndw-smear-modal textarea {
+  border: 1px solid var(--background-modifier-border) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.ndw-smear-modal input[type="text"]:focus,
+.ndw-smear-modal input[type="text"]:focus-visible,
+.ndw-smear-modal input[type="search"]:focus,
+.ndw-smear-modal input[type="search"]:focus-visible,
+.ndw-smear-modal textarea:focus,
+.ndw-smear-modal textarea:focus-visible {
+  border: 1px solid var(--interactive-accent) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.nd-ency-smear-btn[hidden],
+.nd-ency-close-btn[hidden] {
+  display: none !important;
+}
+
+/* Search actions: plus left, smear/X right */
+.nd-ency-add-btn {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+.nd-ency-smear-btn,
+.nd-ency-close-btn {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  justify-self: end;
+}
+
+.ndw-unit { white-space: nowrap; }
+
+.ndw-citation-toggle { white-space: nowrap; min-width: max-content; }
+
+/* Mobile smear: multi-letter words keep their full width */
+body.is-mobile .ndw-unit.ndw-word {
+  width: auto !important;
+  min-width: 1.7em !important;
+  max-width: none !important;
+  flex: 0 0 auto !important;
+  padding: 0 6px !important;
+}
+body.is-mobile .ndw-unit.ndw-gap {
+  width: 0.6em !important;
+  min-width: 0.6em !important;
+  max-width: 0.6em !important;
+  flex: 0 0 0.6em !important;
+}
+
+/* Mobile: citation checkbox stays a compact row above the definition box */
+@media (max-width: 768px) {
+  .ndw-definition-setting .ndw-citation-toggle {
+    position: static;
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+    margin: 0 0 6px;
+    white-space: nowrap;
+  }
+  .ndw-definition-setting .setting-item-info { padding-right: 0; }
+}
+
+body.is-mobile .ndw-unit.ndw-word,
+body.is-mobile .ndw-unit.ndw-gap {
+  aspect-ratio: auto !important;
+}
+
+/* Mobile: citation toggle stays on the same line as the 定义 heading */
+@media (max-width: 768px) {
+  .ndw-definition-setting .ndw-citation-toggle {
+    position: absolute;
+    top: 17px;
+    right: 0;
+    display: flex;
+    width: auto;
+    min-width: max-content;
+    white-space: nowrap;
+    margin: 0;
+  }
+  .ndw-definition-setting .setting-item-info { padding-right: 110px; }
+}
+
+/* Keep the citation checkbox compact on every platform */
+.ndw-definition-setting .ndw-citation-toggle {
+  width: max-content !important;
+  max-width: max-content !important;
+  min-width: 0 !important;
+  flex: 0 0 auto !important;
+}
+.ndw-definition-setting .ndw-citation-toggle input[type="checkbox"] {
+  inline-size: 16px !important;
+  block-size: 16px !important;
+  min-inline-size: 16px !important;
+  max-inline-size: 16px !important;
+  min-block-size: 16px !important;
+  max-block-size: 16px !important;
+  flex: 0 0 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+}
+
+/* Custom citation checkbox: consistent check mark on desktop and mobile */
+.ndw-citation-input {
+  position: absolute !important;
+  opacity: 0 !important;
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+.ndw-citation-box {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  flex: 0 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  background: var(--background-primary);
+}
+.ndw-citation-box.is-checked {
+  border-color: var(--interactive-accent);
+  background: var(--interactive-accent);
+}
+.ndw-citation-box.is-checked::after {
+  content: "";
+  width: 4px;
+  height: 8px;
+  margin-top: -2px;
+  border-right: 2px solid var(--text-on-accent, #fff);
+  border-bottom: 2px solid var(--text-on-accent, #fff);
+  transform: rotate(45deg);
+}
+
+/* Hidden selection action bar must not reserve height */
+.ndw-selection-actions[hidden] {
+  display: none !important;
+}
+
+/* iPad/tablet: review has room for explicit action buttons */
+.ndw-review-mobile.ndw-review-tablet .ndw-review-actions {
+  display: flex !important;
+}
+
+body.is-mobile .nd-ency-clear-btn,
+body.is-mobile .ndw-review-settings {
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
+
+.ndw-icon-text {
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
