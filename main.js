@@ -866,6 +866,7 @@ var require_pxm_main = __commonJS({
     var VALID_DEFINITION_FILE_TYPES = [".md"];
     var DEFAULT_DEF_FOLDER = "Attachments_all/definition folder";
     var DEFAULT_SETTINGS2 = {
+      highPerformanceMode: false,
       enableInReadingView: true,
       enableOnLinks: true,
       enableSpellcheck: true,
@@ -926,6 +927,15 @@ var require_pxm_main = __commonJS({
         containerEl.empty();
         const bookDirectorySettings = containerEl.createDiv();
         (_b = (_a = globalThis.__noteDefinitionsPXMScalability) == null ? void 0 : _a.mountBookSearchSettings) == null ? void 0 : _b.call(_a, bookDirectorySettings);
+        new import_obsidian14.Setting(containerEl).setName("\u9AD8\u6027\u80FD\u6A21\u5F0F\uFF08\u5927\u8BCD\u5E93\uFF09").setDesc("\u4E00\u952E\u5173\u95ED\u6B63\u6587\u4E0B\u5212\u7EBF\u3001\u9605\u8BFB\u89C6\u56FE\u88C5\u9970\u3001\u81EA\u52A8\u8865\u5168\u3001\u6F5C\u5728\u53CC\u94FE\u3001\u5B9A\u4E49\u6B63\u6587\u641C\u7D22\u3001\u6D4F\u89C8/\u968F\u673A\u6392\u5E8F\u548C\u968F\u673A\u590D\u4E60\u3002\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
+          component.setValue(this.settings.highPerformanceMode === true);
+          component.onChange(async (val) => {
+            this.settings.highPerformanceMode = val;
+            await this.saveCallback();
+            new import_obsidian14.Notice("\u9AD8\u6027\u80FD\u6A21\u5F0F\u5C06\u5728\u91CD\u65B0\u542F\u52A8 Obsidian \u540E\u5B8C\u5168\u751F\u6548");
+            this.display();
+          });
+        });
         new import_obsidian14.Setting(containerEl).setName("\u5728\u9605\u8BFB\u89C6\u56FE\u4E2D\u542F\u7528").setDesc(
           "\u5141\u8BB8\u5728\u9605\u8BFB\u89C6\u56FE\u4E2D\u663E\u793A\u5DF2\u5B9A\u4E49\u77ED\u8BED\u548C\u8BCD\u6761\u5F39\u7A97"
         ).addToggle((component) => {
@@ -1336,7 +1346,7 @@ var require_pxm_main = __commonJS({
       } else {
         attributes.onmouseenter = triggerFunc2;
       }
-      if (!settings.enableSpellcheck) {
+      if (!settings.enableSpellcheck || settings.highPerformanceMode === true) {
         attributes.spellcheck = "false";
       }
       return attributes;
@@ -3135,6 +3145,8 @@ var require_pxm_main = __commonJS({
     }
     var DEF_LINK_DECOR_CLS = "def-link-decoration";
     var postProcessor = (element, context) => {
+      if (window.NoteDefinition.settings.highPerformanceMode === true)
+        return;
       if (window.NoteDefinition.settings.scalabilityMode === true)
         return;
       const shouldRunPostProcessor = window.NoteDefinition.settings.enableInReadingView;
@@ -3282,6 +3294,7 @@ var require_pxm_main = __commonJS({
       }
       // Take note: May not be re-entrant
       async run() {
+        if (window.NoteDefinition?.settings?.highPerformanceMode === true) return;
         this.retryCount = 0;
         while (this.retryCount < MAX_RETRY) {
           try {
@@ -5755,6 +5768,10 @@ ${issues.join("\n")}`);
       if (force === void 0)
         force = false;
       const settings = getSettings2();
+      if (settings?.highPerformanceMode === true) {
+        removeAutocompleteContainer();
+        return;
+      }
       if (!force && settings && settings.enableAutocomplete === false) {
         removeAutocompleteContainer();
         return;
@@ -7000,7 +7017,7 @@ ${issues.join("\n")}`);
           const folder = String(settings.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u, "");
           const files = this.app.vault.getMarkdownFiles().filter((file) => file.path === folder || file.path.startsWith(`${folder}/`));
           const bytes = files.reduce((sum, file) => sum + (Number(file.stat?.size) || 0), 0);
-          window.__ndwSkipBaseIndex = files.length > 300 || bytes > 4 * 1024 * 1024;
+          window.__ndwSkipBaseIndex = settings.highPerformanceMode === true || files.length > 300 || bytes > 4 * 1024 * 1024;
         }
         await __ndw_migrateLegacyStateFiles(this.app);
         this.registerEvent(this.app.workspace.on("note-definitions-changed", () => {
@@ -8240,6 +8257,7 @@ var import_obsidian13 = require("obsidian");
 // src/settings.ts
 var import_obsidian2 = require("obsidian");
 var DEFAULT_SETTINGS = {
+  highPerformanceMode: false,
   enableInReadingView: true,
   enableOnLinks: true,
   scalabilityMode: true,
@@ -15546,7 +15564,7 @@ var NoteDefinitionsPXM = class extends LegacyPlugin {
       () => window.NoteDefinition.settings.deterministicShardingMode === true,
       this.backgroundScheduler
     );
-    if (bootstrapPolicy.enabled && savedSettings.enablePotentialNoteLinks === true) {
+    if (bootstrapPolicy.enabled && savedSettings.enablePotentialNoteLinks === true && savedSettings.highPerformanceMode !== true) {
       this.persistentNoteTitleIndex = new PersistentNoteTitleIndex(
         this.app,
         () => window.NoteDefinition.settings.defFolder,
@@ -15832,7 +15850,7 @@ var NoteDefinitionsPXM = class extends LegacyPlugin {
       const folder = String(window.NoteDefinition?.settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u, "");
       const files = this.app.vault.getMarkdownFiles().filter((file) => file.path === folder || file.path.startsWith(`${folder}/`));
       const bytes = files.reduce((sum, file) => sum + (Number(file.stat?.size) || 0), 0);
-      window.__ndwSkipBaseIndex = files.length > 300 || bytes > 4 * 1024 * 1024;
+      window.__ndwSkipBaseIndex = window.NoteDefinition?.settings?.highPerformanceMode === true || files.length > 300 || bytes > 4 * 1024 * 1024;
     }
     if (!window.__ndwSkipBaseIndex) {
       await this.persistentIndex.open();
@@ -16190,7 +16208,7 @@ var NoteDefinitionsPXM = class extends LegacyPlugin {
     const folder = String(window.NoteDefinition?.settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u, "");
     const files = this.app.vault.getMarkdownFiles().filter((file) => file.path === folder || file.path.startsWith(`${folder}/`));
     const bytes = files.reduce((sum, file) => sum + (Number(file.stat?.size) || 0), 0);
-    if (files.length > 300 || bytes > 4 * 1024 * 1024) {
+    if (window.NoteDefinition?.settings?.highPerformanceMode === true || files.length > 300 || bytes > 4 * 1024 * 1024) {
       window.__ndwSkipBaseIndex = true;
       return;
     }
@@ -19091,7 +19109,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       let page;
       if (this.query.trim()) {
         const total = await this.termIndex.count();
-        if (total > 50000) {
+        if (total > 50000 || window.NoteDefinition?.settings?.highPerformanceMode === true) {
           if (!this._largeSearchNoticeShown) {
             this._largeSearchNoticeShown = true;
             new __ndw_obsidian.Notice("词条超过 5 万，已关闭定义正文搜索；当前只搜索词条名和别名。", 6000);
@@ -20303,14 +20321,14 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     ];
     const currentSort = `${this.sortMode}:${this.sortMode === "random" ? "desc" : this.sortOrder}`;
     for (const [value, label] of sortChoices) {
-      const heavy = this._cardTotal > 50000 && ["views", "lastViewed", "random"].includes(value.split(":")[0]);
+      const heavy = (this._cardTotal > 50000 || window.NoteDefinition?.settings?.highPerformanceMode === true) && ["views", "lastViewed", "random"].includes(value.split(":")[0]);
       const option = sort.createEl("option", { text: heavy ? `${label}（大词库不可用）` : label, attr: { value } });
       option.selected = currentSort === value;
       option.disabled = heavy;
     }
     sort.addEventListener("change", () => {
       const [mode, order] = sort.value.split(":");
-      if (this._cardTotal > 50000 && ["views", "lastViewed", "random"].includes(mode)) {
+      if ((this._cardTotal > 50000 || window.NoteDefinition?.settings?.highPerformanceMode === true) && ["views", "lastViewed", "random"].includes(mode)) {
         new __ndw_obsidian.Notice("词条超过 5 万，已关闭浏览排序和随机乱序；请使用最近添加或名称排序。", 6000);
         sort.value = "recent:desc";
         this.sortMode = "recent";
@@ -20421,7 +20439,7 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
   }
 
   async openDefaultReview(silent = false) {
-    if (this._cardTotal > 50000 && this.reviewScope === "random") {
+    if ((this._cardTotal > 50000 || window.NoteDefinition?.settings?.highPerformanceMode === true) && this.reviewScope === "random") {
       this.reviewScope = "all";
       new __ndw_obsidian.Notice("词条超过 5 万，随机复习已关闭，已切换到全部词条。", 6000);
     }
@@ -20481,14 +20499,14 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
       const query = this.query.trim().toLowerCase();
       const cutoff = Date.now() - Math.max(1, this.days) * 86400000;
       const filter = this._cardFilter(stars, views, scores, query, cutoff);
-      if (!query && this._cardTotal > 50000 && ["views", "lastViewed", "random"].includes(this.sortMode)) {
+      if (!query && (this._cardTotal > 50000 || window.NoteDefinition?.settings?.highPerformanceMode === true) && ["views", "lastViewed", "random"].includes(this.sortMode)) {
         this.sortMode = "recent";
         this.sortOrder = "desc";
         if (this.sortEl) this.sortEl.value = "recent:desc";
       }
       let page;
       if (query) {
-        if (this._cardTotal > 50000) {
+        if (this._cardTotal > 50000 || window.NoteDefinition?.settings?.highPerformanceMode === true) {
           if (!this._largeSearchNoticeShown) {
             this._largeSearchNoticeShown = true;
             new __ndw_obsidian.Notice("词条超过 5 万，已关闭定义正文搜索；当前只搜索词条名和别名。", 6000);
