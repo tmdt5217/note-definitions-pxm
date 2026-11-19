@@ -18922,10 +18922,25 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       if (!p || !this.contentEl?.isConnected) return;
       this.contentEl.setText(p.phase === "done" ? "正在整理词条…" : `正在建立索引 ${p.done || 0}/${p.total || ""}…`);
     }, 250);
+    let indexError = null;
     try {
       await this.termIndex.__ready;
+    } catch (error) {
+      indexError = error;
     } finally {
       window.clearInterval(indexProgress);
+    }
+    if (indexError) {
+      this.contentEl.empty();
+      this.contentEl.createEl("h2", { text: "词条索引建立失败" });
+      this.contentEl.createEl("p", { cls: "ndw-hint", text: String(indexError?.message || indexError) });
+      const retry = this.contentEl.createEl("button", { text: "清除索引并重试" });
+      retry.addEventListener("click", async () => {
+        await this.termIndex.reset();
+        window.__ndwSharedTermIndex = null;
+        this.onOpen();
+      });
+      return;
     }
     this.show();
     this.refreshRef = this.app.workspace.on("note-definitions-changed", this.refresh);
@@ -19075,11 +19090,29 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     try {
       let page;
       if (this.query.trim()) {
-        const rows = await this.termIndex.query({ q: this.query.trim(), limit: 5000 });
-        const matches = rows.filter(this._termsFilter);
-        const offset = this._loadedEntries.size;
-        page = { items: matches.slice(offset, offset + this.pageSize), nextCursor: null };
-        this._termsHasMore = offset + page.items.length < matches.length;
+        const total = await this.termIndex.count();
+        if (total > 50000) {
+          if (!this._largeSearchNoticeShown) {
+            this._largeSearchNoticeShown = true;
+            new __ndw_obsidian.Notice("词条超过 5 万，已关闭定义正文搜索；当前只搜索词条名和别名。", 6000);
+          }
+          const rows = await this.termIndex.query({ q: this.query.trim(), limit: 5000 });
+          const matches = rows.filter(this._termsFilter);
+          const offset = this._loadedEntries.size;
+          page = { items: matches.slice(offset, offset + this.pageSize), nextCursor: null };
+          this._termsHasMore = offset + page.items.length < matches.length;
+          this._termsCursor = null;
+        } else {
+          page = await this.termIndex.searchPage({
+            q: this.query.trim(),
+            limit: this.pageSize,
+            cursor: this._termsCursor,
+            order: "desc",
+            filter: this._termsFilter
+          });
+          this._termsCursor = page.nextCursor;
+          this._termsHasMore = Boolean(page.nextCursor);
+        }
       } else {
         page = await this.termIndex.scanPage({
           limit: this.pageSize,
@@ -20119,10 +20152,25 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
       if (!p || !this.contentEl?.isConnected) return;
       this.contentEl.setText(p.phase === "done" ? "正在整理卡片…" : `正在建立索引 ${p.done || 0}/${p.total || ""}…`);
     }, 250);
+    let indexError = null;
     try {
       await this.termIndex.__ready;
+    } catch (error) {
+      indexError = error;
     } finally {
       window.clearInterval(indexProgress);
+    }
+    if (indexError) {
+      this.contentEl.empty();
+      this.contentEl.createEl("h2", { text: "词条索引建立失败" });
+      this.contentEl.createEl("p", { cls: "ndw-hint", text: String(indexError?.message || indexError) });
+      const retry = this.contentEl.createEl("button", { text: "清除索引并重试" });
+      retry.addEventListener("click", async () => {
+        await this.termIndex.reset();
+        window.__ndwSharedTermIndex = null;
+        this.onOpen();
+      });
+      return;
     }
     this._cardTotal = await this.termIndex.count();
     this.entries = [];
@@ -20241,6 +20289,7 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     });
     toolbar.createSpan({ cls: "ndw-toolbar-label", text: "排序" });
     const sort = toolbar.createEl("select", { attr: { "aria-label": "卡片排序" } });
+    this.sortEl = sort;
     const sortChoices = [
       ["recent:desc", "最近添加 ▼"],
       ["recent:asc", "最近添加 ▲"],
@@ -20254,11 +20303,21 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     ];
     const currentSort = `${this.sortMode}:${this.sortMode === "random" ? "desc" : this.sortOrder}`;
     for (const [value, label] of sortChoices) {
-      const option = sort.createEl("option", { text: label, attr: { value } });
+      const heavy = this._cardTotal > 50000 && ["views", "lastViewed", "random"].includes(value.split(":")[0]);
+      const option = sort.createEl("option", { text: heavy ? `${label}（大词库不可用）` : label, attr: { value } });
       option.selected = currentSort === value;
+      option.disabled = heavy;
     }
     sort.addEventListener("change", () => {
       const [mode, order] = sort.value.split(":");
+      if (this._cardTotal > 50000 && ["views", "lastViewed", "random"].includes(mode)) {
+        new __ndw_obsidian.Notice("词条超过 5 万，已关闭浏览排序和随机乱序；请使用最近添加或名称排序。", 6000);
+        sort.value = "recent:desc";
+        this.sortMode = "recent";
+        this.sortOrder = "desc";
+        this.renderCards(true);
+        return;
+      }
       this.sortMode = mode;
       this.sortOrder = order || "desc";
       localStorage.setItem("ndw-card-sort", this.sortMode);
@@ -20362,6 +20421,10 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
   }
 
   async openDefaultReview(silent = false) {
+    if (this._cardTotal > 50000 && this.reviewScope === "random") {
+      this.reviewScope = "all";
+      new __ndw_obsidian.Notice("词条超过 5 万，随机复习已关闭，已切换到全部词条。", 6000);
+    }
     const page = await this.queryReviewPage(null);
     if (!page.items.length) {
       if (!silent) new __ndw_obsidian.Notice("这个复习范围下没有卡片。");
@@ -20418,13 +20481,35 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
       const query = this.query.trim().toLowerCase();
       const cutoff = Date.now() - Math.max(1, this.days) * 86400000;
       const filter = this._cardFilter(stars, views, scores, query, cutoff);
+      if (!query && this._cardTotal > 50000 && ["views", "lastViewed", "random"].includes(this.sortMode)) {
+        this.sortMode = "recent";
+        this.sortOrder = "desc";
+        if (this.sortEl) this.sortEl.value = "recent:desc";
+      }
       let page;
       if (query) {
-        const rows = await this.termIndex.query({ q: query, limit: 5000 });
-        const matches = rows.filter(filter);
-        const offset = this.currentList.length;
-        page = { items: matches.slice(offset, offset + this._pageSize), nextCursor: null };
-        this._hasMoreCards = offset + page.items.length < matches.length;
+        if (this._cardTotal > 50000) {
+          if (!this._largeSearchNoticeShown) {
+            this._largeSearchNoticeShown = true;
+            new __ndw_obsidian.Notice("词条超过 5 万，已关闭定义正文搜索；当前只搜索词条名和别名。", 6000);
+          }
+          const rows = await this.termIndex.query({ q: query, limit: 5000 });
+          const matches = rows.filter(filter);
+          const offset = this.currentList.length;
+          page = { items: matches.slice(offset, offset + this._pageSize), nextCursor: null };
+          this._hasMoreCards = offset + page.items.length < matches.length;
+          this._cardCursor = null;
+        } else {
+          page = await this.termIndex.searchPage({
+            q: query,
+            limit: this._pageSize,
+            cursor: reset ? null : this._cardCursor,
+            order: this.sortOrder === "asc" ? "asc" : "desc",
+            filter
+          });
+          this._cardCursor = page.nextCursor;
+          this._hasMoreCards = Boolean(page.nextCursor);
+        }
       } else if (this.sortMode === "recent" || this.sortMode === "name") {
         page = await this.termIndex.scanPage({
           limit: this._pageSize,
@@ -21295,6 +21380,16 @@ function __ndw_installEncyclopediaButton(app) {
       callback: () => void __ndw_openConceptCardsView(this.app)
     });
     this.addCommand({
+      id: "rebuild-term-index",
+      name: "重建词条索引（清除本地索引缓存）",
+      callback: async () => {
+        const idx = window.__ndwSharedTermIndex;
+        if (idx) await idx.reset();
+        window.__ndwSharedTermIndex = null;
+        new __ndw_obsidian.Notice("词条索引缓存已清除，下次打开卡片/词条管理会重新建立。", 6000);
+      }
+    });
+    this.addCommand({
       id: "keyboard-diagnostics",
       name: "移动端键盘/视口诊断",
       callback: () => __ndw_toggleKeyboardDiagnostics()
@@ -21533,6 +21628,29 @@ window.__NdwTermIndex = class NdTermIndex {
     await done;
     return {items,nextCursor:items.length===limit?items[items.length-1].sortKey:null};
   }
+  async searchPage({q="",limit=48,cursor=null,order="desc",filter=null}={}){
+    const needle=String(q||"").trim().toLowerCase();
+    if(!needle) return this.scanPage({limit,cursor,order,filter});
+    await this.open();
+    const tx=this.db.transaction(TERMS,"readonly"), done=txDone(tx), store=tx.objectStore(TERMS), idx=store.index("sortKey");
+    const dir=order==="asc"?"next":"prev";
+    const range=cursor? (order==="asc"?IDBKeyRange.lowerBound(cursor,true):IDBKeyRange.upperBound(cursor,true)) : null;
+    const items=[];
+    await new Promise((res,rej)=>{
+      const r=idx.openCursor(range,dir);
+      r.onerror=()=>rej(r.error);
+      r.onsuccess=()=>{
+        const cur=r.result;
+        if(!cur||items.length>=limit){res();return;}
+        const value=cur.value;
+        const hay=`${value.word} ${(value.aliases||[]).join(" ")} ${value.definition||""}`.toLowerCase();
+        if(hay.includes(needle)&&(!filter||filter(value))) items.push(value);
+        cur.continue();
+      };
+    });
+    await done;
+    return {items,nextCursor:items.length===limit?items[items.length-1].sortKey:null};
+  }
   async getMany(keys){
     await this.open();
     const unique=[...new Set(keys.filter(Boolean))];
@@ -21541,6 +21659,11 @@ window.__NdwTermIndex = class NdTermIndex {
     const rows=await Promise.all(unique.map(k=>req(store.get(k))));
     await done;
     return rows.filter(Boolean);
+  }
+  async reset(){
+    if(this.db){try{this.db.close();}catch{} this.db=null;}
+    this.__ready=null; this.__progress=null;
+    await new Promise((res,rej)=>{const r=indexedDB.deleteDatabase(DB_NAME);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);r.onblocked=()=>res();});
   }
   async count(){await this.open();const tx=this.db.transaction(TERMS,"readonly"), done=txDone(tx);const n=await req(tx.objectStore(TERMS).count());await done;return n;}
 };
