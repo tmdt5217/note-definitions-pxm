@@ -15,7 +15,7 @@ tmdt5217/note-definitions-pxm
 Then choose version:
 
 ```text
-0.36.16
+0.36.17
 ```
 
 ## Important
@@ -28,5 +28,5 @@ Then choose version:
 ## Version
 
 ```text
-0.36.16
+0.36.17
 ```
