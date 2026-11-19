@@ -15,7 +15,7 @@ tmdt5217/note-definitions-pxm
 Then choose version:
 
 ```text
-0.36.9-PXM.7
+0.36.9-PXM.8
 ```
 
 ## Important
@@ -28,5 +28,5 @@ Then choose version:
 ## Version
 
 ```text
-0.36.9-PXM.7
+0.36.9-PXM.8
 ```
