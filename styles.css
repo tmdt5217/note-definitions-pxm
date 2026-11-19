@@ -3397,7 +3397,9 @@ body.is-mobile .ndw-unit.ndw-gap {
 
 /* Hidden selection action bar must not reserve height */
 .ndw-selection-actions[hidden] {
-  display: none !important;
+  display: flex !important;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* iPad/tablet: review has room for explicit action buttons */
