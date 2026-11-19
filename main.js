@@ -6983,6 +6983,7 @@ ${issues.join("\n")}`);
         );
         if (!String(settings.defFolder || "").trim()) settings.defFolder = DEFAULT_DEF_FOLDER;
         injectGlobals(settings, this.app, window);
+        await __ndw_migrateLegacyStateFiles(this.app);
         if (typeof activeWindow !== "undefined" && activeWindow !== window) {
           injectGlobals(settings, this.app, activeWindow);
         }
@@ -16321,7 +16322,8 @@ function __ndw_scanNotes(app) {
   return notes;
 }
 
-const __NDW_PROGRESS_PATH = "WeRead/nd-weread-progress.json";
+const __NDW_STATE_ROOT = ".obsidian/plugins/note-definitions-pxm";
+const __NDW_PROGRESS_PATH = `${__NDW_STATE_ROOT}/nd-weread-progress.json`;
 
 function __ndw_highlightKey(highlight) {
   return [
@@ -16511,7 +16513,7 @@ async function __ndw_saveProgress(app, patch) {
   }
 }
 
-const __NDW_HL_FAVORITES_PATH = "WeRead/nd-weread-highlight-favorites.md";
+const __NDW_HL_FAVORITES_PATH = `${__NDW_STATE_ROOT}/nd-weread-highlight-favorites.md`;
 let __ndwHighlightFavoritesCache = null;
 
 function __ndw_highlightFavoriteKey(note, highlight) {
@@ -16565,7 +16567,7 @@ async function __ndw_toggleHighlightFavorite(app, favorite) {
   return Boolean(__ndwHighlightFavoritesCache[key]);
 }
 
-const __NDW_RANDOM_EXCLUSIONS_PATH = "WeRead/nd-weread-random-exclusions.md";
+const __NDW_RANDOM_EXCLUSIONS_PATH = `${__NDW_STATE_ROOT}/nd-weread-random-exclusions.md`;
 let __ndwRandomExclusionsCache = null;
 
 async function __ndw_loadRandomExclusions(app, force = false) {
@@ -16603,7 +16605,7 @@ async function __ndw_saveRandomExclusions(app, paths) {
   }
 }
 
-const __NDW_HL_BROWSER_PROGRESS_PATH = "WeRead/nd-weread-card-progress.md";
+const __NDW_HL_BROWSER_PROGRESS_PATH = `${__NDW_STATE_ROOT}/nd-weread-card-progress.md`;
 let __ndwHlBrowserProgressCache = null;
 
 async function __ndw_loadHighlightBrowserProgress(app, force = false) {
@@ -19166,9 +19168,49 @@ const __NDW_CARD_STAR_KEY = "ndw-concept-card-stars-v1";
 const __NDW_CARD_VIEW_KEY = "ndw-concept-card-views-v1";
 const __NDW_CARD_RATING_KEY = "ndw-concept-card-ratings-v1";
 const __NDW_CARD_TOMBSTONE_KEY = "ndw-concept-card-star-tombstones-v1";
-const __NDW_CARD_STATE_TMP_PATH = "WeRead/.nd-card-state.tmp";
-const __NDW_CARD_STATE_PATH = "WeRead/nd-card-state.md";
-const __NDW_CARD_STATE_JSON_PATH = "WeRead/nd-card-state.json";
+const __NDW_CARD_STATE_TMP_PATH = `${__NDW_STATE_ROOT}/.nd-card-state.tmp`;
+const __NDW_CARD_STATE_PATH = `${__NDW_STATE_ROOT}/nd-card-state.md`;
+const __NDW_CARD_STATE_JSON_PATH = `${__NDW_STATE_ROOT}/nd-card-state.json`;
+
+async function __ndw_migrateLegacyStateFiles(app) {
+  const adapter = app.vault.adapter;
+  const pairs = [
+    ["WeRead/nd-weread-progress.json", __NDW_PROGRESS_PATH],
+    ["WeRead/nd-weread-highlight-favorites.md", __NDW_HL_FAVORITES_PATH],
+    ["WeRead/nd-weread-card-progress.md", __NDW_HL_BROWSER_PROGRESS_PATH],
+    ["WeRead/nd-card-state.md", __NDW_CARD_STATE_PATH],
+    ["WeRead/nd-card-state.json", __NDW_CARD_STATE_JSON_PATH],
+    ["WeRead/nd-weread-random-exclusions.md", __NDW_RANDOM_EXCLUSIONS_PATH],
+    ["WeRead/.nd-card-state.tmp", __NDW_CARD_STATE_TMP_PATH]
+  ];
+  for (const [oldPath, newPath] of pairs) {
+    try {
+      if (!(await adapter.exists(oldPath))) continue;
+      if (!(await adapter.exists(newPath))) {
+        const data = await adapter.read(oldPath);
+        await adapter.write(newPath, data);
+      }
+      await adapter.remove(oldPath);
+    } catch (error) {
+      console.warn("[note-definitions] state migration failed", oldPath, error);
+    }
+  }
+  try {
+    const listing = await adapter.list("WeRead");
+    for (const file of listing.files || []) {
+      if (!/\/nd-delete-backup-[^/]+\.json$/u.test(file)) continue;
+      const target = `${__NDW_STATE_ROOT}/${file.split("/").pop()}`;
+      try {
+        if (!(await adapter.exists(target))) await adapter.rename(file, target);
+        else await adapter.remove(file);
+      } catch (error) {
+        console.warn("[note-definitions] delete-backup migration failed", file, error);
+      }
+    }
+  } catch (error) {
+    console.warn("[note-definitions] delete-backup listing failed", error);
+  }
+}
 let __ndwCardStateCache = null;
 let __ndwCardStateSaveTimer = null;
 
