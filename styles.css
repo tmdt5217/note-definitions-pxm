@@ -3451,3 +3451,16 @@ body.is-mobile .ndw-review-settings {
   padding: 0 !important;
   box-sizing: border-box !important;
 }
+
+/* Concept cards: render in batches instead of creating 1000+ cards at once. */
+.ndw-cards-more {
+  display: block;
+  margin: 18px auto 40px;
+  padding: 8px 18px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  cursor: pointer;
+}
+.ndw-cards-more:hover { background: var(--background-modifier-hover); }
