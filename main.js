@@ -6254,7 +6254,7 @@ ${issues.join("\n")}`);
           attr: { "aria-label": "\u6D82\u62B9\u9009\u8BCD" }
         });
         smearBtn.style.cssText = "width:28px;height:28px;border-radius:50%;background:#ccc;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;opacity:0.7;-webkit-tap-highlight-color:transparent;touch-action:manipulation;";
-        __ndw_setRawIcon(smearBtn, __NDW_ICON_POINTER);
+        __ndw_setNativeIcon(smearBtn, "pointer", __NDW_ICON_POINTER);
         const openSmearFromSearch = async (e) => {
           e.stopPropagation();
           const start = Number(input.selectionStart) || 0;
@@ -6482,7 +6482,7 @@ ${issues.join("\n")}`);
           attr: { "aria-label": "\u6E05\u9664\u5386\u53F2\u8BB0\u5F55" }
         });
         clearBtn.style.cssText = "width:28px;height:28px;border-radius:4px;background:#fff;color:#1f1f1f;border:1px solid #1f1f1f;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;-webkit-tap-highlight-color:transparent;touch-action:manipulation;";
-        __ndw_setRawIcon(clearBtn, __NDW_ICON_TRASH);
+        __ndw_setNativeIcon(clearBtn, "trash-2", __NDW_ICON_TRASH);
         clearBtn.addEventListener("click", () => {
           this._recentDefs = [];
           this._saveRecentDefs();
@@ -16196,6 +16196,14 @@ function __ndw_setRawIcon(el, svg) {
   el.innerHTML = svg;
 }
 
+function __ndw_setNativeIcon(el, name, fallbackSvg) {
+  if (!el) return;
+  if (typeof el.empty === "function") el.empty();
+  else el.innerHTML = "";
+  try { __ndw_obsidian.setIcon(el, name); } catch {}
+  if (!el.querySelector?.("svg")) __ndw_setRawIcon(el, fallbackSvg);
+}
+
 function __ndw_norm(value) {
   return String(value || "").normalize("NFKC").toLowerCase().trim();
 }
@@ -17641,7 +17649,7 @@ class __NdwWeReadCardBrowserModal extends __ndw_obsidian.Modal {
       cls: "ndw-wr-card-smear",
       attr: { title: "涂抹选词", "aria-label": "涂抹选词" }
     });
-    __ndw_setRawIcon(smear, __NDW_ICON_POINTER);
+    __ndw_setNativeIcon(smear, "pointer", __NDW_ICON_POINTER);
     smear.addEventListener("click", () => {
       const highlight = this.highlights[this.index];
       if (!highlight || !this.plugin) return;
@@ -18439,7 +18447,7 @@ class __NdwWeReadView extends __ndw_obsidian.ItemView {
         cls: "ndw-smear-btn",
         attr: { type: "button", title: "涂抹选词", "aria-label": "涂抹选词" }
       });
-      __ndw_setRawIcon(smear, __NDW_ICON_POINTER);
+      __ndw_setNativeIcon(smear, "pointer", __NDW_ICON_POINTER);
       this.highlightRows.push({ key, row, index });
       smear.addEventListener("click", () => {
         this.updateVisibleAnchor();
@@ -19467,7 +19475,7 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     __ndw_obsidian.setIcon(this.starEl, "star");
     this.starEl.addEventListener("click", () => this.toggleStar());
     this.settingsEl = this.topEl.createEl("button", { cls: "ndw-review-settings", attr: { "aria-label": "复习设置" } });
-    __ndw_setRawIcon(this.settingsEl, __NDW_ICON_SETTINGS);
+    __ndw_setNativeIcon(this.settingsEl, "settings", __NDW_ICON_SETTINGS);
     this.settingsEl.addEventListener("click", () => this.ownerLeaf?.view?.openReviewSettings?.());
     this.cardEl = this.contentEl.createDiv({ cls: "ndw-review-card" });
     this.cardEl.addEventListener("pointerdown", (event) => this.onPointerDown(event));
@@ -20897,7 +20905,7 @@ function __ndw_installEncyclopediaButton(app) {
           cls: "ndw-ency-delete",
           attr: { title: "删除当前词条", "aria-label": "删除当前词条" }
         });
-        __ndw_setRawIcon(del, __NDW_ICON_TRASH);
+        __ndw_setNativeIcon(del, "trash-2", __NDW_ICON_TRASH);
         del.createSpan({ text: "删除词条" });
       }
       const leafView = app.workspace.getLeavesOfType("nd-encyclopedia").map((leaf) => leaf.view).find((candidate) => candidate?.contentEl === host);
