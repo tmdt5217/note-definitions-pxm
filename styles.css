@@ -3415,3 +3415,24 @@ body.is-mobile .ndw-review-settings {
   font-size: 18px !important;
   line-height: 1 !important;
 }
+
+/* PXM icon visibility: SVG exists in DOM on mobile, force it to render. */
+.ndw-ency-entry > svg,
+.ndw-ency-all-terms > svg,
+.ndw-ency-cards > svg,
+.nd-ency-clear-btn > svg,
+.nd-ency-smear-btn > svg,
+.ndw-review-settings > svg,
+.ndw-hl-card-settings > svg,
+.ndw-wr-card-smear > svg,
+.ndw-smear-btn > svg {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  stroke: currentColor !important;
+  fill: none !important;
+}
