@@ -17375,6 +17375,7 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
       this.termInput.value = selected;
       this.termDirty = true;
       this.termInput.focus();
+      this.clearSelection();
       return;
     }
     if (role === "definition") {
@@ -17383,6 +17384,7 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
         ? __ndw_citationDefinition(selected, this.source, this.blankCitationSource)
         : __ndw_plainDefinition(selected);
       this.definitionInput.focus();
+      this.clearSelection();
       return;
     }
     if (!this.termInput.value.trim()) {
@@ -17400,11 +17402,13 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
       return;
     }
     this.aliasInput.value = [...current, selected].join(", ");
+    this.clearSelection();
   }
 
   clearSelection() {
     this.anchor = null;
     this.head = null;
+    this.dragging = false;
     this.selected.clear();
     for (const unit of this.unitEls) unit.classList.remove("is-selected");
     this.selectedEl.setText("未选择");
