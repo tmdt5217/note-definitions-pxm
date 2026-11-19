@@ -863,7 +863,7 @@ var require_pxm_main = __commonJS({
     };
     var import_obsidian14 = require("obsidian");
     var VALID_DEFINITION_FILE_TYPES = [".md"];
-    var DEFAULT_DEF_FOLDER = "definitions";
+    var DEFAULT_DEF_FOLDER = "Attachments_all/definition folder";
     var DEFAULT_SETTINGS2 = {
       enableInReadingView: true,
       enableOnLinks: true,
@@ -6565,6 +6565,37 @@ ${issues.join("\n")}`);
           addBtn.classList.toggle("nd-ency-add-hidden", hasExact);
         this._renderSearchResults(query, candidates);
       }
+      async _getCustomSearchCandidates(query) {
+        const q = __ndw_norm(query);
+        if (!q) return [];
+        const now = Date.now();
+        if (!this._customSearchEntries || !this._customSearchAt || now - this._customSearchAt > 30000) {
+          this._customSearchEntries = await __ndw_collectTermEntries(this.app);
+          this._customSearchAt = now;
+        }
+        const out = [];
+        for (const entry of this._customSearchEntries) {
+          const word = __ndw_norm(entry.word);
+          const aliases = Array.isArray(entry.aliases) ? entry.aliases : [];
+          const aliasHit = aliases.find((alias) => __ndw_norm(alias).includes(q));
+          if (!word.includes(q) && !aliasHit && !__ndw_norm(entry.definition).includes(q)) continue;
+          out.push({
+            label: entry.word,
+            aliasHit: aliasHit || null,
+            def: {
+              key: word,
+              word: entry.word,
+              aliases,
+              definition: entry.definition,
+              filePath: entry.filePath,
+              file: this.app.vault.getAbstractFileByPath(entry.filePath)
+            }
+          });
+          if (out.length >= 30) break;
+        }
+        return out;
+      }
+
       async _renderSearchResults(query, candidates) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
         (_a = this._disposeCreatedList) == null ? void 0 : _a.call(this);
@@ -6608,6 +6639,15 @@ ${issues.join("\n")}`);
           const page = await scalability.searchBookInclusivePage(query);
           const items = page.items;
           items.nextCursor = page.nextCursor;
+          const custom = await this._getCustomSearchCandidates(query);
+          const seen = new Set(items.map((item) => __ndw_norm(item.label)));
+          for (const item of custom) {
+            const key = __ndw_norm(item.label);
+            if (!seen.has(key)) {
+              seen.add(key);
+              items.push(item);
+            }
+          }
           return items;
         }
         if (scalability == null ? void 0 : scalability.enabled) {
@@ -6941,6 +6981,7 @@ ${issues.join("\n")}`);
           DEFAULT_SETTINGS2,
           await this.loadData()
         );
+        if (!String(settings.defFolder || "").trim()) settings.defFolder = DEFAULT_DEF_FOLDER;
         injectGlobals(settings, this.app, window);
         if (typeof activeWindow !== "undefined" && activeWindow !== window) {
           injectGlobals(settings, this.app, activeWindow);
