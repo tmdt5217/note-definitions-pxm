@@ -18634,7 +18634,11 @@ async function __ndw_collectTermEntries(app) {
   }
   const entries = [];
   const seen = new Set();
-  const folder = String(nd?.settings?.defFolder || "").trim().replace(/\/+$/u, "");
+  let folder = String(nd?.settings?.defFolder || "").trim().replace(/\/+$/u, "");
+  if (!folder) {
+    const fallbackFolder = "Attachments_all/definition folder";
+    if (await app.vault.adapter.exists(fallbackFolder)) folder = fallbackFolder;
+  }
   const files = app.vault.getMarkdownFiles().filter((file) => {
     if (folder) return file.path === folder || file.path.startsWith(`${folder}/`);
     return true;
