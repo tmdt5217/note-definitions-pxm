@@ -3395,7 +3395,7 @@ body.is-mobile .ndw-unit.ndw-gap {
   transform: rotate(45deg);
 }
 
-/* Hidden selection action bar must not reserve height */
+/* Reserve the selection action bar's height before anything is selected. */
 .ndw-selection-actions[hidden] {
   display: flex !important;
   visibility: hidden;
