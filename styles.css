@@ -3464,3 +3464,15 @@ body.is-mobile .ndw-review-settings {
   cursor: pointer;
 }
 .ndw-cards-more:hover { background: var(--background-modifier-hover); }
+
+/* Hide the load-more control completely when there are no remaining cards. */
+.ndw-cards-more[hidden] {
+  display: none !important;
+}
+.ndw-cards-sentinel {
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
