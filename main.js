@@ -19914,6 +19914,13 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     this.currentList = [];
     this._renderedCount = 0;
     this._pageSize = 48;
+    this._scrollBound = false;
+    this._batchRendering = false;
+    this._onCardsScroll = () => {
+      if (!this.contentEl?.isConnected) return;
+      const el = this.contentEl;
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 360) this._renderNextBatch();
+    };
     this.refreshTimer = null;
     this.refreshRef = null;
     this.searchTimer = null;
@@ -19934,6 +19941,10 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
 
   async onOpen() {
     this.contentEl.addClass("ndw-cards-view");
+    if (!this._scrollBound) {
+      this._scrollBound = true;
+      this.contentEl.addEventListener("scroll", this._onCardsScroll, { passive: true });
+    }
     this.contentEl.setText("正在加载概念卡片…");
     await __ndw_loadCardState(this.app, true);
     await new Promise((resolve) => window.setTimeout(resolve, 0));
@@ -19953,6 +19964,12 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
   }
 
   async onClose() {
+    this._moreObserver?.disconnect();
+    this._moreObserver = null;
+    if (this._scrollBound) {
+      this.contentEl.removeEventListener("scroll", this._onCardsScroll);
+      this._scrollBound = false;
+    }
     if (this.refreshTimer) window.clearTimeout(this.refreshTimer);
     if (this.searchTimer) window.clearTimeout(this.searchTimer);
     if (this.refreshRef) {
@@ -20118,6 +20135,14 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     this.emptyEl = this.contentEl.createDiv({ cls: "ndw-hint ndw-cards-empty" });
     this.moreEl = this.contentEl.createEl("button", { cls: "ndw-cards-more", text: "加载更多" });
     this.moreEl.addEventListener("click", () => this._renderNextBatch());
+    this._moreSentinel = this.contentEl.createDiv({ cls: "ndw-cards-sentinel" });
+    this._moreObserver?.disconnect();
+    if (typeof IntersectionObserver !== "undefined") {
+      this._moreObserver = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) this._renderNextBatch();
+      }, { root: null, rootMargin: "0px 0px 600px 0px" });
+      this._moreObserver.observe(this._moreSentinel);
+    }
     this.renderCards();
   }
 
@@ -20211,10 +20236,13 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
 
   _renderNextBatch() {
     if (!this.gridEl) return;
-    if (!this.currentList.length) {
+    if (this._batchRendering) return;
+    if (!this.currentList.length || this._renderedCount >= this.currentList.length) {
       this._updateMoreButton();
       return;
     }
+    this._batchRendering = true;
+    try {
     const end = Math.min(this.currentList.length, this._renderedCount + this._pageSize);
     const stars = __ndw_cardStars();
     const views = __ndw_cardViews();
@@ -20223,6 +20251,9 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
       this.gridEl.appendChild(this.makeCard(this.currentList[i], stars, views, scores, this.gridEl));
     }
     this._renderedCount = end;
+    } finally {
+      this._batchRendering = false;
+    }
     this._updateMoreButton();
   }
 
