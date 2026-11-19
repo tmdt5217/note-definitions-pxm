@@ -19908,6 +19908,8 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     this.autoReview = localStorage.getItem("ndw-card-auto-review") !== "false";
     this.query = "";
     this.currentList = [];
+    this._renderedCount = 0;
+    this._pageSize = 48;
     this.refreshTimer = null;
     this.refreshRef = null;
     this.searchTimer = null;
@@ -20110,6 +20112,8 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     this.countEl = toolbar.createSpan({ cls: "ndw-count" });
     this.gridEl = this.contentEl.createDiv({ cls: "ndw-cards-grid" });
     this.emptyEl = this.contentEl.createDiv({ cls: "ndw-hint ndw-cards-empty" });
+    this.moreEl = this.contentEl.createEl("button", { cls: "ndw-cards-more", text: "加载更多" });
+    this.moreEl.addEventListener("click", () => this._renderNextBatch());
     this.renderCards();
   }
 
@@ -20163,7 +20167,8 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     const query = this.query.trim().toLowerCase();
     const now = Date.now();
     const cutoff = now - Math.max(1, this.days) * 86400000;
-    let list = this.entries.filter((entry) => {
+    const stateFileRe = /(?:^|\/)WeRead\/nd-(?:card-state|weread-highlight-favorites|weread-card-progress)\.md$/i;
+    let list = this.entries.filter((entry) => !stateFileRe.test(String(entry.filePath || ""))).filter((entry) => {
       const key = __ndw_cardKey(entry.word);
       const view = views[key] || {};
       const lastViewed = Number(view.last) || 0;
@@ -20194,14 +20199,39 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     }
     this.currentList = list;
     this.gridEl.empty();
+    this._renderedCount = 0;
     this.countEl?.setText(`${list.length} 张`);
     this.emptyEl?.setText(list.length ? "" : "没有匹配的概念卡片。");
-    for (const entry of list) this.gridEl.appendChild(this.makeCard(entry, stars, views, scores));
+    this._renderNextBatch();
   }
 
-  makeCard(entry, stars, views, scores = {}) {
+  _renderNextBatch() {
+    if (!this.gridEl) return;
+    if (!this.currentList.length) {
+      this._updateMoreButton();
+      return;
+    }
+    const end = Math.min(this.currentList.length, this._renderedCount + this._pageSize);
+    const stars = __ndw_cardStars();
+    const views = __ndw_cardViews();
+    const scores = __ndw_cardScores();
+    for (let i = this._renderedCount; i < end; i += 1) {
+      this.gridEl.appendChild(this.makeCard(this.currentList[i], stars, views, scores, this.gridEl));
+    }
+    this._renderedCount = end;
+    this._updateMoreButton();
+  }
+
+  _updateMoreButton() {
+    if (!this.moreEl) return;
+    const remaining = Math.max(0, this.currentList.length - this._renderedCount);
+    this.moreEl.hidden = remaining === 0;
+    this.moreEl.setText(remaining ? `加载更多（剩余 ${remaining} 张）` : "");
+  }
+
+  makeCard(entry, stars, views, scores = {}, parent = this.gridEl) {
     const key = __ndw_cardKey(entry.word);
-    const card = this.gridEl.createDiv({ cls: "ndw-concept-card" });
+    const card = parent.createDiv({ cls: "ndw-concept-card" });
     const star = card.createEl("button", {
       cls: `ndw-card-star${stars[key] ? " is-starred" : ""}`,
       attr: { "aria-label": stars[key] ? "取消星标" : "星标收藏" }
