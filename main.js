@@ -18896,6 +18896,19 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
       updateStar();
     });
     updateStar();
+    const alignStarToTitle = () => {
+      if (!star.isConnected || !this.titleEl?.isConnected) return;
+      const modalRect = this.modalEl.getBoundingClientRect();
+      const titleRect = this.titleEl.getBoundingClientRect();
+      const starHeight = star.getBoundingClientRect().height || 32;
+      const top = titleRect.top - modalRect.top + (titleRect.height - starHeight) / 2;
+      star.style.setProperty("top", `${Math.round(top)}px`, "important");
+    };
+    this._alignStarToTitle = alignStarToTitle;
+    window.requestAnimationFrame(alignStarToTitle);
+    window.setTimeout(alignStarToTitle, 80);
+    this._starResizeHandler = () => alignStarToTitle();
+    window.addEventListener("resize", this._starResizeHandler);
     const actions = this.contentEl.createDiv({ cls: "ndw-actions" });
     void window.__ndwMountCoreButton?.(actions, this.entry);
     const close = actions.createEl("button", { text: "关闭" });
@@ -18905,6 +18918,9 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
   }
 
   onClose() {
+    if (this._starResizeHandler) window.removeEventListener("resize", this._starResizeHandler);
+    this._starResizeHandler = null;
+    this._alignStarToTitle = null;
     this.pane?.cleanup();
     this.pane = null;
   }
@@ -19894,16 +19910,19 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     this.modalEl.style.setProperty("left", `${Math.round(rect.left + pad)}px`, "important");
     this.modalEl.style.setProperty("top", `${Math.round(rect.top + pad)}px`, "important");
     this.modalEl.style.setProperty("width", `${Math.round(rect.width - pad * 2)}px`, "important");
-    if (this.modalEl.hasClass("ndw-review-mobile") && !this.modalEl.hasClass("ndw-review-tablet")) {
+    const phoneReview = this.modalEl.hasClass("ndw-review-mobile") && !this.modalEl.hasClass("ndw-review-tablet");
+    if (phoneReview) {
       this.modalEl.style.setProperty("height", "auto", "important");
-      this.modalEl.style.setProperty("max-height", `calc(100vh - ${Math.round(rect.top + pad * 2)}px)`, "important");
+      this.modalEl.style.setProperty("max-height", `${Math.round(rect.height - pad * 2)}px`, "important");
+      this.modalEl.style.setProperty("top", `${Math.round(rect.top + rect.height / 2)}px`, "important");
+      this.modalEl.style.setProperty("transform", "translateY(-50%)", "important");
     } else {
       this.modalEl.style.setProperty("height", `${Math.round(rect.height - pad * 2)}px`, "important");
       this.modalEl.style.setProperty("max-height", "none", "important");
+      this.modalEl.style.setProperty("transform", "none", "important");
     }
     this.modalEl.style.setProperty("max-width", "none", "important");
     this.modalEl.style.setProperty("margin", "0", "important");
-    this.modalEl.style.setProperty("transform", "none", "important");
   }
 
   onClose() {

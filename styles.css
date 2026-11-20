@@ -3686,3 +3686,19 @@ body.is-mobile .ndw-ency-core {
 .ndw-review-mobile.ndw-review-tablet .ndw-review-actions {
   display: none !important;
 }
+
+/* iPhone term management: enforce two card columns */
+body.is-mobile .ndw-all-terms-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+@media (max-width: 900px) {
+  .ndw-all-terms-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  body.is-mobile .ndw-all-terms-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .ndw-term-row { min-width: 0 !important; }
+  .ndw-term-name, .ndw-term-def { overflow-wrap: anywhere; }
+}

@@ -1,5 +1,5 @@
-# note-definitions_PXM 0.39.23
+# note-definitions_PXM 0.39.24
 
-- Mobile/iPad term detail window now centers with transform-based positioning.
-- Window stays centered even when rendered content changes height.
-- Desktop centering is unchanged.
+- iPhone concept-card review window is vertically centered with transform positioning.
+- Term management uses two card columns on iPhone and narrow panes.
+- Term-detail favorite star is aligned to the title's vertical center.
