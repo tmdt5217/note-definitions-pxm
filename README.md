@@ -1,4 +1,4 @@
-# note-definitions_PXM 0.39.9
+# note-definitions_PXM 0.39.10
 
-- Term-detail star moved to the top-right corner of the modal, beside the close button.
-- The star remains frameless, hollow by default, and filled gold when selected.
+- Every favorite star is now ordered to the top-right of its row.
+- Applies to concept cards, term detail, review, WeRead cards, and highlight rows.

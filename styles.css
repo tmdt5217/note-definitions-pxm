@@ -3553,3 +3553,10 @@ body.is-mobile .ndw-ency-core {
 @media (max-width: 600px) {
   .ndw-term-star-top { top: 8px; right: 46px; }
 }
+
+/* Keep every favorite star at the far right of its top row */
+.ndw-review-star { order: 10; }
+.ndw-review-settings { order: 9; }
+.ndw-review-core { order: 8; }
+.ndw-hl-card-star { order: 10; }
+.ndw-hl-card-settings { order: 9; }
