@@ -1,4 +1,3 @@
-# note-definitions_PXM 0.39.17
+# note-definitions_PXM 0.39.18
 
-- Core-library floating menu is confined to the active pane, not the whole window.
-- It no longer crosses the left sidebar edge.
+- Core-library popup is narrower and fits its labels without extra horizontal whitespace.

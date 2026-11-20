@@ -3629,3 +3629,13 @@ body.is-mobile .ndw-ency-core {
   top: 0;
   z-index: 9999 !important;
 }
+
+/* Compact core-library popup: fit the labels, no extra horizontal whitespace */
+.ndw-core-submenu {
+  min-width: 0 !important;
+  width: max-content !important;
+  padding: 3px !important;
+}
+.ndw-core-submenu-item {
+  padding: 6px 9px !important;
+}
