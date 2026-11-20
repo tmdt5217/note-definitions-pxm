@@ -1,5 +1,5 @@
-# note-definitions_PXM 0.39.5
+# note-definitions_PXM 0.39.6
 
-- Fix recent/external definitions failing with “no longer indexed”.
-- Fall back to the persistent search index when the definition file is unavailable.
-- Keep core/external library behavior and core buttons.
+- Core-library toggle now also appears on the encyclopedia definition page.
+- External term definitions can be promoted/demoted directly from search results.
+- Recent-definition indexed fallback remains.

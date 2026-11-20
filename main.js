@@ -6858,6 +6858,8 @@ ${issues.join("\n")}`);
           }
         });
         const defContainer = this.contentEl.createDiv({ cls: "nd-ency-def-container" });
+        const coreActions = defContainer.createDiv({ cls: "nd-ency-core-actions" });
+        void window.__ndwMountCoreButton?.(coreActions, def);
         if (!def.file && def.filePath) {
           const resolvedFile = this.app.vault.getAbstractFileByPath(def.filePath);
           def.file = resolvedFile && resolvedFile.path ? resolvedFile : { path: def.filePath, basename: String(def.filePath).split("/").pop() || def.word };

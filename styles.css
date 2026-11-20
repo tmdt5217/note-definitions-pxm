@@ -3478,3 +3478,13 @@ body.is-mobile .ndw-review-settings {
   padding: 0;
   pointer-events: none;
 }
+
+/* Core/external toggle on the encyclopedia definition page */
+.nd-ency-core-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 10px;
+}
+.nd-ency-core-actions button {
+  cursor: pointer;
+}
