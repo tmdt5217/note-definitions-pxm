@@ -3639,3 +3639,16 @@ body.is-mobile .ndw-ency-core {
 .ndw-core-submenu-item {
   padding: 6px 9px !important;
 }
+
+/* Match the reset button radius on the time selector and core-library group */
+.ndw-all-terms-view select {
+  border-radius: var(--radius-s) !important;
+}
+.ndw-all-terms-view .ndw-core-menu {
+  border-radius: var(--radius-s);
+  overflow: hidden;
+}
+.ndw-all-terms-view .ndw-core-main,
+.ndw-all-terms-view .ndw-core-arrow {
+  border-radius: 0 !important;
+}

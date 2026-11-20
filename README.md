@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.18
+# note-definitions_PXM 0.39.19
 
-- Core-library popup is narrower and fits its labels without extra horizontal whitespace.
+- Time selector, reset, and core-library group now share the same 4px radius.
