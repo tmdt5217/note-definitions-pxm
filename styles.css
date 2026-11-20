@@ -3577,3 +3577,16 @@ body.is-mobile .ndw-ency-core {
 .nd-ency-fav-star svg { width: 22px !important; height: 22px !important; fill: none !important; stroke: currentColor !important; stroke-width: 1.4 !important; }
 .nd-ency-fav-star.is-starred { color: #ffd700 !important; }
 .nd-ency-fav-star.is-starred svg { fill: #ffd700 !important; stroke: #ffd700 !important; }
+
+/* Encyclopedia favorite star: top-right of the definition area, aligned with the title */
+.nd-ency-def-container { position: relative; }
+.nd-ency-fav-star {
+  position: absolute !important;
+  top: 12px !important;
+  right: 22px !important;
+  margin: 0 !important;
+  z-index: 4;
+}
+@media (max-width: 600px) {
+  .nd-ency-fav-star { top: 10px !important; right: 14px !important; }
+}

@@ -6857,7 +6857,8 @@ ${issues.join("\n")}`);
             this.app.workspace.openLinkText(def.linkText, "");
           }
         });
-        const favStar = toolbar.createEl("button", {
+        const defContainer = this.contentEl.createDiv({ cls: "nd-ency-def-container" });
+        const favStar = defContainer.createEl("button", {
           cls: "nd-ency-nav-btn nd-ency-fav-star",
           attr: { "aria-label": "星标", title: "星标" }
         });
@@ -6873,7 +6874,6 @@ ${issues.join("\n")}`);
           updateFavStar();
         });
         updateFavStar();
-        const defContainer = this.contentEl.createDiv({ cls: "nd-ency-def-container" });
         if (!def.file && def.filePath) {
           const resolvedFile = this.app.vault.getAbstractFileByPath(def.filePath);
           def.file = resolvedFile && resolvedFile.path ? resolvedFile : { path: def.filePath, basename: String(def.filePath).split("/").pop() || def.word };
