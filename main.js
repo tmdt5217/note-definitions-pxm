@@ -6858,8 +6858,6 @@ ${issues.join("\n")}`);
           }
         });
         const defContainer = this.contentEl.createDiv({ cls: "nd-ency-def-container" });
-        const coreActions = defContainer.createDiv({ cls: "nd-ency-core-actions" });
-        void window.__ndwMountCoreButton?.(coreActions, def);
         if (!def.file && def.filePath) {
           const resolvedFile = this.app.vault.getAbstractFileByPath(def.filePath);
           def.file = resolvedFile && resolvedFile.path ? resolvedFile : { path: def.filePath, basename: String(def.filePath).split("/").pop() || def.word };
@@ -21344,6 +21342,37 @@ function __ndw_installEncyclopediaButton(app) {
         del.createSpan({ text: "删除词条" });
       }
       const leafView = app.workspace.getLeavesOfType("nd-encyclopedia").map((leaf) => leaf.view).find((candidate) => candidate?.contentEl === host);
+      let core = host.querySelector(".ndw-ency-core");
+      if (!core) {
+        core = host.createEl("button", {
+          cls: "ndw-ency-core",
+          attr: { title: "切换核心库", "aria-label": "切换核心库" }
+        });
+        core.createSpan({ text: "加入内库" });
+      }
+      const currentDef = leafView?._currentDef;
+      core.hidden = !(leafView?._mode === "definition" && currentDef);
+      if (currentDef && core.dataset.word !== currentDef.word) {
+        core.dataset.word = currentDef.word;
+        core.setText("检查核心库…");
+        void window.__ndwCore?.contains?.(currentDef).then((active) => {
+          if (core.dataset.word !== currentDef.word) return;
+          core.setText(active ? "移到外库" : "加入内库");
+          core.classList.toggle("is-core", Boolean(active));
+        });
+      }
+      core.onclick = async () => {
+        if (!currentDef) return;
+        core.disabled = true;
+        try {
+          await window.__ndwCore?.toggle?.(currentDef);
+          const active = await window.__ndwCore?.contains?.(currentDef);
+          core.setText(active ? "移到外库" : "加入内库");
+          core.classList.toggle("is-core", Boolean(active));
+        } finally {
+          core.disabled = false;
+        }
+      };
       const inSearchUI = Boolean(host.querySelector(".nd-ency-search-input"));
       const showFloating = !modalOpen && (leafView ? leafView._mode === "search" : inSearchUI);
       if (showFloating) {

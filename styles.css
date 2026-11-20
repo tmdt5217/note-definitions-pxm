@@ -3488,3 +3488,33 @@ body.is-mobile .ndw-review-settings {
 .nd-ency-core-actions button {
   cursor: pointer;
 }
+
+/* Core-library toggle, mirrored with the delete button */
+.ndw-ency-core {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 31;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--interactive-accent);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  color: var(--text-accent);
+  cursor: pointer;
+  box-shadow: var(--shadow-s);
+}
+.ndw-ency-core:hover { background: var(--interactive-accent); color: var(--text-on-accent); }
+.ndw-ency-core.is-core { border-color: var(--background-modifier-border); color: var(--text-muted); }
+.ndw-ency-core[hidden] { display: none; }
+@media (max-width: 640px) {
+  .ndw-ency-core { right: 16px; bottom: 58px; }
+}
+body.is-mobile .ndw-ency-core {
+  position: fixed !important;
+  right: 16px !important;
+  bottom: calc(132px + env(safe-area-inset-bottom, 0px)) !important;
+  z-index: 100 !important;
+}

@@ -1,5 +1,4 @@
-# note-definitions_PXM 0.39.6
+# note-definitions_PXM 0.39.7
 
-- Core-library toggle now also appears on the encyclopedia definition page.
-- External term definitions can be promoted/demoted directly from search results.
-- Recent-definition indexed fallback remains.
+- Encyclopedia core-library toggle is now a floating bottom-right button, symmetric with the bottom-left delete button.
+- The top-right core button was removed from the definition page.
