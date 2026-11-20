@@ -6748,7 +6748,7 @@ ${issues.join("\n")}`);
         (_b = this._disposeCreatedList) == null ? void 0 : _b.call(this);
         this._disposeCreatedList = null;
         const scalability = globalThis.__noteDefinitionsPXMScalability;
-        if ((scalability == null ? void 0 : scalability.enabled) && (!def.file || def.__persistent)) {
+        if ((scalability == null ? void 0 : scalability.enabled) && (!def.file || def.__persistent) && !def.filePath) {
           try {
             def = await scalability.resolveDefinition(def);
             this._currentDef = def;
@@ -6853,6 +6853,10 @@ ${issues.join("\n")}`);
           }
         });
         const defContainer = this.contentEl.createDiv({ cls: "nd-ency-def-container" });
+        if (!def.file && def.filePath) {
+          const resolvedFile = this.app.vault.getAbstractFileByPath(def.filePath);
+          def.file = resolvedFile && resolvedFile.path ? resolvedFile : { path: def.filePath, basename: String(def.filePath).split("/").pop() || def.word };
+        }
         if (!def.file || !def.file.path) {
           defContainer.createEl("h2", { cls: "nd-ency-def-title", text: def.word || "\u52A0\u8F7D\u4E2D..." });
           defContainer.createDiv({
