@@ -17575,7 +17575,13 @@ function __ndw_confineModalToPane(modal, ownerLeaf, options = {}) {
     if (rect.width < 80 || rect.height < 80) return;
     const width = Math.min(options.width || 700, Math.max(280, rect.width - 24));
     const left = rect.left + (rect.width - width) / 2;
-    const top = rect.top + 12;
+    const centerOnMobile = options.centerOnMobile === true;
+    const modalHeight = modal.modalEl.getBoundingClientRect().height || 0;
+    let top = rect.top + 12;
+    if (centerOnMobile && modalHeight > 0) {
+      top = rect.top + Math.max(12, (rect.height - modalHeight) / 2);
+      top = Math.min(top, rect.bottom - 12 - modalHeight);
+    }
     backdrop.style.setProperty("position", "fixed", "important");
     backdrop.style.setProperty("left", `${Math.round(rect.left)}px`, "important");
     backdrop.style.setProperty("top", `${Math.round(rect.top)}px`, "important");
@@ -18842,7 +18848,7 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
   }
 
   onOpen() {
-    this.pane = __ndw_confineModalToPane(this, this.ownerLeaf, { width: 700 });
+    this.pane = __ndw_confineModalToPane(this, this.ownerLeaf, { width: 700, centerOnMobile: true });
     this.titleEl.setText(this.entry.word);
     this.modalEl.addClass("ndw-term-detail-modal");
     const meta = this.contentEl.createDiv({ cls: "ndw-term-detail-meta" });
@@ -18880,6 +18886,8 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
     void window.__ndwMountCoreButton?.(actions, this.entry);
     const close = actions.createEl("button", { text: "关闭" });
     close.addEventListener("click", () => this.close());
+    window.setTimeout(() => this.pane?.position?.(), 0);
+    window.setTimeout(() => this.pane?.position?.(), 80);
   }
 
   onClose() {
@@ -19790,6 +19798,7 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     this.titleEl.setText("概念卡片");
     this.backdropEl = document.createElement("div");
     this.backdropEl.className = "ndw-review-pane-backdrop";
+    if (isTabletDevice) this.backdropEl.classList.add("ndw-review-tablet-backdrop");
     this.backdropEl.addEventListener("click", (event) => {
       event.stopPropagation();
       this.close();
@@ -19871,7 +19880,7 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     this.modalEl.style.setProperty("left", `${Math.round(rect.left + pad)}px`, "important");
     this.modalEl.style.setProperty("top", `${Math.round(rect.top + pad)}px`, "important");
     this.modalEl.style.setProperty("width", `${Math.round(rect.width - pad * 2)}px`, "important");
-    if (this.modalEl.hasClass("ndw-review-mobile")) {
+    if (this.modalEl.hasClass("ndw-review-mobile") && !this.modalEl.hasClass("ndw-review-tablet")) {
       this.modalEl.style.setProperty("height", "auto", "important");
       this.modalEl.style.setProperty("max-height", `calc(100vh - ${Math.round(rect.top + pad * 2)}px)`, "important");
     } else {
@@ -21698,6 +21707,14 @@ async function __ndw_writeCoreEntries(app,entries){
     await app.vault.adapter.write(target,formatShard(clean));
     await app.vault.adapter.remove(temp).catch(()=>{});
   }
+  window.setTimeout(() => {
+    try {
+      const promise = window.NoteDefinition?.persistentIndex?.reconcile?.();
+      if (promise && typeof promise.catch === "function") promise.catch(() => {});
+    } catch (error) {
+      console.warn("[note-definitions] core index refresh failed", error);
+    }
+  }, 50);
   return clean.length;
 }
 async function __ndw_lookupIndexedDefinition(word){
@@ -21726,7 +21743,7 @@ async function __ndw_demoteCoreWords(words){
   if(removed>0){
     await __ndw_writeCoreEntries(app,kept);
     if(window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready=null;
-    new __ndw_obsidian.Notice(`已从核心库移出 ${removed} 条；重启 Obsidian 后生效。`,8000);
+    new __ndw_obsidian.Notice(`已从核心库移出 ${removed} 条；索引正在刷新。`,8000);
   }
   return removed;
 }
@@ -21789,7 +21806,7 @@ async function __ndw_promoteCoreEntries(entries){
   const total=await __ndw_writeCoreEntries(app,merged);
   if(window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready=null;
   if(total>8000) new __ndw_obsidian.Notice(`核心库已有 ${total} 条，超过 8000 条后 iPad 输入可能变慢。`,10000);
-  new __ndw_obsidian.Notice(`核心库现有 ${total} 条；重启 Obsidian 后编辑器完整功能只作用于核心库。`,8000);
+  new __ndw_obsidian.Notice(`核心库现有 ${total} 条；索引正在刷新。`,8000);
   return total;
 }
 
@@ -21808,7 +21825,7 @@ async function __ndw_clearCore(){
   if(!app) return;
   try{await app.vault.adapter.remove(__ndw_coreShardPath());}catch{}
   if(window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready=null;
-  new __ndw_obsidian.Notice("核心库已清空。重启 Obsidian 后生效。",6000);
+  new __ndw_obsidian.Notice("核心库已清空；索引正在刷新。",6000);
 }
 window.__ndwCore = { promoteFirst: __ndw_promoteCoreFirst, promoteEntries: __ndw_promoteCoreEntries, demote: __ndw_demoteCoreWords, toggle: __ndw_toggleCoreEntry, contains: __ndw_coreContains, clear: __ndw_clearCore, read: __ndw_readCoreEntries, folder: __ndw_coreFolder, path: __ndw_coreShardPath };
 window.__ndwMountCoreButton = __ndw_mountCoreButton;
