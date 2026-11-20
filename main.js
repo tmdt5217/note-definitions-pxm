@@ -19107,24 +19107,27 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       text: "▾",
       attr: { title: "核心库操作", "aria-label": "核心库操作" }
     });
-    const coreSubmenu = coreMenu.createDiv({ cls: "ndw-core-submenu", attr: { hidden: "true" } });
+    window.__ndwCoreMenuEl?.remove?.();
+    const coreSubmenu = document.body.createDiv({ cls: "ndw-core-submenu ndw-core-submenu-floating", attr: { hidden: "true" } });
+    window.__ndwCoreMenuEl = coreSubmenu;
     const closeCoreMenu = () => coreSubmenu.setAttr("hidden", "true");
     const placeCoreSubmenu = () => {
       if (!coreSubmenu.isConnected || coreSubmenu.hasAttribute("hidden")) return;
-      coreSubmenu.style.left = "0";
-      coreSubmenu.style.right = "auto";
-      const first = coreSubmenu.getBoundingClientRect();
+      const anchor = coreArrow.getBoundingClientRect();
+      const width = coreSubmenu.offsetWidth;
       const margin = 8;
-      if (first.right > window.innerWidth - margin) {
-        coreSubmenu.style.left = "auto";
-        coreSubmenu.style.right = "0";
-      }
-      const placed = coreSubmenu.getBoundingClientRect();
-      if (placed.left < margin) {
-        coreSubmenu.style.left = `${margin - placed.left}px`;
-        coreSubmenu.style.right = "auto";
-      }
+      let left = anchor.right - width;
+      if (left < margin) left = margin;
+      if (left + width > window.innerWidth - margin) left = window.innerWidth - width - margin;
+      coreSubmenu.style.left = `${Math.max(margin, left)}px`;
+      coreSubmenu.style.right = "auto";
+      coreSubmenu.style.top = `${anchor.bottom + 4}px`;
     };
+    const onCoreMenuOutside = (event) => {
+      if (coreSubmenu.contains(event.target) || coreArrow.contains(event.target)) return;
+      closeCoreMenu();
+    };
+    document.addEventListener("pointerdown", onCoreMenuOutside, true);
     coreArrow.addEventListener("click", (event) => {
       event.stopPropagation();
       if (coreSubmenu.hasAttribute("hidden")) {

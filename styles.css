@@ -3620,3 +3620,12 @@ body.is-mobile .ndw-ency-core {
   white-space: nowrap;
 }
 .ndw-core-submenu-item:hover { background: var(--background-modifier-hover) !important; }
+
+/* Floating body-level core menu, avoids leaf overflow clipping */
+.ndw-core-submenu-floating {
+  position: fixed !important;
+  left: 8px;
+  right: auto;
+  top: 0;
+  z-index: 9999 !important;
+}

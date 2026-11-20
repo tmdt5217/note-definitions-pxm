@@ -1,4 +1,4 @@
-# note-definitions_PXM 0.39.15
+# note-definitions_PXM 0.39.16
 
-- Core-library submenu flips to right-aligned when near the right edge.
-- Keeps all submenu text inside the window on both edges.
+- Core-library submenu is rendered at body level so it cannot be clipped by the leaf container.
+- Positioned fixed inside the window edges and repositions on resize.
