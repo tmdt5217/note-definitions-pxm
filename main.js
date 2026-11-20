@@ -18942,6 +18942,8 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     this.listEl = null;
     this.query = "";
     this.includeEstimated = false;
+    this.coreOnly = false;
+    this._lastCoreMove = [];
     this.selected = new Set();
     this.deleteButton = null;
     this.selectionCountEl = null;
@@ -19088,24 +19090,59 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       this.query = "";
       this.days = 0;
       this.includeEstimated = false;
+      this.coreOnly = false;
       search.value = "";
       filter.value = "0";
       estimate.checked = false;
       this.applyFilter();
     });
-    const coreSelected = toolbar.createEl("button", { text: "选中→核心库", cls: "ndw-filter-reset" });
+    const coreMenu = toolbar.createDiv({ cls: "ndw-core-menu" });
+    const coreMain = coreMenu.createEl("button", {
+      cls: "ndw-filter-reset ndw-core-main",
+      text: "核心库",
+      attr: { title: "查看核心库内容", "aria-label": "查看核心库内容" }
+    });
+    const coreArrow = coreMenu.createEl("button", {
+      cls: "ndw-core-arrow",
+      text: "▾",
+      attr: { title: "核心库操作", "aria-label": "核心库操作" }
+    });
+    const coreSubmenu = coreMenu.createDiv({ cls: "ndw-core-submenu", attr: { hidden: "true" } });
+    const closeCoreMenu = () => coreSubmenu.setAttr("hidden", "true");
+    coreArrow.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (coreSubmenu.hasAttribute("hidden")) coreSubmenu.removeAttribute("hidden");
+      else closeCoreMenu();
+    });
+    coreMain.addEventListener("click", () => {
+      closeCoreMenu();
+      this.coreOnly = !this.coreOnly;
+      coreMain.classList.toggle("is-active", this.coreOnly);
+      this.applyFilter();
+    });
+    const coreSelected = coreSubmenu.createEl("button", { text: "选中→核心库", cls: "ndw-core-submenu-item" });
     coreSelected.addEventListener("click", () => {
+      closeCoreMenu();
       const entries = [...this._loadedEntries.values()].filter((entry) => this.selected.has(entry.word));
       if (!entries.length) {
         new __ndw_obsidian.Notice("请先勾选要加入核心库的词条。");
         return;
       }
+      this._lastCoreMove = entries.map((entry) => entry.word);
       void window.__ndwCore?.promoteEntries?.(entries);
     });
-    const corePromote = toolbar.createEl("button", { text: "前5000→核心库", cls: "ndw-filter-reset" });
-    corePromote.addEventListener("click", () => void window.__ndwCore?.promoteFirst?.(5000));
-    const coreClear = toolbar.createEl("button", { text: "清空核心库", cls: "ndw-filter-reset" });
-    coreClear.addEventListener("click", () => void window.__ndwCore?.clear?.());
+    const coreUndo = coreSubmenu.createEl("button", { text: "撤销移动", cls: "ndw-core-submenu-item" });
+    coreUndo.addEventListener("click", () => {
+      closeCoreMenu();
+      const last = Array.isArray(this._lastCoreMove) ? this._lastCoreMove.slice() : [];
+      if (!last.length) {
+        new __ndw_obsidian.Notice("没有可撤销的核心库移动记录；可先勾选核心库词条再撤销。");
+        return;
+      }
+      this._lastCoreMove = [];
+      void window.__ndwCore?.demote?.(last);
+    });
+    coreMain.classList.toggle("is-active", this.coreOnly);
     this.countEl = toolbar.createSpan({ cls: "ndw-count" });
     this.selectionCountEl = toolbar.createSpan({ cls: "ndw-selection-count" });
     const selectAll = toolbar.createEl("button", { text: "全选已加载", cls: "ndw-filter-reset" });
@@ -19128,6 +19165,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     const cutoff = this.days > 0 ? Date.now() - this.days * 86400000 : 0;
     const query = this.query.trim().toLowerCase();
     this._termsFilter = (entry) => {
+      if (this.coreOnly && entry.tier !== "core") return false;
       if (query) {
         const haystack = `${entry.word} ${(entry.aliases || []).join(" ")} ${entry.definition}`.toLowerCase();
         if (!haystack.includes(query)) return false;
@@ -21630,6 +21668,22 @@ async function __ndw_lookupIndexedDefinition(word){
   }catch{return null;}
 }
 
+async function __ndw_demoteCoreWords(words){
+  const app=window.NoteDefinition?.app;
+  if(!app) return 0;
+  const targets=new Set((words||[]).map(word=>String(word||"").trim().toLowerCase()).filter(Boolean));
+  if(!targets.size) return 0;
+  const existing=await __ndw_readCoreEntries(app);
+  const kept=existing.filter(entry=>!targets.has(String(entry.word||"").trim().toLowerCase()));
+  const removed=existing.length-kept.length;
+  if(removed>0){
+    await __ndw_writeCoreEntries(app,kept);
+    if(window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready=null;
+    new __ndw_obsidian.Notice(`已从核心库移出 ${removed} 条；重启 Obsidian 后生效。`,8000);
+  }
+  return removed;
+}
+
 async function __ndw_coreContains(entry){
   const target=String(entry?.word||"").trim().toLowerCase();
   if(!target) return false;
@@ -21709,7 +21763,7 @@ async function __ndw_clearCore(){
   if(window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready=null;
   new __ndw_obsidian.Notice("核心库已清空。重启 Obsidian 后生效。",6000);
 }
-window.__ndwCore = { promoteFirst: __ndw_promoteCoreFirst, promoteEntries: __ndw_promoteCoreEntries, toggle: __ndw_toggleCoreEntry, contains: __ndw_coreContains, clear: __ndw_clearCore, read: __ndw_readCoreEntries, folder: __ndw_coreFolder, path: __ndw_coreShardPath };
+window.__ndwCore = { promoteFirst: __ndw_promoteCoreFirst, promoteEntries: __ndw_promoteCoreEntries, demote: __ndw_demoteCoreWords, toggle: __ndw_toggleCoreEntry, contains: __ndw_coreContains, clear: __ndw_clearCore, read: __ndw_readCoreEntries, folder: __ndw_coreFolder, path: __ndw_coreShardPath };
 window.__ndwMountCoreButton = __ndw_mountCoreButton;
 window.__ndwLookupIndexedDefinition = __ndw_lookupIndexedDefinition;
 const DB_NAME = "ndw-term-index-v1";

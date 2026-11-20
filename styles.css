@@ -3590,3 +3590,29 @@ body.is-mobile .ndw-ency-core {
 @media (max-width: 600px) {
   .nd-ency-fav-star { top: 10px !important; right: 14px !important; }
 }
+
+/* Core-library menu in the term manager */
+.ndw-core-menu { position: relative; display: inline-flex; align-items: stretch; }
+.ndw-core-main { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+.ndw-core-main.is-active { background: var(--interactive-accent) !important; color: var(--text-on-accent) !important; }
+.ndw-core-arrow {
+  min-width: 24px; padding: 0 6px; cursor: pointer;
+  border-left: 0 !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+.ndw-core-submenu {
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 30;
+  min-width: 156px; padding: 4px;
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+}
+.ndw-core-submenu[hidden] { display: none !important; }
+.ndw-core-submenu-item {
+  width: 100%; text-align: left; border: 0 !important; box-shadow: none !important;
+  background: transparent !important; padding: 7px 9px; border-radius: var(--radius-s); cursor: pointer;
+}
+.ndw-core-submenu-item:hover { background: var(--background-modifier-hover) !important; }
