@@ -3518,3 +3518,24 @@ body.is-mobile .ndw-ency-core {
   bottom: calc(132px + env(safe-area-inset-bottom, 0px)) !important;
   z-index: 100 !important;
 }
+
+/* Term detail star: no frame, hollow outline, gold when active */
+.ndw-term-star {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text-faint) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.ndw-term-star:hover { color: var(--text-muted) !important; }
+.ndw-term-star svg { width: 22px !important; height: 22px !important; fill: none !important; stroke: currentColor !important; stroke-width: 1.4 !important; }
+.ndw-term-star.is-starred { color: #ffd700 !important; }
+.ndw-term-star.is-starred svg { fill: #ffd700 !important; stroke: #ffd700 !important; }

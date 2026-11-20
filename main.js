@@ -18849,11 +18849,13 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
     }
     const actions = this.contentEl.createDiv({ cls: "ndw-actions" });
     void window.__ndwMountCoreButton?.(actions, this.entry);
-    const star = actions.createEl("button", { text: "☆ 星标" });
+    const star = actions.createEl("button", { cls: "ndw-term-star", attr: { "aria-label": "星标", title: "星标" } });
+    __ndw_obsidian.setIcon(star, "star");
     const updateStar = () => {
       const active = Boolean(__ndw_cardStars()[__ndw_cardKey(this.entry.word)]);
-      star.setText(active ? "★ 已收藏" : "☆ 星标");
-      star.classList.toggle("mod-cta", active);
+      star.classList.toggle("is-starred", active);
+      star.setAttr("aria-label", active ? "取消星标" : "星标");
+      star.setAttr("title", active ? "取消星标" : "星标");
     };
     star.addEventListener("click", () => {
       __ndw_toggleCardStar(this.entry.word);

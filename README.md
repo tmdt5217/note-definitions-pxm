@@ -1,4 +1,4 @@
-# note-definitions_PXM 0.39.7
+# note-definitions_PXM 0.39.8
 
-- Encyclopedia core-library toggle is now a floating bottom-right button, symmetric with the bottom-left delete button.
-- The top-right core button was removed from the definition page.
+- Term-detail star is now a frameless hollow star; selected state is filled gold.
+- Matches card/review star visuals.
