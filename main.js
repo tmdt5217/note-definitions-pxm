@@ -867,6 +867,7 @@ var require_pxm_main = __commonJS({
     var DEFAULT_DEF_FOLDER = "Attachments_all/definition folder";
     var DEFAULT_SETTINGS2 = {
       highPerformanceMode: false,
+      coreDefFolder: "Attachments_all/core definitions",
       enableInReadingView: true,
       enableOnLinks: true,
       enableSpellcheck: true,
@@ -927,13 +928,21 @@ var require_pxm_main = __commonJS({
         containerEl.empty();
         const bookDirectorySettings = containerEl.createDiv();
         (_b = (_a = globalThis.__noteDefinitionsPXMScalability) == null ? void 0 : _a.mountBookSearchSettings) == null ? void 0 : _b.call(_a, bookDirectorySettings);
-        new import_obsidian14.Setting(containerEl).setName("\u9AD8\u6027\u80FD\u6A21\u5F0F\uFF08\u5927\u8BCD\u5E93\uFF09").setDesc("\u4E00\u952E\u5173\u95ED\u6B63\u6587\u4E0B\u5212\u7EBF\u3001\u9605\u8BFB\u89C6\u56FE\u88C5\u9970\u3001\u81EA\u52A8\u8865\u5168\u3001\u6F5C\u5728\u53CC\u94FE\u3001\u5B9A\u4E49\u6B63\u6587\u641C\u7D22\u3001\u6D4F\u89C8/\u968F\u673A\u6392\u5E8F\u548C\u968F\u673A\u590D\u4E60\u3002\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
+        new import_obsidian14.Setting(containerEl).setName("\u9AD8\u6027\u80FD\u6A21\u5F0F\uFF08\u5927\u8BCD\u5E93\uFF09").setDesc("\u9AD8\u6027\u80FD\u6A21\u5F0F\uFF1A\u5916\u5E93\u53EA\u641C\u7D22\uFF1B\u6838\u5FC3\u5E93\u4ECD\u4FDD\u7559\u6B63\u6587\u4E0B\u5212\u7EBF\u3001\u70B9\u51FB\u5B9A\u4E49\u548C\u81EA\u52A8\u8865\u5168\u3002\u540C\u65F6\u5173\u95ED\u6D4F\u89C8/\u968F\u673A\u6392\u5E8F\u3001\u968F\u673A\u590D\u4E60\u548C\u5B9A\u4E49\u6B63\u6587\u641C\u7D22\u3002\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
           component.setValue(this.settings.highPerformanceMode === true);
           component.onChange(async (val) => {
             this.settings.highPerformanceMode = val;
             await this.saveCallback();
             new import_obsidian14.Notice("\u9AD8\u6027\u80FD\u6A21\u5F0F\u5C06\u5728\u91CD\u65B0\u542F\u52A8 Obsidian \u540E\u5B8C\u5168\u751F\u6548");
             this.display();
+          });
+        });
+        new import_obsidian14.Setting(containerEl).setName("\u6838\u5FC3\u5E93\u76EE\u5F55").setDesc("\u5B58\u653E 5000\u201310000 \u6761\u9AD8\u9891\u8BCD\u6761\u3002\u6838\u5FC3\u5E93\u4F7F\u7528\u5B8C\u6574\u7F16\u8F91\u5668\u529F\u80FD\uFF1B\u5176\u4F59\u8BCD\u6761\u4ECD\u5728\u5916\u5E93\u53EA\u4F9B\u641C\u7D22\u3002").addText((component) => {
+          component.setValue(this.settings.coreDefFolder || "Attachments_all/core definitions");
+          component.onChange(async (val) => {
+            this.settings.coreDefFolder = String(val || "").trim() || "Attachments_all/core definitions";
+            await this.saveCallback();
+            new import_obsidian14.Notice("\u6838\u5FC3\u5E93\u76EE\u5F55\u5C06\u5728\u91CD\u65B0\u542F\u52A8 Obsidian \u540E\u751F\u6548");
           });
         });
         new import_obsidian14.Setting(containerEl).setName("\u5728\u9605\u8BFB\u89C6\u56FE\u4E2D\u542F\u7528").setDesc(
@@ -5768,10 +5777,6 @@ ${issues.join("\n")}`);
       if (force === void 0)
         force = false;
       const settings = getSettings2();
-      if (settings?.highPerformanceMode === true) {
-        removeAutocompleteContainer();
-        return;
-      }
       if (!force && settings && settings.enableAutocomplete === false) {
         removeAutocompleteContainer();
         return;
@@ -7013,12 +7018,7 @@ ${issues.join("\n")}`);
         );
         if (!String(settings.defFolder || "").trim()) settings.defFolder = DEFAULT_DEF_FOLDER;
         injectGlobals(settings, this.app, window);
-        {
-          const folder = String(settings.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u, "");
-          const files = this.app.vault.getMarkdownFiles().filter((file) => file.path === folder || file.path.startsWith(`${folder}/`));
-          const bytes = files.reduce((sum, file) => sum + (Number(file.stat?.size) || 0), 0);
-          window.__ndwSkipBaseIndex = settings.highPerformanceMode === true || files.length > 300 || bytes > 4 * 1024 * 1024;
-        }
+        window.__ndwSkipBaseIndex = false;
         await __ndw_migrateLegacyStateFiles(this.app);
         this.registerEvent(this.app.workspace.on("note-definitions-changed", () => {
           if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
@@ -8258,6 +8258,7 @@ var import_obsidian13 = require("obsidian");
 var import_obsidian2 = require("obsidian");
 var DEFAULT_SETTINGS = {
   highPerformanceMode: false,
+  coreDefFolder: "Attachments_all/core definitions",
   enableInReadingView: true,
   enableOnLinks: true,
   scalabilityMode: true,
@@ -15560,7 +15561,7 @@ var NoteDefinitionsPXM = class extends LegacyPlugin {
     this.usePersistentEditorMarker = bootstrapPolicy.enabled;
     this.persistentIndex = new PersistentIndexController(
       this.app,
-      () => window.NoteDefinition.settings.defFolder,
+      () => String(window.NoteDefinition?.settings?.coreDefFolder || "Attachments_all/core definitions").trim().replace(/\/+$/u, ""),
       () => window.NoteDefinition.settings.deterministicShardingMode === true,
       this.backgroundScheduler
     );
@@ -15846,12 +15847,7 @@ var NoteDefinitionsPXM = class extends LegacyPlugin {
         )
       );
     }
-    {
-      const folder = String(window.NoteDefinition?.settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u, "");
-      const files = this.app.vault.getMarkdownFiles().filter((file) => file.path === folder || file.path.startsWith(`${folder}/`));
-      const bytes = files.reduce((sum, file) => sum + (Number(file.stat?.size) || 0), 0);
-      window.__ndwSkipBaseIndex = window.NoteDefinition?.settings?.highPerformanceMode === true || files.length > 300 || bytes > 4 * 1024 * 1024;
-    }
+    window.__ndwSkipBaseIndex = false;
     if (!window.__ndwSkipBaseIndex) {
       await this.persistentIndex.open();
       await ((_a = this.persistentNoteTitleIndex) == null ? void 0 : _a.open());
@@ -16205,13 +16201,7 @@ var NoteDefinitionsPXM = class extends LegacyPlugin {
   }
   startScan() {
     var _a, _b;
-    const folder = String(window.NoteDefinition?.settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u, "");
-    const files = this.app.vault.getMarkdownFiles().filter((file) => file.path === folder || file.path.startsWith(`${folder}/`));
-    const bytes = files.reduce((sum, file) => sum + (Number(file.stat?.size) || 0), 0);
-    if (window.NoteDefinition?.settings?.highPerformanceMode === true || files.length > 300 || bytes > 4 * 1024 * 1024) {
-      window.__ndwSkipBaseIndex = true;
-      return;
-    }
+    window.__ndwSkipBaseIndex = false;
     (_a = this.persistentIndex) == null ? void 0 : _a.queueReconcile(0);
     (_b = this.persistentNoteTitleIndex) == null ? void 0 : _b.queueReconcile(0);
   }
@@ -19058,6 +19048,19 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       estimate.checked = false;
       this.applyFilter();
     });
+    const coreSelected = toolbar.createEl("button", { text: "选中→核心库", cls: "ndw-filter-reset" });
+    coreSelected.addEventListener("click", () => {
+      const entries = [...this._loadedEntries.values()].filter((entry) => this.selected.has(entry.word));
+      if (!entries.length) {
+        new __ndw_obsidian.Notice("请先勾选要加入核心库的词条。");
+        return;
+      }
+      void window.__ndwCore?.promoteEntries?.(entries);
+    });
+    const corePromote = toolbar.createEl("button", { text: "前5000→核心库", cls: "ndw-filter-reset" });
+    corePromote.addEventListener("click", () => void window.__ndwCore?.promoteFirst?.(5000));
+    const coreClear = toolbar.createEl("button", { text: "清空核心库", cls: "ndw-filter-reset" });
+    coreClear.addEventListener("click", () => void window.__ndwCore?.clear?.());
     this.countEl = toolbar.createSpan({ cls: "ndw-count" });
     this.selectionCountEl = toolbar.createSpan({ cls: "ndw-selection-count" });
     const selectAll = toolbar.createEl("button", { text: "全选已加载", cls: "ndw-filter-reset" });
@@ -21398,6 +21401,21 @@ function __ndw_installEncyclopediaButton(app) {
       callback: () => void __ndw_openConceptCardsView(this.app)
     });
     this.addCommand({
+      id: "core-promote-5000",
+      name: "核心库：加入前 5000 条",
+      callback: () => void window.__ndwCore?.promoteFirst?.(5000)
+    });
+    this.addCommand({
+      id: "core-promote-10000",
+      name: "核心库：加入前 10000 条",
+      callback: () => void window.__ndwCore?.promoteFirst?.(10000)
+    });
+    this.addCommand({
+      id: "core-clear",
+      name: "核心库：清空",
+      callback: () => void window.__ndwCore?.clear?.()
+    });
+    this.addCommand({
       id: "rebuild-term-index",
       name: "重建词条索引（清除本地索引缓存）",
       callback: async () => {
@@ -21481,6 +21499,71 @@ function __ndw_installEncyclopediaButton(app) {
   PluginClass.__wereadEntryPatched = true;
 })();
 (function(){
+function __ndw_coreFolder(){
+  const value=String(window.NoteDefinition?.settings?.coreDefFolder || "Attachments_all/core definitions").trim().replace(/\/+$/u,"");
+  return value || "Attachments_all/core definitions";
+}
+function __ndw_coreShardPath(){ return `${__ndw_coreFolder()}/shards/core.md`; }
+async function __ndw_readCoreEntries(app){
+  const path=__ndw_coreShardPath();
+  try{
+    if(!(await app.vault.adapter.exists(path))) return [];
+    return parseTerms(await app.vault.adapter.read(path)).map(entry=>({word:entry.word,aliases:entry.aliases||[],definition:entry.definition||""}));
+  }catch{return [];}
+}
+async function __ndw_writeCoreEntries(app,entries){
+  const folder=__ndw_coreFolder();
+  const shards=`${folder}/shards`;
+  if(!(await app.vault.adapter.exists(folder))) await app.vault.adapter.mkdir(folder);
+  if(!(await app.vault.adapter.exists(shards))) await app.vault.adapter.mkdir(shards);
+  const clean=[];
+  const seen=new Set();
+  for(const entry of entries){
+    const key=String(entry.word||"").trim().toLowerCase();
+    if(!key||seen.has(key)) continue;
+    seen.add(key);
+    clean.push({word:String(entry.word).trim(),aliases:Array.isArray(entry.aliases)?entry.aliases:[],definition:String(entry.definition||"")});
+  }
+  await app.vault.adapter.write(__ndw_coreShardPath(),formatShard(clean));
+  return clean.length;
+}
+async function __ndw_promoteCoreEntries(entries){
+  const app=window.NoteDefinition?.app;
+  if(!app) return 0;
+  const existing=await __ndw_readCoreEntries(app);
+  const merged=[...existing];
+  const seen=new Set(existing.map(entry=>String(entry.word).trim().toLowerCase()));
+  for(const entry of entries){
+    const key=String(entry.word||"").trim().toLowerCase();
+    if(!key||seen.has(key)) continue;
+    seen.add(key);
+    merged.push({word:entry.word,aliases:entry.aliases||[],definition:entry.definition||""});
+    if(merged.length>=10000) break;
+  }
+  const total=await __ndw_writeCoreEntries(app,merged);
+  if(window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready=null;
+  new __ndw_obsidian.Notice(`核心库现有 ${total} 条；重启 Obsidian 后编辑器完整功能只作用于核心库。`,8000);
+  return total;
+}
+
+async function __ndw_promoteCoreFirst(count=5000){
+  const app=window.NoteDefinition?.app;
+  if(!app) return 0;
+  const idx=window.__ndwSharedTermIndex || (window.__ndwSharedTermIndex=new window.__NdwTermIndex(app));
+  if(!idx.__ready) idx.__ready=idx.build(String(window.NoteDefinition?.settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u,""));
+  await idx.__ready;
+  const rows=await idx.query({limit:Math.max(1,Math.min(10000,count))});
+  idx.__ready=null;
+  return __ndw_promoteCoreEntries(rows);
+}
+async function __ndw_clearCore(){
+  const app=window.NoteDefinition?.app;
+  if(!app) return;
+  try{await app.vault.adapter.remove(__ndw_coreShardPath());}catch{}
+  if(window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready=null;
+  new __ndw_obsidian.Notice("核心库已清空。重启 Obsidian 后生效。",6000);
+}
+window.__ndwCore = { promoteFirst: __ndw_promoteCoreFirst, promoteEntries: __ndw_promoteCoreEntries, clear: __ndw_clearCore, read: __ndw_readCoreEntries, folder: __ndw_coreFolder, path: __ndw_coreShardPath };
 const DB_NAME = "ndw-term-index-v1";
 const DB_VERSION = 2;
 const TERMS = "terms";
@@ -21528,7 +21611,11 @@ window.__NdwTermIndex = class NdTermIndex {
   async build(folder,{onProgress}={}){
     await this.open(); this.folder=folder;
     this.__progress={phase:"start",at:Date.now()};
-    const files=this.app.vault.getMarkdownFiles().filter(f=>f.path===folder||f.path.startsWith(folder+"/"));
+    const core=__ndw_coreFolder();
+    const roots=[folder,core].filter((value,index,array)=>value&&array.indexOf(value)===index);
+    const corePath=core;
+    const files=this.app.vault.getMarkdownFiles().filter(f=>roots.some(root=>f.path===root||f.path.startsWith(root+"/")));
+    files.sort((a,b)=>Number(!(a.path===corePath||a.path.startsWith(corePath+"/")))-Number(!(b.path===corePath||b.path.startsWith(corePath+"/"))));
     const db=this.db;
     const oldFiles=new Map();
     {const tx=db.transaction(FILES,"readonly"); const done=txDone(tx); const all=await req(tx.objectStore(FILES).getAll()); await done; for(const x of all) oldFiles.set(x.path,x);}
@@ -21548,7 +21635,8 @@ window.__NdwTermIndex = class NdTermIndex {
       for(const term of parsed){
         const n=norm(term.word); if(!n) continue;
         const createdAt=Number(st.ctime)||Number(st.mtime)||Date.now();
-        ts.put({key:n,word:term.word,norm:n,aliases:term.aliases,aliasesNorm:term.aliases.map(norm).filter(Boolean),definition:term.definition,filePath:file.path,createdAt,updatedAt:Number(st.mtime)||Date.now(),sortKey:`${String(createdAt).padStart(16,"0")}\u0000${n}`});
+        const tier=corePath && (file.path===corePath||file.path.startsWith(corePath+"/")) ? "core" : "external";
+        ts.put({key:n,word:term.word,norm:n,aliases:term.aliases,aliasesNorm:term.aliases.map(norm).filter(Boolean),definition:term.definition,filePath:file.path,createdAt,updatedAt:Number(st.mtime)||Date.now(),sortKey:`${String(createdAt).padStart(16,"0")}\u0000${n}`,tier});
         terms++;
       }
       fs.put({path:file.path,mtime:st.mtime,size:st.size,indexedAt:Date.now(),count:parsed.length});

@@ -1,7 +1,9 @@
-# note-definitions_PXM 0.38.0
+# note-definitions_PXM 0.39.0
 
-- One-switch High Performance Mode for very large dictionaries.
-- Disables editor decorations, reading-view marking, autocomplete, potential-note links, file-explorer decoration, definition-body search, heavy sorts, random review, and spellcheck.
-- Keeps word/alias search, paginated cards, term manager, review, stars, and manual editing.
-- Persistent IndexedDB index with incremental reconciliation.
-- 100k-term synthetic vault validated on desktop Obsidian.
+- Two-tier dictionary: core library and external library.
+- Core library: full editor features, including underlines, click definitions, autocomplete, and reading view.
+- External library: search/cards/term manager/review only; no editor decorations.
+- Promote selected terms or the first 5,000/10,000 to the core library.
+- Base index provider now scans only the core library; the custom index scans both.
+- High Performance Mode keeps core-library editor features while suppressing the external library.
+- Persistent IndexedDB index and 100k-term pagination remain.
