@@ -19114,12 +19114,16 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     const placeCoreSubmenu = () => {
       if (!coreSubmenu.isConnected || coreSubmenu.hasAttribute("hidden")) return;
       const anchor = coreArrow.getBoundingClientRect();
+      const panel = coreMenu.closest(".workspace-leaf-content, .view-content, .ndw-all-terms-view")?.getBoundingClientRect();
       const width = coreSubmenu.offsetWidth;
       const margin = 8;
+      const minLeft = Math.max(margin, (panel?.left ?? 0) + margin);
+      const maxRight = Math.min(window.innerWidth - margin, (panel?.right ?? window.innerWidth) - margin);
       let left = anchor.right - width;
-      if (left < margin) left = margin;
-      if (left + width > window.innerWidth - margin) left = window.innerWidth - width - margin;
-      coreSubmenu.style.left = `${Math.max(margin, left)}px`;
+      if (left < minLeft) left = minLeft;
+      if (left + width > maxRight) left = maxRight - width;
+      left = Math.max(minLeft, Math.min(left, Math.max(minLeft, maxRight - width)));
+      coreSubmenu.style.left = `${left}px`;
       coreSubmenu.style.right = "auto";
       coreSubmenu.style.top = `${anchor.bottom + 4}px`;
     };
