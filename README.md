@@ -1,4 +1,4 @@
-# note-definitions_PXM 0.39.14
+# note-definitions_PXM 0.39.15
 
-- Core-library submenu opens left-aligned and stays inside the viewport edge.
-- Removed text clipping on “选中→核心库” and “撤销移动”.
+- Core-library submenu flips to right-aligned when near the right edge.
+- Keeps all submenu text inside the window on both edges.

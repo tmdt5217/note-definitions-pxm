@@ -19109,11 +19109,32 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     });
     const coreSubmenu = coreMenu.createDiv({ cls: "ndw-core-submenu", attr: { hidden: "true" } });
     const closeCoreMenu = () => coreSubmenu.setAttr("hidden", "true");
+    const placeCoreSubmenu = () => {
+      if (!coreSubmenu.isConnected || coreSubmenu.hasAttribute("hidden")) return;
+      coreSubmenu.style.left = "0";
+      coreSubmenu.style.right = "auto";
+      const first = coreSubmenu.getBoundingClientRect();
+      const margin = 8;
+      if (first.right > window.innerWidth - margin) {
+        coreSubmenu.style.left = "auto";
+        coreSubmenu.style.right = "0";
+      }
+      const placed = coreSubmenu.getBoundingClientRect();
+      if (placed.left < margin) {
+        coreSubmenu.style.left = `${margin - placed.left}px`;
+        coreSubmenu.style.right = "auto";
+      }
+    };
     coreArrow.addEventListener("click", (event) => {
       event.stopPropagation();
-      if (coreSubmenu.hasAttribute("hidden")) coreSubmenu.removeAttribute("hidden");
-      else closeCoreMenu();
+      if (coreSubmenu.hasAttribute("hidden")) {
+        coreSubmenu.removeAttribute("hidden");
+        window.requestAnimationFrame(placeCoreSubmenu);
+      } else {
+        closeCoreMenu();
+      }
     });
+    window.addEventListener("resize", placeCoreSubmenu);
     coreMain.addEventListener("click", () => {
       closeCoreMenu();
       this.coreOnly = !this.coreOnly;
