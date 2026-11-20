@@ -19156,8 +19156,13 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
         new __ndw_obsidian.Notice("请先勾选要加入核心库的词条。");
         return;
       }
-      this._lastCoreMove = entries.map((entry) => entry.word);
-      void window.__ndwCore?.promoteEntries?.(entries);
+      const candidates = entries.filter((entry) => entry.tier !== "core");
+      if (!candidates.length) {
+        new __ndw_obsidian.Notice("选中的词条已经在核心库中。");
+        return;
+      }
+      this._lastCoreMove = candidates.map((entry) => entry.word);
+      void window.__ndwCore?.promoteEntries?.(candidates);
     });
     const coreUndo = coreSubmenu.createEl("button", { text: "撤销移动", cls: "ndw-core-submenu-item" });
     coreUndo.addEventListener("click", () => {

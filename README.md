@@ -1,3 +1,4 @@
-# note-definitions_PXM 0.39.19
+# note-definitions_PXM 0.39.20
 
-- Time selector, reset, and core-library group now share the same 4px radius.
+- “选中→核心库” now reports when selected terms are already in the core library.
+- Prevents a silent no-op that looked like the action was broken.
