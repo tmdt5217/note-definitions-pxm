@@ -6857,6 +6857,22 @@ ${issues.join("\n")}`);
             this.app.workspace.openLinkText(def.linkText, "");
           }
         });
+        const favStar = toolbar.createEl("button", {
+          cls: "nd-ency-nav-btn nd-ency-fav-star",
+          attr: { "aria-label": "星标", title: "星标" }
+        });
+        __ndw_obsidian.setIcon(favStar, "star");
+        const updateFavStar = () => {
+          const active = Boolean(__ndw_cardStars()[__ndw_cardKey(def.word)]);
+          favStar.classList.toggle("is-starred", active);
+          favStar.setAttr("aria-label", active ? "取消星标" : "星标");
+          favStar.setAttr("title", active ? "取消星标" : "星标");
+        };
+        favStar.addEventListener("click", () => {
+          __ndw_toggleCardStar(def.word);
+          updateFavStar();
+        });
+        updateFavStar();
         const defContainer = this.contentEl.createDiv({ cls: "nd-ency-def-container" });
         if (!def.file && def.filePath) {
           const resolvedFile = this.app.vault.getAbstractFileByPath(def.filePath);

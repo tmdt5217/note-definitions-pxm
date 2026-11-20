@@ -3560,3 +3560,20 @@ body.is-mobile .ndw-ency-core {
 .ndw-review-core { order: 8; }
 .ndw-hl-card-star { order: 10; }
 .ndw-hl-card-settings { order: 9; }
+
+/* Encyclopedia definition-page favorite star */
+.nd-ency-fav-star {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  padding: 0 !important;
+  margin-left: 4px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text-faint) !important;
+}
+.nd-ency-fav-star:hover { color: var(--text-muted) !important; }
+.nd-ency-fav-star svg { width: 22px !important; height: 22px !important; fill: none !important; stroke: currentColor !important; stroke-width: 1.4 !important; }
+.nd-ency-fav-star.is-starred { color: #ffd700 !important; }
+.nd-ency-fav-star.is-starred svg { fill: #ffd700 !important; stroke: #ffd700 !important; }

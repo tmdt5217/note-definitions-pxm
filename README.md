@@ -1,4 +1,3 @@
-# note-definitions_PXM 0.39.10
+# note-definitions_PXM 0.39.11
 
-- Every favorite star is now ordered to the top-right of its row.
-- Applies to concept cards, term detail, review, WeRead cards, and highlight rows.
+- Encyclopedia definition page now has a favorite star in the top-right toolbar.
