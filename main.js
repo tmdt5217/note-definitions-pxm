@@ -6753,6 +6753,11 @@ ${issues.join("\n")}`);
             def = await scalability.resolveDefinition(def);
             this._currentDef = def;
           } catch (error) {
+            const indexedFallback = await window.__ndwLookupIndexedDefinition?.(def.word || def.key);
+            if (indexedFallback) {
+              this._currentDef = indexedFallback;
+              return this._buildDefinitionUI(indexedFallback);
+            }
             this.contentEl.empty();
             this.contentEl.addClass("nd-ency-container");
             this.contentEl.createDiv({
@@ -21561,6 +21566,21 @@ async function __ndw_writeCoreEntries(app,entries){
   }
   return clean.length;
 }
+async function __ndw_lookupIndexedDefinition(word){
+  const app=window.NoteDefinition?.app;
+  const target=String(word||"").trim().toLowerCase();
+  if(!app||!target) return null;
+  try{
+    const idx=window.__ndwSharedTermIndex || (window.__ndwSharedTermIndex=new window.__NdwTermIndex(app));
+    if(!idx.__ready) idx.__ready=idx.build(String(window.NoteDefinition?.settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u,""));
+    await idx.__ready;
+    const rows=await idx.query({q:word,limit:20});
+    const hit=rows.find(entry=>String(entry.word||"").trim().toLowerCase()===target || (entry.aliases||[]).some(alias=>String(alias||"").trim().toLowerCase()===target));
+    if(!hit) return null;
+    return { key:hit.norm||hit.key||target, word:hit.word, aliases:hit.aliases||[], definition:hit.definition||"", filePath:hit.filePath||"", file:app.vault.getAbstractFileByPath(hit.filePath||"")||null };
+  }catch{return null;}
+}
+
 async function __ndw_coreContains(entry){
   const target=String(entry?.word||"").trim().toLowerCase();
   if(!target) return false;
@@ -21642,6 +21662,7 @@ async function __ndw_clearCore(){
 }
 window.__ndwCore = { promoteFirst: __ndw_promoteCoreFirst, promoteEntries: __ndw_promoteCoreEntries, toggle: __ndw_toggleCoreEntry, contains: __ndw_coreContains, clear: __ndw_clearCore, read: __ndw_readCoreEntries, folder: __ndw_coreFolder, path: __ndw_coreShardPath };
 window.__ndwMountCoreButton = __ndw_mountCoreButton;
+window.__ndwLookupIndexedDefinition = __ndw_lookupIndexedDefinition;
 const DB_NAME = "ndw-term-index-v1";
 const DB_VERSION = 2;
 const TERMS = "terms";
