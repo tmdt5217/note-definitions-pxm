@@ -6606,7 +6606,15 @@ ${issues.join("\n")}`);
             });
           }
           await this._termIndex.__ready;
-          const rows = await this._termIndex.query({ q, limit: 30 });
+          let rows = await this._termIndex.query({ q, limit: 30 });
+          if (!rows.length && (await this._termIndex.count()) === 0) {
+            await this._termIndex.reset();
+            this._termIndex = window.__ndwSharedTermIndex = new window.__NdwTermIndex(this.app);
+            const folder = window.NoteDefinition?.settings?.defFolder || "Attachments_all/definition folder";
+            this._termIndex.__ready = this._termIndex.build(folder).catch(() => null);
+            await this._termIndex.__ready;
+            rows = await this._termIndex.query({ q, limit: 30 });
+          }
           return rows.map((entry) => ({
             label: entry.word,
             aliasHit: (entry.aliases || []).find((alias) => __ndw_norm(alias).includes(q)) || null,
@@ -6675,9 +6683,14 @@ ${issues.join("\n")}`);
       async _getAllCandidates(query) {
         const scalability = globalThis.__noteDefinitionsPXMScalability;
         if (scalability == null ? void 0 : scalability.searchBookInclusivePage) {
-          const page = await scalability.searchBookInclusivePage(query);
-          const items = page.items;
-          items.nextCursor = page.nextCursor;
+          let items = [];
+          try {
+            const page = await scalability.searchBookInclusivePage(query);
+            items = Array.isArray(page?.items) ? page.items : [];
+            items.nextCursor = page?.nextCursor;
+          } catch (error) {
+            console.warn("[note-definitions] core book search failed; using external index", error);
+          }
           const custom = await this._getCustomSearchCandidates(query);
           const seen = new Set(items.map((item) => __ndw_norm(item.label)));
           for (const item of custom) {
@@ -21675,7 +21688,7 @@ window.__NdwTermIndex = class NdTermIndex {
     let done=0, terms=0; const t0=performance.now();
     for(const file of files){
       const st=file.stat||{}; const old=oldFiles.get(file.path);
-      if(old && old.mtime===st.mtime && old.size===st.size){done++; continue;}
+      if(old && old.count>0 && old.mtime===st.mtime && old.size===st.size){done++; continue;}
       this.__progress={phase:"read",done,total:files.length,terms,at:Date.now(),path:file.path};
       const raw=typeof this.app.vault.cachedRead === "function" ? await this.app.vault.cachedRead(file) : await this.app.vault.adapter.read(file.path);
       this.__progress={phase:"parsed",done,total:files.length,terms,at:Date.now(),path:file.path};
