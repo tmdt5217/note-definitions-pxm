@@ -17574,11 +17574,13 @@ function __ndw_confineModalToPane(modal, ownerLeaf, options = {}) {
     const rect = contentEl.getBoundingClientRect();
     if (rect.width < 80 || rect.height < 80) return;
     const width = Math.min(options.width || 700, Math.max(280, rect.width - 24));
-    const left = rect.left + (rect.width - width) / 2;
     const centerOnMobile = options.centerOnMobile === true;
+    const mobileDevice = Boolean(__ndw_obsidian.Platform.isMobile || __ndw_obsidian.Platform.isTablet);
+    const useTransformCenter = centerOnMobile && mobileDevice;
+    const left = useTransformCenter ? rect.left + rect.width / 2 : rect.left + (rect.width - width) / 2;
     const modalHeight = modal.modalEl.getBoundingClientRect().height || 0;
-    let top = rect.top + 12;
-    if (centerOnMobile && modalHeight > 0) {
+    let top = useTransformCenter ? rect.top + rect.height / 2 : rect.top + 12;
+    if (!useTransformCenter && centerOnMobile && modalHeight > 0) {
       top = rect.top + Math.max(12, (rect.height - modalHeight) / 2);
       top = Math.min(top, rect.bottom - 12 - modalHeight);
     }
@@ -17594,7 +17596,7 @@ function __ndw_confineModalToPane(modal, ownerLeaf, options = {}) {
     modal.modalEl.style.setProperty("max-width", "none", "important");
     modal.modalEl.style.setProperty("max-height", `${Math.round(rect.height - 24)}px`, "important");
     modal.modalEl.style.setProperty("margin", "0", "important");
-    modal.modalEl.style.setProperty("transform", "none", "important");
+    modal.modalEl.style.setProperty("transform", useTransformCenter ? "translate(-50%, -50%)" : "none", "important");
   };
 
   const setVisible = (visible) => {
@@ -17620,6 +17622,17 @@ function __ndw_confineModalToPane(modal, ownerLeaf, options = {}) {
     observer = new ResizeObserver(() => position());
     observer.observe(contentEl);
   }
+  let modalObserver = null;
+  if (options.centerOnMobile === true && typeof ResizeObserver !== "undefined") {
+    let lastHeight = 0;
+    modalObserver = new ResizeObserver(() => {
+      const height = modal.modalEl.getBoundingClientRect().height;
+      if (!height || Math.abs(height - lastHeight) < 0.5) return;
+      lastHeight = height;
+      position();
+    });
+    modalObserver.observe(modal.modalEl);
+  }
   position();
 
   return {
@@ -17629,6 +17642,7 @@ function __ndw_confineModalToPane(modal, ownerLeaf, options = {}) {
       modal.app.workspace.offref(leafChangeRef);
       modal.app.workspace.offref(layoutChangeRef);
       observer?.disconnect();
+      modalObserver?.disconnect();
       backdrop.remove();
     }
   };
