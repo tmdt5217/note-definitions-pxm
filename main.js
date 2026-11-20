@@ -21606,6 +21606,7 @@ async function __ndw_promoteCoreEntries(entries){
   }
   const total=await __ndw_writeCoreEntries(app,merged);
   if(window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready=null;
+  if(total>8000) new __ndw_obsidian.Notice(`核心库已有 ${total} 条，超过 8000 条后 iPad 输入可能变慢。`,10000);
   new __ndw_obsidian.Notice(`核心库现有 ${total} 条；重启 Obsidian 后编辑器完整功能只作用于核心库。`,8000);
   return total;
 }
@@ -21730,10 +21731,26 @@ window.__NdwTermIndex = class NdTermIndex {
     if(n){
       const tx=db.transaction(TERMS,"readonly"), done=txDone(tx), store=tx.objectStore(TERMS);
       const seen=new Set();
-      for(const idxName of ["norm","aliases"]){
+      const wanted=Math.max(0,Number(limit)||0)+Math.max(0,Number(offset)||0);
+      const collect=async(idxName)=>{
+        if(wanted<=0) return [];
         const idx=store.index(idxName);
         const range=IDBKeyRange.bound(n,n+"\uffff");
-        const vals=await req(idx.getAll(range));
+        const values=[];
+        await new Promise((res,rej)=>{
+          const r=idx.openCursor(range);
+          r.onerror=()=>rej(r.error);
+          r.onsuccess=()=>{
+            const cur=r.result;
+            if(!cur||values.length>=wanted){res();return;}
+            values.push(cur.value);
+            cur.continue();
+          };
+        });
+        return values;
+      };
+      const groups=await Promise.all(["norm","aliases"].map(collect));
+      for(const vals of groups){
         for(const v of vals){if(!seen.has(v.key)){seen.add(v.key);out.push(v);}}
       }
       await done;

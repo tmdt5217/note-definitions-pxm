@@ -1,6 +1,6 @@
-# note-definitions_PXM 0.39.2
+# note-definitions_PXM 0.39.3
 
-- Fix empty external search after upgrading to the core/external split.
-- Rebuild files whose index record has zero terms.
-- Automatically rebuild an empty shared term index before searching.
-- Keep core/external library behavior and core buttons in term windows.
+- Bounded prefix search: broad searches no longer load every matching row.
+- Core library size warning above 8,000 terms.
+- External search recovery for empty/zero-term index records.
+- Core/external two-tier dictionary and core buttons in term windows.
