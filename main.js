@@ -2874,6 +2874,10 @@ var require_pxm_main = __commonJS({
         defContent.style.setProperty("-webkit-user-select", "text", "important");
         defContent.style.setProperty("-webkit-touch-callout", "default", "important");
         appendSameNameNoteLink(this.modal.contentEl, openSameNamedNote, () => this.close());
+        if (window.__ndwMountCoreButton) {
+          const coreActions = this.modal.contentEl.createDiv({ cls: "ndw-term-detail-core-actions" });
+          void window.__ndwMountCoreButton(coreActions, definition);
+        }
         const applyFixes = () => {
           this.modal.contentEl.querySelectorAll("*").forEach((child) => {
             child.style.setProperty("user-select", "text", "important");
@@ -18822,6 +18826,7 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
       body.createEl("pre", { text: markdown });
     }
     const actions = this.contentEl.createDiv({ cls: "ndw-actions" });
+    void window.__ndwMountCoreButton?.(actions, this.entry);
     const star = actions.createEl("button", { text: "☆ 星标" });
     const updateStar = () => {
       const active = Boolean(__ndw_cardStars()[__ndw_cardKey(this.entry.word)]);
@@ -19690,6 +19695,9 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     this.starEl = this.topEl.createEl("button", { cls: "ndw-review-star", attr: { "aria-label": "星标" } });
     __ndw_obsidian.setIcon(this.starEl, "star");
     this.starEl.addEventListener("click", () => this.toggleStar());
+    void window.__ndwMountCoreButton?.(this.topEl, this.entries[this.index], { cls: "ndw-review-core" }).then((control) => {
+      this.coreControl = control;
+    });
     this.settingsEl = this.topEl.createEl("button", { cls: "ndw-review-settings", attr: { "aria-label": "复习设置" } });
     __ndw_setNativeIcon(this.settingsEl, "settings", __NDW_ICON_SETTINGS);
     this.settingsEl.addEventListener("click", () => this.ownerLeaf?.view?.openReviewSettings?.());
@@ -19775,6 +19783,7 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     }
     this.index = Math.max(0, Math.min(this.entries.length - 1, this.index));
     const entry = this.entries[this.index];
+    this.coreControl?.update(entry);
     this.seen.add(__ndw_cardKey(entry.word));
     const entryKey = __ndw_cardKey(entry.word);
     if (this.lastRecordedKey !== entryKey) {
@@ -21527,6 +21536,48 @@ async function __ndw_writeCoreEntries(app,entries){
   await app.vault.adapter.write(__ndw_coreShardPath(),formatShard(clean));
   return clean.length;
 }
+async function __ndw_coreContains(entry){
+  const target=String(entry?.word||"").trim().toLowerCase();
+  if(!target) return false;
+  const entries=await __ndw_readCoreEntries(window.NoteDefinition?.app);
+  return entries.some(item=>String(item.word||"").trim().toLowerCase()===target);
+}
+
+async function __ndw_toggleCoreEntry(entry){
+  const app=window.NoteDefinition?.app;
+  if(!app) return false;
+  const target=String(entry?.word||"").trim().toLowerCase();
+  const existing=await __ndw_readCoreEntries(app);
+  const index=existing.findIndex(item=>String(item.word||"").trim().toLowerCase()===target);
+  if(index>=0){
+    const total=await __ndw_writeCoreEntries(app,existing.filter((_,i)=>i!==index));
+    if(window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready=null;
+    new __ndw_obsidian.Notice(`已移到外库：${entry.word}（核心库现有 ${total} 条；重启后生效）`,8000);
+    return false;
+  }
+  return (await __ndw_promoteCoreEntries([entry])) >= 0;
+}
+
+async function __ndw_mountCoreButton(parent, entry, options = {}){
+  const app=window.NoteDefinition?.app;
+  const button=parent.createEl("button",{text:"检查核心库…",cls:options.cls||""});
+  let current=entry;
+  const refresh=async()=>{
+    if(!app||!current?.word) return;
+    const active=await __ndw_coreContains(current);
+    button.setText(active?"移到外库":"加入内库");
+    button.classList.toggle("mod-cta",active);
+    button.setAttr("aria-label",active?"从核心库移到外库":"加入核心库");
+  };
+  button.addEventListener("click",async()=>{
+    button.disabled=true;
+    try{await __ndw_toggleCoreEntry(current);await refresh();}
+    finally{button.disabled=false;}
+  });
+  void refresh();
+  return {button,update:(next)=>{current=next;void refresh();}};
+}
+
 async function __ndw_promoteCoreEntries(entries){
   const app=window.NoteDefinition?.app;
   if(!app) return 0;
@@ -21563,7 +21614,8 @@ async function __ndw_clearCore(){
   if(window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready=null;
   new __ndw_obsidian.Notice("核心库已清空。重启 Obsidian 后生效。",6000);
 }
-window.__ndwCore = { promoteFirst: __ndw_promoteCoreFirst, promoteEntries: __ndw_promoteCoreEntries, clear: __ndw_clearCore, read: __ndw_readCoreEntries, folder: __ndw_coreFolder, path: __ndw_coreShardPath };
+window.__ndwCore = { promoteFirst: __ndw_promoteCoreFirst, promoteEntries: __ndw_promoteCoreEntries, toggle: __ndw_toggleCoreEntry, contains: __ndw_coreContains, clear: __ndw_clearCore, read: __ndw_readCoreEntries, folder: __ndw_coreFolder, path: __ndw_coreShardPath };
+window.__ndwMountCoreButton = __ndw_mountCoreButton;
 const DB_NAME = "ndw-term-index-v1";
 const DB_VERSION = 2;
 const TERMS = "terms";
