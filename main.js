@@ -6743,6 +6743,8 @@ ${issues.join("\n")}`);
       // ── 词条界面 ──
       async _buildDefinitionUI(def) {
         var _a, _b, _c, _d, _e;
+        this._favStarObserver?.disconnect?.();
+        this._favStarObserver = null;
         (_a = this._disposeSearchSizing) == null ? void 0 : _a.call(this);
         this._disposeSearchSizing = null;
         (_b = this._disposeCreatedList) == null ? void 0 : _b.call(this);
@@ -6874,6 +6876,20 @@ ${issues.join("\n")}`);
           updateFavStar();
         });
         updateFavStar();
+        const alignFavStarToTitle = () => {
+          const title = defContainer.querySelector(".nd-ency-def-title");
+          if (!title || !favStar.isConnected) return;
+          const containerRect = defContainer.getBoundingClientRect();
+          const titleRect = title.getBoundingClientRect();
+          const top = titleRect.top - containerRect.top + defContainer.scrollTop + (titleRect.height - favStar.offsetHeight) / 2;
+          favStar.style.setProperty("top", `${Math.round(top)}px`, "important");
+        };
+        window.requestAnimationFrame(alignFavStarToTitle);
+        window.setTimeout(alignFavStarToTitle, 80);
+        if (typeof ResizeObserver !== "undefined") {
+          this._favStarObserver = new ResizeObserver(alignFavStarToTitle);
+          this._favStarObserver.observe(defContainer);
+        }
         if (!def.file && def.filePath) {
           const resolvedFile = this.app.vault.getAbstractFileByPath(def.filePath);
           def.file = resolvedFile && resolvedFile.path ? resolvedFile : { path: def.filePath, basename: String(def.filePath).split("/").pop() || def.word };

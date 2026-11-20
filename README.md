@@ -1,5 +1,5 @@
-# note-definitions_PXM 0.39.24
+# note-definitions_PXM 0.39.25
 
-- iPhone concept-card review window is vertically centered with transform positioning.
-- Term management uses two card columns on iPhone and narrow panes.
-- Term-detail favorite star is aligned to the title's vertical center.
+- Encyclopedia favorite star is vertically aligned to the term title.
+- Desktop delete/core buttons restored to the bottom corners.
+- Mobile delete/core buttons share the same bottom baseline.

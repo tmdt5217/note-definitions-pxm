@@ -3702,3 +3702,33 @@ body.is-mobile .ndw-all-terms-list {
   .ndw-term-row { min-width: 0 !important; }
   .ndw-term-name, .ndw-term-def { overflow-wrap: anywhere; }
 }
+
+/* Keep the core-library button on the same baseline as the delete button on mobile */
+body.is-mobile .ndw-ency-delete,
+body.is-mobile .ndw-ency-core {
+  position: fixed !important;
+  bottom: 100px !important;
+}
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-delete,
+body.is-mobile.ndw-ency-keyboard-open .ndw-ency-core {
+  bottom: calc(35.5vh + 8px) !important;
+}
+body.is-mobile .ndw-ency-core {
+  right: 16px !important;
+}
+
+/* Desktop: restore delete bottom-left and core button bottom-right */
+@media (min-width: 800px) and (pointer: fine) {
+  .ndw-ency-delete {
+    position: absolute !important;
+    left: 18px !important;
+    right: auto !important;
+    bottom: 18px !important;
+  }
+  .ndw-ency-core {
+    position: absolute !important;
+    left: auto !important;
+    right: 18px !important;
+    bottom: 18px !important;
+  }
+}
