@@ -19146,14 +19146,28 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       closeCoreMenu();
       this.coreOnly = !this.coreOnly;
       coreMain.classList.toggle("is-active", this.coreOnly);
+      updateCoreActionLabel();
       this.applyFilter();
     });
     const coreSelected = coreSubmenu.createEl("button", { text: "选中→核心库", cls: "ndw-core-submenu-item" });
+    const updateCoreActionLabel = () => {
+      coreSelected.setText(this.coreOnly ? "移出核心库" : "选中→核心库");
+    };
+    updateCoreActionLabel();
     coreSelected.addEventListener("click", () => {
       closeCoreMenu();
       const entries = [...this._loadedEntries.values()].filter((entry) => this.selected.has(entry.word));
       if (!entries.length) {
-        new __ndw_obsidian.Notice("请先勾选要加入核心库的词条。");
+        new __ndw_obsidian.Notice(this.coreOnly ? "请先勾选要移出核心库的词条。" : "请先勾选要加入核心库的词条。");
+        return;
+      }
+      if (this.coreOnly) {
+        const coreEntries = entries.filter((entry) => entry.tier === "core");
+        if (!coreEntries.length) {
+          new __ndw_obsidian.Notice("选中的词条不在核心库中。");
+          return;
+        }
+        void window.__ndwCore?.demote?.(coreEntries.map((entry) => entry.word));
         return;
       }
       const candidates = entries.filter((entry) => entry.tier !== "core");

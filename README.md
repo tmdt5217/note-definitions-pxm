@@ -1,4 +1,4 @@
-# note-definitions_PXM 0.39.20
+# note-definitions_PXM 0.39.21
 
-- “选中→核心库” now reports when selected terms are already in the core library.
-- Prevents a silent no-op that looked like the action was broken.
+- In the core-library filtered view, “选中→核心库” becomes “移出核心库”.
+- The action moves selected core terms back to the external tier.
