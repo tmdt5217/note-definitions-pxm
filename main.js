@@ -18847,9 +18847,7 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
       console.error("[note-definitions] term render failed", error);
       body.createEl("pre", { text: markdown });
     }
-    const actions = this.contentEl.createDiv({ cls: "ndw-actions" });
-    void window.__ndwMountCoreButton?.(actions, this.entry);
-    const star = actions.createEl("button", { cls: "ndw-term-star", attr: { "aria-label": "星标", title: "星标" } });
+    const star = this.modalEl.createEl("button", { cls: "ndw-term-star ndw-term-star-top", attr: { "aria-label": "星标", title: "星标" } });
     __ndw_obsidian.setIcon(star, "star");
     const updateStar = () => {
       const active = Boolean(__ndw_cardStars()[__ndw_cardKey(this.entry.word)]);
@@ -18862,6 +18860,8 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
       updateStar();
     });
     updateStar();
+    const actions = this.contentEl.createDiv({ cls: "ndw-actions" });
+    void window.__ndwMountCoreButton?.(actions, this.entry);
     const close = actions.createEl("button", { text: "关闭" });
     close.addEventListener("click", () => this.close());
   }

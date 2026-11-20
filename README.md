@@ -1,4 +1,4 @@
-# note-definitions_PXM 0.39.8
+# note-definitions_PXM 0.39.9
 
-- Term-detail star is now a frameless hollow star; selected state is filled gold.
-- Matches card/review star visuals.
+- Term-detail star moved to the top-right corner of the modal, beside the close button.
+- The star remains frameless, hollow by default, and filled gold when selected.
