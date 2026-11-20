@@ -3602,8 +3602,11 @@ body.is-mobile .ndw-ency-core {
   border-bottom-left-radius: 0 !important;
 }
 .ndw-core-submenu {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 30;
-  min-width: 156px; padding: 4px;
+  position: absolute; top: calc(100% + 4px); left: 0; right: auto; z-index: 30;
+  width: max-content;
+  min-width: 168px;
+  max-width: min(240px, calc(100vw - 24px));
+  padding: 4px;
   display: flex; flex-direction: column; gap: 2px;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
@@ -3614,5 +3617,6 @@ body.is-mobile .ndw-ency-core {
 .ndw-core-submenu-item {
   width: 100%; text-align: left; border: 0 !important; box-shadow: none !important;
   background: transparent !important; padding: 7px 9px; border-radius: var(--radius-s); cursor: pointer;
+  white-space: nowrap;
 }
 .ndw-core-submenu-item:hover { background: var(--background-modifier-hover) !important; }
