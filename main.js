@@ -21546,7 +21546,15 @@ async function __ndw_writeCoreEntries(app,entries){
     seen.add(key);
     clean.push({word:String(entry.word).trim(),aliases:Array.isArray(entry.aliases)?entry.aliases:[],definition:String(entry.definition||"")});
   }
-  await app.vault.adapter.write(__ndw_coreShardPath(),formatShard(clean));
+  const target=__ndw_coreShardPath();
+  const temp=`${shards}/.core.md.tmp`;
+  await app.vault.adapter.write(temp,formatShard(clean));
+  try{
+    await app.vault.adapter.rename(temp,target);
+  }catch{
+    await app.vault.adapter.write(target,formatShard(clean));
+    await app.vault.adapter.remove(temp).catch(()=>{});
+  }
   return clean.length;
 }
 async function __ndw_coreContains(entry){
@@ -21595,8 +21603,8 @@ async function __ndw_promoteCoreEntries(entries){
   const app=window.NoteDefinition?.app;
   if(!app) return 0;
   const existing=await __ndw_readCoreEntries(app);
-  const merged=[...existing];
-  const seen=new Set(existing.map(entry=>String(entry.word).trim().toLowerCase()));
+  const merged=existing.slice(0,10000);
+  const seen=new Set(merged.map(entry=>String(entry.word).trim().toLowerCase()));
   for(const entry of entries){
     const key=String(entry.word||"").trim().toLowerCase();
     if(!key||seen.has(key)) continue;
@@ -21681,7 +21689,8 @@ window.__NdwTermIndex = class NdTermIndex {
     const roots=[folder,core].filter((value,index,array)=>value&&array.indexOf(value)===index);
     const corePath=core;
     const files=this.app.vault.getMarkdownFiles().filter(f=>roots.some(root=>f.path===root||f.path.startsWith(root+"/")));
-    files.sort((a,b)=>Number(!(a.path===corePath||a.path.startsWith(corePath+"/")))-Number(!(b.path===corePath||b.path.startsWith(corePath+"/"))));
+    const tierRank=(file)=>corePath&&(file.path===corePath||file.path.startsWith(corePath+"/"))?1:0;
+    files.sort((a,b)=>tierRank(a)-tierRank(b));
     const db=this.db;
     const oldFiles=new Map();
     {const tx=db.transaction(FILES,"readonly"); const done=txDone(tx); const all=await req(tx.objectStore(FILES).getAll()); await done; for(const x of all) oldFiles.set(x.path,x);}

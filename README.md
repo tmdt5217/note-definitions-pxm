@@ -1,6 +1,5 @@
-# note-definitions_PXM 0.39.3
+# note-definitions_PXM 0.39.4
 
-- Bounded prefix search: broad searches no longer load every matching row.
-- Core library size warning above 8,000 terms.
-- External search recovery for empty/zero-term index records.
-- Core/external two-tier dictionary and core buttons in term windows.
+- Core terms win over duplicate external records in the merged index.
+- Core library capped at 10,000 terms.
+- Core shard writes are atomic.
