@@ -3732,3 +3732,10 @@ body.is-mobile .ndw-ency-core {
     bottom: 18px !important;
   }
 }
+
+.ndw-term-swipe-hint {
+  margin: 8px 0 0;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}

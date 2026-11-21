@@ -18871,48 +18871,32 @@ function __ndw_showUndoNotice(_message, onUndo) {
 }
 
 class __NdwTermDetailModal extends __ndw_obsidian.Modal {
-  constructor(app, entry, ownerLeaf) {
+  constructor(app, entry, ownerLeaf, options = {}) {
     super(app);
-    this.entry = entry;
     this.ownerLeaf = ownerLeaf || app.workspace.activeLeaf;
+    this.entry = entry;
+    this.entries = Array.isArray(options.entries) && options.entries.length ? options.entries : [entry];
+    this.getEntries = typeof options.getEntries === "function" ? options.getEntries : null;
+    this.loadMore = typeof options.loadMore === "function" ? options.loadMore : null;
+    this.index = Number.isInteger(options.index) ? options.index : this.entries.findIndex((item) => item === entry || item.word === entry.word && item.filePath === entry.filePath);
+    if (this.index < 0) this.index = 0;
+    this.pointerStart = null;
+    this.starEl = null;
+    this._onPointerDown = this.onPointerDown.bind(this);
+    this._onPointerUp = this.onPointerUp.bind(this);
+    this._onPointerCancel = this.onPointerCancel.bind(this);
   }
 
   onOpen() {
     this.pane = __ndw_confineModalToPane(this, this.ownerLeaf, { width: 700, centerOnMobile: true });
-    this.titleEl.setText(this.entry.word);
     this.modalEl.addClass("ndw-term-detail-modal");
-    const meta = this.contentEl.createDiv({ cls: "ndw-term-detail-meta" });
-    if (this.entry.aliases.length) meta.createDiv({ text: `别名：${this.entry.aliases.join("、")}` });
-    const date = this.entry.createdAt ? new Date(this.entry.createdAt).toLocaleString("zh-CN") : "时间未知";
-    meta.createDiv({ text: `创建：${this.entry.estimated ? "≈ " : ""}${date}` });
-    this.contentEl.createDiv({ cls: "ndw-term-detail-rule" });
-    const body = this.contentEl.createDiv({ cls: "ndw-term-detail-def" });
-    const markdown = this.entry.definition || "（暂无定义）";
-    try {
-      const renderer = __ndw_obsidian.MarkdownRenderer;
-      if (renderer?.render) {
-        void renderer.render(this.app, markdown, body, this.entry.filePath || "", this);
-      } else {
-        body.createEl("pre", { text: markdown });
-      }
-    } catch (error) {
-      console.error("[note-definitions] term render failed", error);
-      body.createEl("pre", { text: markdown });
-    }
-    const star = this.modalEl.createEl("button", { cls: "ndw-term-star ndw-term-star-top", attr: { "aria-label": "星标", title: "星标" } });
+    const star = this.starEl = this.modalEl.createEl("button", { cls: "ndw-term-star ndw-term-star-top", attr: { "aria-label": "星标", title: "星标" } });
     __ndw_obsidian.setIcon(star, "star");
-    const updateStar = () => {
-      const active = Boolean(__ndw_cardStars()[__ndw_cardKey(this.entry.word)]);
-      star.classList.toggle("is-starred", active);
-      star.setAttr("aria-label", active ? "取消星标" : "星标");
-      star.setAttr("title", active ? "取消星标" : "星标");
-    };
     star.addEventListener("click", () => {
       __ndw_toggleCardStar(this.entry.word);
-      updateStar();
+      this.updateStar();
     });
-    updateStar();
-    const alignStarToTitle = () => {
+    this._alignStarToTitle = () => {
       if (!star.isConnected || !this.titleEl?.isConnected) return;
       const modalRect = this.modalEl.getBoundingClientRect();
       const titleRect = this.titleEl.getBoundingClientRect();
@@ -18920,23 +18904,113 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
       const top = titleRect.top - modalRect.top + (titleRect.height - starHeight) / 2;
       star.style.setProperty("top", `${Math.round(top)}px`, "important");
     };
-    this._alignStarToTitle = alignStarToTitle;
-    window.requestAnimationFrame(alignStarToTitle);
-    window.setTimeout(alignStarToTitle, 80);
-    this._starResizeHandler = () => alignStarToTitle();
+    window.requestAnimationFrame(this._alignStarToTitle);
+    window.setTimeout(this._alignStarToTitle, 80);
+    this._starResizeHandler = () => this._alignStarToTitle();
     window.addEventListener("resize", this._starResizeHandler);
-    const actions = this.contentEl.createDiv({ cls: "ndw-actions" });
-    void window.__ndwMountCoreButton?.(actions, this.entry);
-    const close = actions.createEl("button", { text: "关闭" });
-    close.addEventListener("click", () => this.close());
+    this.modalEl.addEventListener("pointerdown", this._onPointerDown);
+    this.modalEl.addEventListener("pointerup", this._onPointerUp);
+    this.modalEl.addEventListener("pointercancel", this._onPointerCancel);
+    this.renderEntry(this.entry);
     window.setTimeout(() => this.pane?.position?.(), 0);
     window.setTimeout(() => this.pane?.position?.(), 80);
+  }
+
+  updateStar() {
+    if (!this.starEl) return;
+    const active = Boolean(__ndw_cardStars()[__ndw_cardKey(this.entry.word)]);
+    this.starEl.classList.toggle("is-starred", active);
+    this.starEl.setAttr("aria-label", active ? "取消星标" : "星标");
+    this.starEl.setAttr("title", active ? "取消星标" : "星标");
+  }
+
+  renderEntry(entry) {
+    this.entry = entry;
+    this.titleEl.setText(entry.word || "");
+    this.contentEl.empty();
+    const meta = this.contentEl.createDiv({ cls: "ndw-term-detail-meta" });
+    if (entry.aliases?.length) meta.createDiv({ text: `别名：${entry.aliases.join("、")}` });
+    const date = entry.createdAt ? new Date(entry.createdAt).toLocaleString("zh-CN") : "时间未知";
+    meta.createDiv({ text: `创建：${entry.estimated ? "≈ " : ""}${date}` });
+    this.contentEl.createDiv({ cls: "ndw-term-detail-rule" });
+    const body = this.contentEl.createDiv({ cls: "ndw-term-detail-def" });
+    const markdown = entry.definition || "（暂无定义）";
+    try {
+      const renderer = __ndw_obsidian.MarkdownRenderer;
+      if (renderer?.render) {
+        void renderer.render(this.app, markdown, body, entry.filePath || "", this);
+      } else {
+        body.createEl("pre", { text: markdown });
+      }
+    } catch (error) {
+      console.error("[note-definitions] term render failed", error);
+      body.createEl("pre", { text: markdown });
+    }
+    if (__ndw_obsidian.Platform.isMobile || __ndw_obsidian.Platform.isTablet) {
+      this.contentEl.createDiv({ cls: "ndw-term-swipe-hint", text: "上滑下一条 · 下滑上一条" });
+    }
+    const actions = this.contentEl.createDiv({ cls: "ndw-actions" });
+    void window.__ndwMountCoreButton?.(actions, entry);
+    const close = actions.createEl("button", { text: "关闭" });
+    close.addEventListener("click", () => this.close());
+    this.updateStar();
+    this._alignStarToTitle?.();
+    window.requestAnimationFrame(() => this._alignStarToTitle?.());
+    window.setTimeout(() => this.pane?.position?.(), 0);
+  }
+
+  onPointerDown(event) {
+    if (event.isPrimary === false) return;
+    if (event.target.closest?.("button, input, textarea, select, a")) return;
+    this.pointerStart = { x: event.clientX, y: event.clientY, id: event.pointerId, target: event.target };
+  }
+
+  onPointerUp(event) {
+    const start = this.pointerStart;
+    this.pointerStart = null;
+    if (!start || start.id !== event.pointerId) return;
+    if (start.target.closest?.(".ndw-term-detail-def")) {
+      const def = start.target.closest(".ndw-term-detail-def");
+      if (def.scrollHeight > def.clientHeight + 1) return;
+    }
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dy) < 60 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
+    void this.move(dy < 0 ? 1 : -1);
+  }
+
+  onPointerCancel() {
+    this.pointerStart = null;
+  }
+
+  async move(delta) {
+    let list = this.getEntries ? this.getEntries() : this.entries;
+    if (!Array.isArray(list) || !list.length) return;
+    let index = list.findIndex((item) => item === this.entry || item.word === this.entry.word && item.filePath === this.entry.filePath);
+    if (index < 0) index = this.index;
+    let next = index + delta;
+    if (next >= list.length && this.loadMore) {
+      await this.loadMore();
+      list = this.getEntries ? this.getEntries() : this.entries;
+      index = list.findIndex((item) => item === this.entry || item.word === this.entry.word && item.filePath === this.entry.filePath);
+      if (index < 0) index = this.index;
+      next = index + delta;
+    }
+    if (next < 0 || next >= list.length) {
+      new __ndw_obsidian.Notice(delta > 0 ? "已经是最后一条词条。" : "已经是第一条词条。");
+      return;
+    }
+    this.index = next;
+    this.renderEntry(list[next]);
   }
 
   onClose() {
     if (this._starResizeHandler) window.removeEventListener("resize", this._starResizeHandler);
     this._starResizeHandler = null;
     this._alignStarToTitle = null;
+    this.modalEl.removeEventListener("pointerdown", this._onPointerDown);
+    this.modalEl.removeEventListener("pointerup", this._onPointerUp);
+    this.modalEl.removeEventListener("pointercancel", this._onPointerCancel);
     this.pane?.cleanup();
     this.pane = null;
   }
@@ -19433,7 +19507,14 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     });
     row.addEventListener("click", (event) => {
       if (event.target.closest("input")) return;
-      new __NdwTermDetailModal(this.app, entry, this.leaf).open();
+      const entries = [...this._loadedEntries.values()];
+      const index = Math.max(0, entries.findIndex((item) => item.word === entry.word && item.filePath === entry.filePath));
+      new __NdwTermDetailModal(this.app, entry, this.leaf, {
+        entries,
+        index,
+        getEntries: () => [...this._loadedEntries.values()],
+        loadMore: () => this.appendPage()
+      }).open();
     });
     const main = row.createDiv({ cls: "ndw-term-main" });
     main.createDiv({ cls: "ndw-term-name", text: entry.word });

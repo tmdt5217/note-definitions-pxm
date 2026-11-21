@@ -1,5 +1,5 @@
-# note-definitions_PXM 0.39.25
+# note-definitions_PXM 0.39.26
 
-- Encyclopedia favorite star is vertically aligned to the term title.
-- Desktop delete/core buttons restored to the bottom corners.
-- Mobile delete/core buttons share the same bottom baseline.
+- Term-detail modal supports swipe up/down to switch terms from term management.
+- Loads more terms when reaching the end of the loaded list.
+- Long definitions scroll before the swipe switches terms.
