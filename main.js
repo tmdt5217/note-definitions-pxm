@@ -20015,6 +20015,7 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     this.loadingMore = false;
     this.ownerLeaf = options.ownerLeaf || app.workspace.activeLeaf;
     this.seen = new Set();
+    this.ratedKeys = new Set();
     this.lastRecordedKey = null;
     this.pointerStart = null;
   }
@@ -20193,6 +20194,12 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
   rate(type) {
     const entry = this.entries[this.index];
     if (!entry) return;
+    const key = __ndw_cardKey(entry.word);
+    if (this.ratedKeys.has(key)) {
+      new __ndw_obsidian.Notice(`这张卡片已经标记过了：${entry.word}`, 1400);
+      return;
+    }
+    this.ratedKeys.add(key);
     __ndw_recordReviewEvent(entry.word, type);
     new __ndw_obsidian.Notice(type === "familiar" ? `已标记为熟悉：${entry.word}` : `已标记为不熟悉：${entry.word}`, 1600);
     this.render();
