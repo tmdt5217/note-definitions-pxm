@@ -1,4 +1,5 @@
-# note-definitions_PXM 0.39.27
+# note-definitions_PXM 0.39.28
 
-- Concept-card swipe no longer animates the card.
-- Long definitions scroll on the first swipe; switching only happens on the next swipe at the boundary.
+- 手动词典链接：{{nd:词条}}，显示为词条下划线，点击弹窗。
+- 支持选中词条直接插入、无词条时搜索、移动端工具栏命令。
+- 词条弹窗限制在当前标签页内。

@@ -1503,6 +1503,96 @@ var require_pxm_main = __commonJS({
       DefinitionMarker,
       pluginSpec2
     );
+    var NDW_MANUAL_LINK_RE = /\[([^\]\r\n]{1,120})\]\((?:https:\/\/note-definitions\.invalid\/term|obsidian:\/\/note-definitions)\?word=([^)\r\n]+)\)/gu;
+    var ManualLinkMarker = class {
+      constructor(view) {
+        this.decorations = this.build(view);
+      }
+      update(update) {
+        if (update.docChanged || update.viewportChanged) this.decorations = this.build(update.view);
+      }
+      build(view) {
+        const builder = new import_state4.RangeSetBuilder();
+        for (const { from, to } of view.visibleRanges) {
+          const text = view.state.sliceDoc(from, to);
+          NDW_MANUAL_LINK_RE.lastIndex = 0;
+          let match;
+          while ((match = NDW_MANUAL_LINK_RE.exec(text))) {
+            const label = match[1];
+            let word = match[2];
+            try { word = decodeURIComponent(word); } catch {}
+            if (!word || label !== word) continue;
+            const start = from + match.index + 1;
+            builder.add(start, start + label.length, import_view3.Decoration.mark({
+              class: "ndw-manual-link",
+              attributes: { "data-ndw-word": word }
+            }));
+          }
+        }
+        return builder.finish();
+      }
+    };
+    var manualLinkMarker = import_view3.ViewPlugin.fromClass(ManualLinkMarker, {
+      decorations: (value) => value.decorations
+    });
+    var NDW_ND_MARKER_RE = /\{\{nd:([^{}\r\n]{1,120})\}\}/gu;
+    var NdLinkWidget = class extends import_view3.WidgetType {
+      constructor(word) {
+        super();
+        this.word = word;
+      }
+      eq(other) {
+        return other.word === this.word;
+      }
+      toDOM() {
+        const span = document.createElement("span");
+        span.className = "ndw-manual-link";
+        span.setAttribute("data-ndw-word", this.word);
+        span.textContent = this.word;
+        return span;
+      }
+      ignoreEvent() {
+        return false;
+      }
+    };
+    var NdLinkMarker = class {
+      constructor(view) {
+        this.decorations = this.build(view);
+      }
+      update(update) {
+        this.decorations = this.build(update.view);
+      }
+      build(view) {
+        let sourceMode = false;
+        try {
+          const info = view.state.field(import_obsidian22.editorInfoField, false);
+          sourceMode = info?.getState?.().source === true;
+        } catch {}
+        if (!sourceMode) {
+          const sourceView = view.dom.closest(".markdown-source-view");
+          sourceMode = !!sourceView && sourceView.classList.contains("is-source");
+        }
+        if (sourceMode) return import_view3.Decoration.none;
+        const builder = new import_state4.RangeSetBuilder();
+        for (const { from, to } of view.visibleRanges) {
+          const text = view.state.sliceDoc(from, to);
+          NDW_ND_MARKER_RE.lastIndex = 0;
+          let match;
+          while ((match = NDW_ND_MARKER_RE.exec(text))) {
+            const word = match[1];
+            if (!word) continue;
+            builder.add(from + match.index, from + match.index + match[0].length, import_view3.Decoration.replace({
+              widget: new NdLinkWidget(word)
+            }));
+          }
+        }
+        return builder.finish();
+      }
+    };
+    var manualNdMarker = import_view3.ViewPlugin.fromClass(NdLinkMarker, {
+      decorations: (value) => value.decorations
+    });
+    globalThis.__ndwManualLinkExtension = [manualLinkMarker, manualNdMarker];
     function getMarkedWordUnderCursor(editor) {
       const currWord = getWordByOffset(editor.posToOffset(editor.getCursor()));
       return normaliseWord(currWord);
@@ -2812,6 +2902,7 @@ var require_pxm_main = __commonJS({
     function getDefinitionPopover() {
       return definitionPopover;
     }
+    globalThis.__ndwGetDefinitionPopover = getDefinitionPopover;
     var import_obsidian52 = require("obsidian");
     var defModal;
     var DefinitionModal = class extends import_obsidian52.Component {
@@ -21677,6 +21768,337 @@ function __ndw_installEncyclopediaButton(app) {
   };
 }
 
+function __ndw_wordAtCursor(editor) {
+  const cursor = editor.getCursor();
+  const line = editor.getLine(cursor.line);
+  const isWord = (ch) => /[\p{L}\p{N}_-]/u.test(ch || "");
+  let start = cursor.ch;
+  let end = cursor.ch;
+  while (start > 0 && isWord(line[start - 1])) start--;
+  while (end < line.length && isWord(line[end])) end++;
+  return { word: line.slice(start, end).trim(), from: { line: cursor.line, ch: start }, to: { line: cursor.line, ch: end } };
+}
+
+let __ndwManualOpenedAt = 0;
+
+function __ndw_openManualWord(app, word, anchor) {
+  if (!word) return;
+  __ndwManualOpenedAt = Date.now();
+  void (async () => {
+    const entry = await window.__ndwLookupIndexedDefinition?.(word);
+    if (entry) __ndw_showDictionaryPopover(app, entry, anchor);
+    else new __ndw_obsidian.Notice(`词典中没有找到“${word}”。`);
+  })();
+}
+
+const __ndwPopoverPanes = new WeakMap();
+
+function __ndw_confinePopovers() {
+  const app = window.NoteDefinition?.app;
+  const activeLeaf = app?.workspace?.activeLeaf;
+  const activePane = activeLeaf?.view?.containerEl?.querySelector(".workspace-leaf-content") || activeLeaf?.view?.containerEl;
+  const gap = 8;
+  document.querySelectorAll(".definition-popover").forEach((popover) => {
+    let pane = __ndwPopoverPanes.get(popover);
+    if (!pane && activePane) {
+      pane = activePane;
+      __ndwPopoverPanes.set(popover, pane);
+    }
+    if (!pane) return;
+    const bounds = pane.getBoundingClientRect();
+    if (bounds.width < 120 || bounds.height < 120) return;
+    let rect = popover.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const maxWidth = Math.max(160, bounds.width - gap * 2);
+    if (rect.width > maxWidth) {
+      popover.style.setProperty("max-width", `${maxWidth}px`, "important");
+      rect = popover.getBoundingClientRect();
+    }
+    const maxHeight = Math.max(120, bounds.height - gap * 2);
+    popover.style.setProperty("max-height", `${maxHeight}px`, "important");
+    popover.style.setProperty("overflow", "auto", "important");
+    const left = Math.min(Math.max(rect.left, bounds.left + gap), bounds.right - gap - rect.width);
+    const top = Math.min(Math.max(rect.top, bounds.top + gap), bounds.bottom - gap - rect.height);
+    popover.style.setProperty("left", `${Math.max(bounds.left + gap, left)}px`, "important");
+    popover.style.setProperty("top", `${Math.max(bounds.top + gap, top)}px`, "important");
+    popover.style.setProperty("right", "auto", "important");
+    popover.style.setProperty("bottom", "auto", "important");
+  });
+}
+
+function __ndw_closePopoverOutside(event) {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  if (target.closest(".definition-popover") || target.closest(".ndw-manual-link")) return;
+  const popover = document.querySelector(".definition-popover");
+  if (popover) globalThis.__ndwGetDefinitionPopover?.()?.unmount?.();
+}
+
+function __ndw_styleManualLinks() {
+  document.querySelectorAll('a[href^="https://note-definitions.invalid/"], a[href^="obsidian://note-definitions"]').forEach((anchor) => {
+    anchor.classList.add("ndw-manual-link");
+    anchor.classList.remove("external-link");
+    anchor.removeAttribute("target");
+    anchor.dataset.ndwManualLink = "1";
+    anchor.style.setProperty("color", "var(--text-normal)", "important");
+    anchor.style.setProperty("text-decoration-line", "underline", "important");
+    anchor.style.setProperty("text-decoration-style", "dotted", "important");
+    anchor.style.setProperty("text-decoration-color", "var(--color-red)", "important");
+    anchor.style.setProperty("text-decoration-thickness", "1.5px", "important");
+    anchor.style.setProperty("text-underline-offset", "2px", "important");
+    anchor.querySelectorAll(".external-link-icon, .svg-icon, svg").forEach((icon) => icon.remove());
+    anchor.parentElement?.querySelectorAll(".external-link-icon, .svg-icon, :scope > svg").forEach((icon) => icon.remove());
+    anchor.querySelectorAll(".def-decoration").forEach((span) => {
+      span.classList.remove("def-decoration");
+      span.removeAttribute("def");
+      span.style.setProperty("text-decoration", "none", "important");
+    });
+    let sibling = anchor.nextElementSibling;
+    while (sibling && /external-link-icon|svg-icon/u.test(sibling.className || "")) {
+      const next = sibling.nextElementSibling;
+      sibling.remove();
+      sibling = next;
+    }
+  });
+  document.querySelectorAll(".ndw-manual-link").forEach((span) => {
+    const cmLink = span.closest(".cm-link");
+    cmLink?.querySelectorAll(".external-link-icon, .svg-icon, svg").forEach((icon) => icon.remove());
+    span.closest(".cm-line")?.querySelectorAll(".external-link-icon, .svg-icon, svg").forEach((icon) => icon.remove());
+    span.style.setProperty("color", "var(--text-normal)", "important");
+    span.style.setProperty("text-decoration-line", "underline", "important");
+    span.style.setProperty("text-decoration-style", "dotted", "important");
+    span.style.setProperty("text-decoration-color", "var(--color-red)", "important");
+    span.style.setProperty("text-decoration-thickness", "1.5px", "important");
+    span.style.setProperty("text-underline-offset", "2px", "important");
+    span.querySelectorAll(".def-decoration, .cm-underline").forEach((child) => {
+      child.style.setProperty("text-decoration", "none", "important");
+    });
+  });
+  __ndw_confinePopovers();
+}
+
+function __ndw_dictionaryLinkURL(word) {
+  return `https://note-definitions.invalid/term?word=${encodeURIComponent(word)}`;
+}
+
+function __ndw_dictionaryMarker(word) {
+  return `{{nd:${word}}}`;
+}
+
+function __ndw_renderNdMarkers(root) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent || parent.closest("pre, code, a, .ndw-manual-link")) return NodeFilter.FILTER_REJECT;
+      return /\{\{nd:[^{}\r\n]{1,120}\}\}/u.test(node.nodeValue || "") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    const text = node.nodeValue || "";
+    const re = /\{\{nd:([^{}\r\n]{1,120})\}\}/gu;
+    let match;
+    let last = 0;
+    let fragment = null;
+    while ((match = re.exec(text))) {
+      if (!fragment) fragment = document.createDocumentFragment();
+      if (match.index > last) fragment.appendChild(document.createTextNode(text.slice(last, match.index)));
+      const span = document.createElement("span");
+      span.className = "ndw-manual-link";
+      span.dataset.ndwWord = match[1];
+      span.textContent = match[1];
+      fragment.appendChild(span);
+      last = match.index + match[0].length;
+    }
+    if (fragment) {
+      if (last < text.length) fragment.appendChild(document.createTextNode(text.slice(last)));
+      node.replaceWith(fragment);
+    }
+  }
+}
+
+async function __ndw_insertDictionaryLink(app, editor) {
+  if (!editor) return;
+  const selected = String(editor.getSelection() || "").trim();
+  const cursor = editor.getCursor();
+  if (!selected) {
+    const atCursor = __ndw_wordAtCursor(editor);
+    new __NdwDictionaryLinkSearchModal(app, editor, cursor, atCursor.word, atCursor).open();
+    return;
+  }
+  const entry = await window.__ndwLookupIndexedDefinition?.(selected);
+  if (!entry) {
+    const from = editor.getCursor("from");
+    const to = editor.getCursor("to");
+    new __NdwDictionaryLinkSearchModal(app, editor, cursor, selected, null, { from, to }).open();
+    return;
+  }
+  editor.replaceSelection(__ndw_dictionaryMarker(selected));
+  new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${entry.word}}}`);
+}
+
+class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
+  constructor(app, editor, cursor, initialQuery = "", cursorWord = null, replaceRange = null) {
+    super(app);
+    this.editor = editor;
+    this.cursor = cursor;
+    this.initialQuery = String(initialQuery || "").trim();
+    this.cursorWord = cursorWord;
+    this.replaceRange = replaceRange;
+    this.searchTimer = null;
+    this.queryToken = 0;
+    this.buttons = [];
+  }
+
+  onOpen() {
+    this.modalEl.addClass("ndw-dict-link-modal");
+    this.titleEl.setText("插入词典链接");
+    const wrap = this.contentEl.createDiv({ cls: "ndw-dict-link-search-wrap" });
+    this.input = wrap.createEl("input", {
+      type: "search",
+      cls: "ndw-dict-link-search",
+      attr: { placeholder: "搜索词条名或别名", "aria-label": "搜索词典词条" }
+    });
+    this.resultEl = this.contentEl.createDiv({ cls: "ndw-dict-link-results" });
+    this.statusEl = this.contentEl.createDiv({ cls: "ndw-hint" });
+    this.input.addEventListener("input", () => {
+      if (this.searchTimer) window.clearTimeout(this.searchTimer);
+      this.searchTimer = window.setTimeout(() => void this.search(this.input.value), 120);
+    });
+    this.input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        this.buttons[0]?.focus();
+      }
+    });
+    this.input.value = this.initialQuery;
+    void this.search(this.initialQuery);
+    window.setTimeout(() => {
+      this.input.focus();
+      this.input.select();
+    }, 0);
+  }
+
+  async ensureIndex() {
+    const app = window.NoteDefinition?.app;
+    if (!app) return null;
+    const idx = window.__ndwSharedTermIndex || (window.__ndwSharedTermIndex = new window.__NdwTermIndex(app));
+    if (!idx.__ready) {
+      const folder = String(window.NoteDefinition?.settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u, "");
+      idx.__ready = idx.build(folder).catch((error) => {
+        console.warn("[note-definitions] dictionary link search index failed", error);
+        idx.__ready = null;
+        return null;
+      });
+    }
+    await idx.__ready;
+    return idx;
+  }
+
+  async search(query) {
+    const token = ++this.queryToken;
+    this.statusEl.setText("搜索中…");
+    try {
+      const idx = await this.ensureIndex();
+      if (!idx) throw new Error("索引不可用");
+      let rows = query.trim() ? await idx.query({ q: query.trim(), limit: 60 }) : await idx.query({ limit: 60 });
+      if (!rows.length && query.trim().length > 1) {
+        const text = query.trim();
+        for (let length = text.length - 1; length >= 1 && !rows.length; length--) {
+          rows = await idx.query({ q: text.slice(0, length), limit: 60 });
+        }
+      }
+      if (token !== this.queryToken) return;
+      this.renderResults(rows, rows.length && query.trim() ? "相近词条" : "");
+    } catch (error) {
+      if (token !== this.queryToken) return;
+      this.resultEl.empty();
+      this.statusEl.setText(String(error?.message || error));
+    }
+  }
+
+  renderResults(rows, label = "") {
+    this.resultEl.empty();
+    this.buttons = [];
+    if (!rows.length) {
+      this.statusEl.setText(this.input.value.trim() ? "没有匹配词条" : "输入关键词搜索词典");
+      return;
+    }
+    this.statusEl.setText(`${label ? label + "：" : ""}共 ${rows.length} 条，点击插入`);
+    for (const row of rows) {
+      const button = this.resultEl.createEl("button", { cls: "ndw-dict-link-row", attr: { type: "button" } });
+      button.createSpan({ cls: "ndw-dict-link-word", text: row.word });
+      if (row.aliases?.length) button.createSpan({ cls: "ndw-dict-link-aliases", text: row.aliases.join("、") });
+      const preview = String(row.definition || "").replace(/\s+/g, " ").trim().slice(0, 90);
+      if (preview) button.createSpan({ cls: "ndw-dict-link-preview", text: preview });
+      button.addEventListener("click", () => this.insert(row));
+      button.addEventListener("keydown", (event) => {
+        const index = this.buttons.indexOf(button);
+        if (event.key === "ArrowDown") { event.preventDefault(); this.buttons[index + 1]?.focus(); }
+        else if (event.key === "ArrowUp") { event.preventDefault(); if (index > 0) this.buttons[index - 1].focus(); else this.input.focus(); }
+        else if (event.key === "Enter") { event.preventDefault(); this.insert(row); }
+      });
+      this.buttons.push(button);
+    }
+  }
+
+  insert(row) {
+    const markdown = __ndw_dictionaryMarker(String(row.word || ""));
+    if (this.replaceRange) this.editor.replaceRange(markdown, this.replaceRange.from, this.replaceRange.to);
+    else {
+      const sameAsCursorWord = this.cursorWord?.word && __ndw_norm(this.cursorWord.word) === __ndw_norm(row.word);
+      if (sameAsCursorWord) this.editor.replaceRange(markdown, this.cursorWord.from, this.cursorWord.to);
+      else this.editor.replaceRange(markdown, this.cursor);
+    }
+    this.close();
+    new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${row.word}}}`);
+  }
+
+  onClose() {
+    if (this.searchTimer) window.clearTimeout(this.searchTimer);
+    this.searchTimer = null;
+  }
+}
+
+function __ndw_showDictionaryPopover(app, entry, anchorElement) {
+  const popover = globalThis.__ndwGetDefinitionPopover?.();
+  if (popover && anchorElement?.isConnected) {
+    const file = app.vault.getAbstractFileByPath(entry.filePath || "") || { path: entry.filePath || entry.word, basename: String(entry.filePath || entry.word).split("/").pop() };
+    try {
+      popover.openAtCoords({
+        key: entry.key || entry.word,
+        word: entry.word,
+        aliases: entry.aliases || [],
+        definition: entry.definition || "",
+        file,
+        linkText: entry.filePath || entry.word
+      }, anchorElement.getBoundingClientRect(), document, null);
+      const popoverEl = document.querySelector(".definition-popover");
+      const anchorPane = anchorElement.closest(".workspace-leaf-content") || anchorElement.closest(".workspace-leaf");
+      if (popoverEl && anchorPane) __ndwPopoverPanes.set(popoverEl, anchorPane);
+      window.setTimeout(__ndw_confinePopovers, 0);
+      window.setTimeout(__ndw_confinePopovers, 80);
+      return true;
+    } catch (error) {
+      console.warn("[note-definitions] dictionary link popover failed", error);
+    }
+  }
+  new __NdwTermDetailModal(app, entry, app.workspace.activeLeaf).open();
+  return false;
+}
+
+async function __ndw_openDictionaryProtocol(app, params) {
+  const word = String(params?.word || "").trim();
+  if (!word) return;
+  const entry = await window.__ndwLookupIndexedDefinition?.(word);
+  if (!entry) {
+    new __ndw_obsidian.Notice(`词典中没有找到“${word}”。`);
+    return;
+  }
+  new __NdwTermDetailModal(app, entry, app.workspace.activeLeaf).open();
+}
+
 (() => {
   const PluginClass = module.exports?.default;
   if (!PluginClass || PluginClass.__wereadEntryPatched) return;
@@ -21684,12 +22106,105 @@ function __ndw_installEncyclopediaButton(app) {
   PluginClass.prototype.onload = async function () {
     await originalOnload.apply(this, arguments);
     window.__ndwCardStateApp = this.app;
+    this.addCommand({
+      id: "insert-dictionary-link",
+      name: "插入ND链接",
+      icon: "book-open",
+      editorCallback: (editor) => void __ndw_insertDictionaryLink(this.app, editor)
+    });
+    this.addCommand({
+      id: "convert-selection-to-dictionary-link",
+      name: "将选中词汇转为ND链接",
+      icon: "book-open",
+      editorCallback: (editor) => void __ndw_insertDictionaryLink(this.app, editor)
+    });
+    if (typeof this.registerObsidianProtocolHandler === "function") {
+      this.registerObsidianProtocolHandler("note-definitions", (params) => {
+        void __ndw_openDictionaryProtocol(this.app, params);
+      });
+    }
+    this.registerEvent(this.app.workspace.on("editor-menu", (menu, editor) => {
+      menu.addItem((item) => {
+        item.setTitle("插入ND链接").setIcon("book-open").onClick(() => {
+          void __ndw_insertDictionaryLink(this.app, editor);
+        });
+      });
+    }));
+    this.registerMarkdownPostProcessor((el) => {
+      __ndw_renderNdMarkers(el);
+      el.querySelectorAll('a[href^="https://note-definitions.invalid/"], a[href^="obsidian://note-definitions"]').forEach((anchor) => {
+        anchor.classList.add("ndw-manual-link");
+        anchor.classList.remove("external-link");
+        anchor.removeAttribute("target");
+        anchor.querySelectorAll(".external-link-icon, svg").forEach((icon) => icon.remove());
+        anchor.querySelectorAll(".def-decoration").forEach((span) => {
+          span.classList.remove("def-decoration");
+          span.removeAttribute("def");
+        });
+      });
+      window.setTimeout(__ndw_styleManualLinks, 0);
+    });
+    let manualStyleScheduled = false;
+    const scheduleManualStyle = () => {
+      if (manualStyleScheduled) return;
+      manualStyleScheduled = true;
+      window.setTimeout(() => {
+        manualStyleScheduled = false;
+        __ndw_styleManualLinks();
+      }, 40);
+    };
+    if (typeof MutationObserver !== "undefined") {
+      const manualStyleObserver = new MutationObserver(scheduleManualStyle);
+      manualStyleObserver.observe(document.body, { childList: true, subtree: true });
+      this.register(() => manualStyleObserver.disconnect());
+    }
+    this.registerDomEvent(document, "pointerdown", (event) => {
+      __ndw_closePopoverOutside(event);
+    }, true);
+    this.registerDomEvent(document, "pointerdown", (event) => {
+      if (event.pointerType !== "mouse" || event.button !== 0) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const manual = target.closest(".ndw-manual-link");
+      if (!manual) return;
+      event.preventDefault();
+      event.stopPropagation();
+      __ndw_openManualWord(this.app, manual.getAttribute("data-ndw-word") || "", manual);
+    }, true);
+    this.registerDomEvent(document, "click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const manual = target.closest(".ndw-manual-link");
+      if (manual) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (Date.now() - __ndwManualOpenedAt < 500) return;
+        __ndw_openManualWord(this.app, manual.getAttribute("data-ndw-word") || "", manual);
+        return;
+      }
+      const anchor = target.closest('a[href^="obsidian://note-definitions"], a[href^="https://note-definitions.invalid/"]');
+      if (!anchor) return;
+      event.preventDefault();
+      event.stopPropagation();
+      let word = "";
+      try {
+        const href = anchor.getAttribute("href") || "";
+        if (href.startsWith("https://note-definitions.invalid/")) word = new URL(href).searchParams.get("word") || "";
+      } catch {}
+      if (!word) return;
+      void (async () => {
+        const entry = await window.__ndwLookupIndexedDefinition?.(word);
+        if (entry) __ndw_showDictionaryPopover(this.app, entry, anchor);
+        else new __ndw_obsidian.Notice(`词典中没有找到“${word}”。`);
+      })();
+    }, true);
     const flushCardState = () => __ndw_flushCardState();
     this.registerDomEvent(window, "beforeunload", flushCardState);
     this.registerDomEvent(document, "visibilitychange", () => {
       if (document.visibilityState === "hidden") flushCardState();
     });
     void __ndw_loadCardState(this.app);
+    if (globalThis.__ndwManualLinkExtension) this.registerEditorExtension(globalThis.__ndwManualLinkExtension);
     this.registerView("ndw-weread-view", (leaf) => new __NdwWeReadView(leaf, this));
     this.registerView("ndw-all-terms", (leaf) => new __NdwAllTermsView(leaf, this));
     this.registerView("ndw-concept-cards", (leaf) => new __NdwConceptCardsView(leaf, this));
@@ -21762,6 +22277,13 @@ function __ndw_installEncyclopediaButton(app) {
       editorCallback: (editor, view) => __ndw_smearFromEditor(this.app, this, editor, view)
     });
     window.setTimeout(() => __ndw_installMobileToolbarCommand(this.app, `${this.manifest.id}:smear-selected-text`), 800);
+    const installNdToolbar = () => __ndw_installMobileToolbarCommand(this.app, `${this.manifest.id}:insert-dictionary-link`);
+    window.setTimeout(installNdToolbar, 900);
+    this.app.workspace.onLayoutReady(() => {
+      installNdToolbar();
+      window.setTimeout(installNdToolbar, 1200);
+      window.setTimeout(installNdToolbar, 3000);
+    });
     const syncMobileBottom = () => __ndw_syncMobileActionBottom();
     window.visualViewport?.addEventListener("resize", syncMobileBottom);
     window.visualViewport?.addEventListener("scroll", syncMobileBottom);
