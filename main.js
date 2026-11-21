@@ -20194,6 +20194,7 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     const entry = this.entries[this.index];
     if (!entry) return;
     __ndw_recordReviewEvent(entry.word, type);
+    new __ndw_obsidian.Notice(type === "familiar" ? `已标记为熟悉：${entry.word}` : `已标记为不熟悉：${entry.word}`, 1600);
     this.move(1);
   }
 

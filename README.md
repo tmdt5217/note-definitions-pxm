@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.33
+# note-definitions_PXM 0.39.34
 
-- 概念卡片左右滑动评分改为文档级 pointerup 兜底，避免手指移出卡片后丢失手势。
+- 左划/右划或点击“熟悉/不熟悉”后显示评分提示。
