@@ -21978,6 +21978,62 @@ class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
       this.input.focus();
       this.input.select();
     }, 0);
+    this.setupMobileLayout();
+  }
+
+  setupMobileLayout() {
+    if (!__ndw_obsidian.Platform?.isMobile) return;
+    const modal = this.modalEl;
+    modal.addClass("ndw-dict-link-mobile");
+    const apply = () => {
+      if (!modal.isConnected) return;
+      const vv = window.visualViewport;
+      const viewportBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      let inset = Math.max(0, window.innerHeight - viewportBottom);
+      const focused = document.activeElement === this.input || this.contentEl.contains(document.activeElement);
+      if (inset < 80 && focused) inset = Math.round(window.innerHeight * 0.37);
+      modal.style.setProperty("position", "fixed", "important");
+      modal.style.setProperty("top", "46px", "important");
+      modal.style.setProperty("bottom", `${inset + 8}px`, "important");
+      modal.style.setProperty("left", "8px", "important");
+      modal.style.setProperty("right", "8px", "important");
+      modal.style.setProperty("width", "auto", "important");
+      modal.style.setProperty("height", "auto", "important");
+      modal.style.setProperty("max-width", "none", "important");
+      modal.style.setProperty("max-height", "none", "important");
+      modal.style.setProperty("margin", "0", "important");
+      modal.style.setProperty("transform", "none", "important");
+      modal.style.setProperty("display", "flex", "important");
+      modal.style.setProperty("flex-direction", "column", "important");
+      this.contentEl.style.setProperty("display", "flex", "important");
+      this.contentEl.style.setProperty("flex-direction", "column", "important");
+      this.contentEl.style.setProperty("min-height", "0", "important");
+      this.contentEl.style.setProperty("overflow", "hidden", "important");
+      this.resultEl.style.setProperty("flex", "1", "important");
+      this.resultEl.style.setProperty("min-height", "0", "important");
+      this.resultEl.style.setProperty("max-height", "none", "important");
+    };
+    this._mobileApply = apply;
+    this._mobileListeners = [];
+    const listen = (target, type, fn) => {
+      target?.addEventListener?.(type, fn);
+      this._mobileListeners.push([target, type, fn]);
+    };
+    listen(window, "resize", apply);
+    listen(window.visualViewport, "resize", apply);
+    listen(window.visualViewport, "scroll", apply);
+    listen(this.input, "focus", apply);
+    listen(this.input, "blur", () => window.setTimeout(apply, 60));
+    apply();
+    window.setTimeout(apply, 100);
+    window.setTimeout(apply, 350);
+    window.setTimeout(apply, 700);
+  }
+
+  clearMobileLayout() {
+    for (const [target, type, fn] of this._mobileListeners || []) target?.removeEventListener?.(type, fn);
+    this._mobileListeners = [];
+    this._mobileApply = null;
   }
 
   async ensureIndex() {
@@ -22058,6 +22114,7 @@ class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
   onClose() {
     if (this.searchTimer) window.clearTimeout(this.searchTimer);
     this.searchTimer = null;
+    this.clearMobileLayout();
   }
 }
 

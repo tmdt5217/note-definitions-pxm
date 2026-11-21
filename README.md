@@ -1,4 +1,4 @@
-# note-definitions_PXM 0.39.29
+# note-definitions_PXM 0.39.30
 
-- “Add definition”统一改名为“增加ND词条”。
-- 右键菜单、命令面板和移动端菜单名称一致。
+- 手机端“插入词典链接”搜索框避开屏幕键盘。
+- 结果区可滚动，键盘关闭后自动展开。
