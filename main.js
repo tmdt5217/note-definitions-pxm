@@ -21963,7 +21963,7 @@ async function __ndw_insertDictionaryLink(app, editor) {
   const cursor = editor.getCursor();
   if (!selected) {
     const atCursor = __ndw_wordAtCursor(editor);
-    new __NdwDictionaryLinkSearchModal(app, editor, cursor, atCursor.word, atCursor).open();
+    new __NdwDictionaryLinkSearchModal(app, editor, cursor, "", atCursor).open();
     return;
   }
   const entry = await window.__ndwLookupIndexedDefinition?.(selected);
