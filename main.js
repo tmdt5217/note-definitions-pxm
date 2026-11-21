@@ -7369,7 +7369,7 @@ ${issues.join("\n")}`);
         });
         this.addCommand({
           id: "add-definition",
-          name: "Add definition",
+          name: "增加ND词条",
           callback: () => {
             const view = this.app.workspace.getActiveViewOfType(import_obsidian112.MarkdownView);
             const selectedText = view ? view.editor.getSelection() : "";
@@ -7378,7 +7378,7 @@ ${issues.join("\n")}`);
         });
         this.addCommand({
           id: "add-def-context",
-          name: "Add definition context",
+          name: "增加ND词条（当前笔记）",
           callback: () => {
             const activeFile = this.app.workspace.getActiveFile();
             if (!activeFile) {
@@ -7549,7 +7549,7 @@ ${issues.join("\n")}`);
             }
             const selectedText = editor.getSelection();
             menu.addItem((item) => {
-              item.setTitle(import_obsidian112.Platform.isMobile ? "\u6DFB\u52A0\u8BCD\u6761" : "Add definition");
+              item.setTitle("增加ND词条");
               item.setIcon("plus").onClick(() => {
                 openAddDefinitionInTab(this.app, selectedText);
               });
