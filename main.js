@@ -22664,6 +22664,22 @@ window.__NdwTermIndex = class NdTermIndex {
         for(const v of vals){if(!seen.has(v.key)){seen.add(v.key);out.push(v);}}
       }
       await done;
+      if (out.length === 0 || n.length === 1) {
+        const tx2=db.transaction(TERMS,"readonly"), done2=txDone(tx2), store2=tx2.objectStore(TERMS);
+        await new Promise((res,rej)=>{
+          const r=store2.index("sortKey").openCursor();
+          r.onerror=()=>rej(r.error);
+          r.onsuccess=()=>{
+            const cur=r.result;
+            if(!cur||out.length>=wanted){res();return;}
+            const v=cur.value;
+            const hay=`${v.word||""} ${(v.aliases||[]).join(" ")}`.toLowerCase();
+            if(hay.includes(n)&&!seen.has(v.key)){seen.add(v.key);out.push(v);}
+            cur.continue();
+          };
+        });
+        await done2;
+      }
       out.sort((a,b)=>a.word.localeCompare(b.word,"zh"));
       return out.slice(offset,offset+limit);
     }
