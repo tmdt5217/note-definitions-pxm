@@ -20071,6 +20071,12 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     this.cardEl.addEventListener("pointermove", (event) => this.onPointerMove(event));
     this.cardEl.addEventListener("pointerup", (event) => this.onPointerUp(event));
     this.cardEl.addEventListener("pointercancel", () => this.resetTransform());
+    this.documentPointerMove = (event) => this.onPointerMove(event);
+    this.documentPointerUp = (event) => this.onPointerUp(event);
+    this.documentPointerCancel = () => { this.pointerStart = null; this.scrollTarget = null; this.resetTransform(); };
+    document.addEventListener("pointermove", this.documentPointerMove, true);
+    document.addEventListener("pointerup", this.documentPointerUp, true);
+    document.addEventListener("pointercancel", this.documentPointerCancel, true);
     this.contentEl.createDiv({ cls: "ndw-review-hint", text: "上滑下一条 · 下滑上一条 · 左滑不熟悉 · 右滑熟悉" });
     const actions = this.contentEl.createDiv({ cls: "ndw-review-actions" });
     const prev = actions.createEl("button", { text: "上一条" });
@@ -20127,6 +20133,12 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
   }
 
   onClose() {
+    if (this.documentPointerMove) document.removeEventListener("pointermove", this.documentPointerMove, true);
+    if (this.documentPointerUp) document.removeEventListener("pointerup", this.documentPointerUp, true);
+    if (this.documentPointerCancel) document.removeEventListener("pointercancel", this.documentPointerCancel, true);
+    this.documentPointerMove = null;
+    this.documentPointerUp = null;
+    this.documentPointerCancel = null;
     this.backdropEl?.remove();
     this.backdropEl = null;
     if (this.leafChangeRef) {
@@ -20463,6 +20475,12 @@ class __NdwCardReviewSettingsModal extends __ndw_obsidian.Modal {
   }
 
   onClose() {
+    if (this.documentPointerMove) document.removeEventListener("pointermove", this.documentPointerMove, true);
+    if (this.documentPointerUp) document.removeEventListener("pointerup", this.documentPointerUp, true);
+    if (this.documentPointerCancel) document.removeEventListener("pointercancel", this.documentPointerCancel, true);
+    this.documentPointerMove = null;
+    this.documentPointerUp = null;
+    this.documentPointerCancel = null;
     this.backdropEl?.remove();
     this.backdropEl = null;
     if (this.leafChangeRef) {

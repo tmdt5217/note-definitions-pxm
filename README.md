@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.32
+# note-definitions_PXM 0.39.33
 
-- 增加ND词条时检查完整词库，已有词条不再允许重复添加。
+- 概念卡片左右滑动评分改为文档级 pointerup 兜底，避免手指移出卡片后丢失手势。
