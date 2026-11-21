@@ -4352,6 +4352,11 @@ ${conflictLines}
         const word = phraseText.value.trim();
         const wordKey = word.toLowerCase();
         const aliases = aliasText.value ? aliasText.value.split(",").map((alias) => alias.trim()).filter((a) => a) : [];
+        const indexedExisting = await window.__ndwLookupIndexedDefinition?.(word);
+        if (indexedExisting) {
+          new import_obsidian92.Notice(`词条 "${indexedExisting.word}" 已存在，未重复添加。`, 5000);
+          return;
+        }
         const existingDef = defManager.get(wordKey);
         if (existingDef) {
           new import_obsidian92.Notice(isMobile ? `\u8BCD\u6761 "${word}" \u5DF2\u5B58\u5728` : `Definition "${word}" already exists`);
@@ -5034,6 +5039,14 @@ ${issues.join("\n")}`);
       }
     };
     async function openAddDefinitionInTab(app, text, originLeaf) {
+      const seedWord = String(text || "").trim();
+      if (seedWord) {
+        const existing = await window.__ndwLookupIndexedDefinition?.(seedWord);
+        if (existing) {
+          new import_obsidian112.Notice(`词条 "${existing.word}" 已存在，未重复添加。`, 5000);
+          return;
+        }
+      }
       const activeFile = app.workspace.getActiveFile();
       const leaf = app.workspace.getLeaf("tab");
       await leaf.setViewState({
