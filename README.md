@@ -1,5 +1,4 @@
-# note-definitions_PXM 0.39.26
+# note-definitions_PXM 0.39.27
 
-- Term-detail modal supports swipe up/down to switch terms from term management.
-- Loads more terms when reaching the end of the loaded list.
-- Long definitions scroll before the swipe switches terms.
+- Concept-card swipe no longer animates the card.
+- Long definitions scroll on the first swipe; switching only happens on the next swipe at the boundary.

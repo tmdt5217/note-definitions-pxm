@@ -20111,6 +20111,8 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     const def = event.target.closest?.(".ndw-review-def");
     this.scrollTarget = def && def.scrollHeight > def.clientHeight + 2 ? def : null;
     this.scrollStart = this.scrollTarget?.scrollTop || 0;
+    this.scrollAtTop = this.scrollTarget ? this.scrollTarget.scrollTop <= 0 : false;
+    this.scrollAtBottom = this.scrollTarget ? this.scrollTarget.scrollTop + this.scrollTarget.clientHeight >= this.scrollTarget.scrollHeight - 1 : false;
     this.pointerStart = { x: event.clientX, y: event.clientY, id: event.pointerId };
     try { this.cardEl.setPointerCapture(event.pointerId); } catch {}
   }
@@ -20121,12 +20123,8 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     const dy = event.clientY - this.pointerStart.y;
     if (this.scrollTarget && Math.abs(dy) > Math.abs(dx)) {
       this.scrollTarget.scrollTop = this.scrollStart - dy;
-      this.resetTransform();
       event.preventDefault?.();
-      return;
     }
-    this.cardEl.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.02}deg)`;
-    this.cardEl.style.opacity = String(Math.max(0.55, 1 - (Math.abs(dx) + Math.abs(dy)) / 500));
   }
 
   onPointerUp(event) {
@@ -20134,8 +20132,12 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     const dx = event.clientX - this.pointerStart.x;
     const dy = event.clientY - this.pointerStart.y;
     const def = this.scrollTarget;
+    const startedAtTop = this.scrollAtTop;
+    const startedAtBottom = this.scrollAtBottom;
     this.pointerStart = null;
     this.scrollTarget = null;
+    this.scrollAtTop = false;
+    this.scrollAtBottom = false;
     this.resetTransform();
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 60) {
       this.rate(dx > 0 ? "familiar" : "unfamiliar");
@@ -20143,10 +20145,8 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     }
     if (Math.abs(dy) <= 60) return;
     if (def) {
-      const atTop = def.scrollTop <= 0;
-      const atBottom = def.scrollTop + def.clientHeight >= def.scrollHeight - 1;
-      if (dy > 60 && atTop) this.move(-1);
-      else if (dy < -60 && atBottom) this.move(1);
+      if (dy > 60 && startedAtTop) this.move(-1);
+      else if (dy < -60 && startedAtBottom) this.move(1);
       return;
     }
     this.move(dy < 0 ? 1 : -1);

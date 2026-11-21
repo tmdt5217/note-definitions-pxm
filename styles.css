@@ -3739,3 +3739,16 @@ body.is-mobile .ndw-ency-core {
   color: var(--text-faint);
   font-size: var(--font-ui-smaller);
 }
+
+/* Review uses the same native vertical scrolling as term management */
+.ndw-review-card,
+.ndw-review-def {
+  touch-action: pan-y !important;
+  overscroll-behavior: contain;
+}
+
+/* Keep pointer gestures available while scrolling the review definition */
+.ndw-review-card,
+.ndw-review-def {
+  touch-action: none !important;
+}
