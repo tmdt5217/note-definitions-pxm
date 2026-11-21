@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.37
+# note-definitions_PXM 0.39.38
 
-- 手机未选中文字时，插入词典链接搜索框不再自动填入光标所在句子。
+- iPad 上概念卡片和词条管理隐藏“退出”按钮；iPhone 保留。

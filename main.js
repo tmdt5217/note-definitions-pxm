@@ -19274,7 +19274,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     const headText = head.createDiv({ cls: "ndw-cards-title" });
     headText.createEl("h2", { text: "词条管理" });
     headText.createEl("p", { cls: "ndw-hint", text: "按创建时间倒序；≈ 表示时间来自文件创建/修改时间估算。近 N 天可勾选“含估算时间”。" });
-    if (__ndw_obsidian.Platform.isMobile) {
+    if (__ndw_obsidian.Platform.isMobile && !__ndw_isTabletLike()) {
       const exit = head.createEl("button", { text: "退出", cls: "ndw-cards-exit", attr: { "aria-label": "退出词条管理，返回百科全书搜索" } });
       exit.addEventListener("click", () => {
         const encyclopedia = this.app.workspace.getLeavesOfType("nd-encyclopedia")[0];
@@ -20689,7 +20689,7 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     const headActions = head.createDiv({ cls: "ndw-cards-head-actions" });
     const start = headActions.createEl("button", { text: "复习", cls: "ndw-cards-exit", attr: { "aria-label": "开始复习卡片" } });
     start.addEventListener("click", () => this.openDefaultReview(false));
-    if (__ndw_obsidian.Platform.isMobile) {
+    if (__ndw_obsidian.Platform.isMobile && !__ndw_isTabletLike()) {
       const exit = headActions.createEl("button", { text: "退出", cls: "ndw-cards-exit", attr: { "aria-label": "退出概念卡片，返回百科全书搜索" } });
       exit.addEventListener("click", () => {
         const encyclopedia = this.app.workspace.getLeavesOfType("nd-encyclopedia")[0];
