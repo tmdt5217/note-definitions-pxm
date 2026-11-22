@@ -22862,6 +22862,29 @@ function __ndw_cleanEmptyNdMarkers(editor) {
   return starts.length;
 }
 
+function __ndwWouldDeleteHiddenDelimiter(editor, key) {
+  if (!editor?.getCursor || !editor?.getLine) return false;
+  const selection = editor.getSelection?.() || "";
+  if (selection) return false;
+  const cursor = editor.getCursor();
+  const line = editor.getLine(cursor.line) || "";
+  if (!line.includes("{{nd:")) return false;
+  const before = line.slice(0, cursor.ch);
+  const after = line.slice(cursor.ch);
+  if (key === "Delete") {
+    if (!after.startsWith("}")) return false;
+    const open = before.lastIndexOf("{{nd:");
+    if (open < 0) return false;
+    return before.indexOf("}}", open) < 0;
+  }
+  if (key === "Backspace") {
+    if (!/\{\{nd:?$/.test(before)) return false;
+    const open = before.lastIndexOf("{{nd:");
+    return open >= 0 && before.indexOf("}}", open) < 0;
+  }
+  return false;
+}
+
 function __ndwSourceLinesForFile(file) {
   const settings = window.NoteDefinition?.settings;
   return new Set(
@@ -23580,6 +23603,16 @@ async function __ndw_openDictionaryProtocol(app, params) {
         new __ndw_obsidian.Notice(count ? "当前笔记的ND词条已刷新。" : "当前笔记没有已注册的ND词条。");
       }
     });
+    this.registerDomEvent(document, "keydown", (event) => {
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      const view = this.app.workspace.getActiveViewOfType?.(__ndw_obsidian.MarkdownView);
+      if (!view?.editor) return;
+      const sourceView = view.contentEl?.querySelector?.(".markdown-source-view");
+      if (sourceView?.classList.contains("is-source")) return;
+      if (!__ndwWouldDeleteHiddenDelimiter(view.editor, event.key)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
     this.registerDomEvent(document, "copy", (event) => __ndw_copyPlainLinkSelection(event), true);
     this.registerMarkdownPostProcessor((el) => {
       __ndw_renderNdMarkers(el);

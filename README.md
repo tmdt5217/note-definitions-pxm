@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.96
+# note-definitions_PXM 0.39.97
 
-- 删除源笔记 marker 时移除注册并清理引用；删除 shard 词条时清理引用；改名重复主词条会阻止；支持直接编辑 shard 的改名同步；收紧孤立 }} 清理；打开笔记不再逐个校验全部链接；改进缩写子串搜索。
+- 防止 Delete/Backspace 删除隐藏的 ND 分隔符，避免链接只掉红色虚线但文字不变。
