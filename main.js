@@ -1676,7 +1676,33 @@ var require_pxm_main = __commonJS({
     var manualNdMarker = import_view3.ViewPlugin.fromClass(NdLinkMarker, {
       decorations: (value) => value.decorations
     });
-    globalThis.__ndwManualLinkExtension = [manualLinkMarker, manualNdMarker];
+    const __ndwBlockHiddenDelimiter = (view, key) => {
+      try {
+        if (view.dom.closest(".markdown-source-view")?.classList.contains("is-source")) return false;
+        const sel = view.state.selection.main;
+        if (!sel.empty) return false;
+        const line = view.state.doc.lineAt(sel.head);
+        const before = view.state.sliceDoc(line.from, sel.head);
+        const after = view.state.sliceDoc(sel.head, line.to);
+        if (!before.includes("{{nd:")) return false;
+        if (key === "Delete") {
+          if (!after.startsWith("}")) return false;
+          const open = before.lastIndexOf("{{nd:");
+          return open >= 0 && before.indexOf("}}", open) < 0;
+        }
+        if (key === "Backspace") {
+          if (!/\{\{nd:?$/.test(before)) return false;
+          const open = before.lastIndexOf("{{nd:");
+          return open >= 0 && before.indexOf("}}", open) < 0;
+        }
+      } catch {}
+      return false;
+    };
+    const __ndwDeleteKeyGuard = import_state4.Prec.highest(import_view3.keymap.of([
+      { key: "Delete", run: (view) => __ndwBlockHiddenDelimiter(view, "Delete") },
+      { key: "Backspace", run: (view) => __ndwBlockHiddenDelimiter(view, "Backspace") }
+    ]));
+    globalThis.__ndwManualLinkExtension = [manualLinkMarker, manualNdMarker, __ndwDeleteKeyGuard];
     function getMarkedWordUnderCursor(editor) {
       const currWord = getWordByOffset(editor.posToOffset(editor.getCursor()));
       return normaliseWord(currWord);
