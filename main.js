@@ -867,6 +867,8 @@ var require_pxm_main = __commonJS({
     var DEFAULT_DEF_FOLDER = "Attachments_all/definition folder";
     var DEFAULT_SETTINGS2 = {
       highPerformanceMode: false,
+      manualLinkOnly: false,
+      manualLinkOnlyCoreFolder: "",
       coreDefFolder: "Attachments_all/core definitions",
       enableInReadingView: true,
       enableOnLinks: true,
@@ -937,6 +939,25 @@ var require_pxm_main = __commonJS({
             this.display();
           });
         });
+        new import_obsidian14.Setting(containerEl).setName("\u4EC5\u624B\u52A8\u94FE\u63A5\u6A21\u5F0F\uFF08\u5173\u95ED\u6838\u5FC3\u5E93\uFF09").setDesc("\u5F00\u542F\u540E\u6B63\u6587\u4E0D\u518D\u81EA\u52A8\u8BC6\u522B\u6838\u5FC3\u5E93\u8BCD\u6761\uFF0C\u4E5F\u4E0D\u518D\u81EA\u52A8\u8865\u5168\uFF1B\u624B\u52A8 {{nd:\u8BCD\u6761}} \u4ECD\u53EF\u68C0\u7D22\u539F\u6838\u5FC3\u5E93\u548C\u5916\u5E93\u3002\u6838\u5FC3\u5E93\u6570\u636E\u4FDD\u7559\uFF0C\u91CD\u542F Obsidian \u540E\u5B8C\u5168\u751F\u6548\u3002").addToggle((component) => {
+          component.setValue(this.settings.manualLinkOnly === true);
+          component.onChange(async (val) => {
+            this.settings.manualLinkOnly = val;
+            if (val) {
+              if (!this.settings.manualLinkOnlyCoreFolder) {
+                this.settings.manualLinkOnlyCoreFolder = this.settings.coreDefFolder || "Attachments_all/core definitions";
+              }
+              this.settings.coreDefFolder = "Attachments_all/.nd-core-disabled";
+            } else {
+              this.settings.coreDefFolder = this.settings.manualLinkOnlyCoreFolder || "Attachments_all/core definitions";
+            }
+            if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+            await this.saveCallback();
+            new import_obsidian14.Notice(val ? "\u5DF2\u5F00\u542F\u4EC5\u624B\u52A8\u94FE\u63A5\u6A21\u5F0F\uFF0C\u91CD\u542F Obsidian \u540E\u5B8C\u5168\u751F\u6548\u3002" : "\u5DF2\u5173\u95ED\u4EC5\u624B\u52A8\u94FE\u63A5\u6A21\u5F0F\uFF0C\u91CD\u542F Obsidian \u540E\u6062\u590D\u6838\u5FC3\u5E93\u3002", 6000);
+            this.display();
+          });
+        });
+        if (!this.settings.manualLinkOnly) {
         new import_obsidian14.Setting(containerEl).setName("\u6838\u5FC3\u5E93\u76EE\u5F55").setDesc("\u5B58\u653E 5000\u201310000 \u6761\u9AD8\u9891\u8BCD\u6761\u3002\u6838\u5FC3\u5E93\u4F7F\u7528\u5B8C\u6574\u7F16\u8F91\u5668\u529F\u80FD\uFF1B\u5176\u4F59\u8BCD\u6761\u4ECD\u5728\u5916\u5E93\u53EA\u4F9B\u641C\u7D22\u3002").addText((component) => {
           component.setValue(this.settings.coreDefFolder || "Attachments_all/core definitions");
           component.onChange(async (val) => {
@@ -945,6 +966,7 @@ var require_pxm_main = __commonJS({
             new import_obsidian14.Notice("\u6838\u5FC3\u5E93\u76EE\u5F55\u5C06\u5728\u91CD\u65B0\u542F\u52A8 Obsidian \u540E\u751F\u6548");
           });
         });
+        }
         new import_obsidian14.Setting(containerEl).setName("\u5728\u9605\u8BFB\u89C6\u56FE\u4E2D\u542F\u7528").setDesc(
           "\u5141\u8BB8\u5728\u9605\u8BFB\u89C6\u56FE\u4E2D\u663E\u793A\u5DF2\u5B9A\u4E49\u77ED\u8BED\u548C\u8BCD\u6761\u5F39\u7A97"
         ).addToggle((component) => {
@@ -1452,6 +1474,10 @@ var require_pxm_main = __commonJS({
       destroy() {
       }
       buildDecorations(view) {
+        if (window.NoteDefinition?.settings?.manualLinkOnly === true) {
+          markedPhrases = [];
+          return import_view3.Decoration.none;
+        }
         const builder = new import_state4.RangeSetBuilder();
         const phraseInfos = [];
         for (let { from, to } of view.visibleRanges) {
@@ -5885,7 +5911,7 @@ ${issues.join("\n")}`);
       if (force === void 0)
         force = false;
       const settings = getSettings2();
-      if (!force && settings && settings.enableAutocomplete === false) {
+      if (!force && settings && (settings.enableAutocomplete === false || settings.manualLinkOnly === true)) {
         removeAutocompleteContainer();
         return;
       }
@@ -22580,6 +22606,9 @@ function __ndw_coreFolder(){
   const value=String(window.NoteDefinition?.settings?.coreDefFolder || "Attachments_all/core definitions").trim().replace(/\/+$/u,"");
   return value || "Attachments_all/core definitions";
 }
+function __ndw_coreDisabled(){
+  return window.NoteDefinition?.settings?.manualLinkOnly === true;
+}
 function __ndw_coreShardPath(){ return `${__ndw_coreFolder()}/shards/core.md`; }
 async function __ndw_readCoreEntries(app){
   const path=__ndw_coreShardPath();
@@ -22636,6 +22665,7 @@ async function __ndw_lookupIndexedDefinition(word){
 }
 
 async function __ndw_demoteCoreWords(words){
+  if (__ndw_coreDisabled()) { new __ndw_obsidian.Notice("核心库已关闭；可在设置中关闭“仅手动链接模式”后再操作。"); return 0; }
   const app=window.NoteDefinition?.app;
   if(!app) return 0;
   const targets=new Set((words||[]).map(word=>String(word||"").trim().toLowerCase()).filter(Boolean));
@@ -22659,6 +22689,7 @@ async function __ndw_coreContains(entry){
 }
 
 async function __ndw_toggleCoreEntry(entry){
+  if (__ndw_coreDisabled()) { new __ndw_obsidian.Notice("核心库已关闭；可在设置中关闭“仅手动链接模式”后再操作。"); return false; }
   const app=window.NoteDefinition?.app;
   if(!app) return false;
   const target=String(entry?.word||"").trim().toLowerCase();
@@ -22694,6 +22725,7 @@ async function __ndw_mountCoreButton(parent, entry, options = {}){
 }
 
 async function __ndw_promoteCoreEntries(entries){
+  if (__ndw_coreDisabled()) { new __ndw_obsidian.Notice("核心库已关闭；可在设置中关闭“仅手动链接模式”后再操作。"); return 0; }
   const app=window.NoteDefinition?.app;
   if(!app) return 0;
   const existing=await __ndw_readCoreEntries(app);
@@ -22724,6 +22756,7 @@ async function __ndw_promoteCoreFirst(count=5000){
   return __ndw_promoteCoreEntries(rows);
 }
 async function __ndw_clearCore(){
+  if (__ndw_coreDisabled()) { new __ndw_obsidian.Notice("核心库已关闭；可在设置中关闭“仅手动链接模式”后再操作。"); return; }
   const app=window.NoteDefinition?.app;
   if(!app) return;
   try{await app.vault.adapter.remove(__ndw_coreShardPath());}catch{}
@@ -22781,8 +22814,9 @@ window.__NdwTermIndex = class NdTermIndex {
     await this.open(); this.folder=folder;
     this.__progress={phase:"start",at:Date.now()};
     const core=__ndw_coreFolder();
-    const roots=[folder,core].filter((value,index,array)=>value&&array.indexOf(value)===index);
-    const corePath=core;
+    const archivedCore=window.NoteDefinition?.settings?.manualLinkOnly===true ? String(window.NoteDefinition?.settings?.manualLinkOnlyCoreFolder||"").trim().replace(/\/+$/u,"") : "";
+    const roots=[folder,core,archivedCore].filter((value,index,array)=>value&&array.indexOf(value)===index);
+    const corePath=archivedCore||core;
     const files=this.app.vault.getMarkdownFiles().filter(f=>roots.some(root=>f.path===root||f.path.startsWith(root+"/")));
     const tierRank=(file)=>corePath&&(file.path===corePath||file.path.startsWith(corePath+"/"))?1:0;
     files.sort((a,b)=>tierRank(a)-tierRank(b));
