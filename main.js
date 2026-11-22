@@ -1613,9 +1613,13 @@ var require_pxm_main = __commonJS({
       toDOM() {
         const span = document.createElement("span");
         span.className = "ndw-manual-link";
+        if (this.bold) span.classList.add("ndw-manual-bold");
         span.setAttribute("data-ndw-word", this.word);
         span.textContent = this.word;
-        if (this.bold) span.style.setProperty("font-weight", "700", "important");
+        if (this.bold) {
+          span.style.setProperty("font-weight", "var(--bold-weight, 700)", "important");
+          span.style.setProperty("color", "var(--bold-color, var(--text-normal))", "important");
+        }
         return span;
       }
       ignoreEvent() {
@@ -22125,7 +22129,9 @@ function __ndw_styleManualLinks() {
     anchor.classList.remove("external-link");
     anchor.removeAttribute("target");
     anchor.dataset.ndwManualLink = "1";
-    anchor.style.setProperty("color", "var(--text-normal)", "important");
+    const anchorBold = anchor.classList.contains("ndw-manual-bold") || Boolean(anchor.closest("strong, b"));
+    if (anchorBold) anchor.classList.add("ndw-manual-bold");
+    anchor.style.setProperty("color", anchorBold ? "var(--bold-color, var(--text-normal))" : "var(--text-normal)", "important");
     anchor.style.setProperty("text-decoration-line", "underline", "important");
     anchor.style.setProperty("text-decoration-style", "dotted", "important");
     anchor.style.setProperty("text-decoration-color", "var(--color-red)", "important");
@@ -22149,7 +22155,10 @@ function __ndw_styleManualLinks() {
     const cmLink = span.closest(".cm-link");
     cmLink?.querySelectorAll(".external-link-icon, .svg-icon, svg").forEach((icon) => icon.remove());
     span.closest(".cm-line")?.querySelectorAll(".external-link-icon, .svg-icon, svg").forEach((icon) => icon.remove());
-    span.style.setProperty("color", "var(--text-normal)", "important");
+    const spanBold = span.classList.contains("ndw-manual-bold") || Boolean(span.closest("strong, b"));
+    if (spanBold) span.classList.add("ndw-manual-bold");
+    span.style.setProperty("color", spanBold ? "var(--bold-color, var(--text-normal))" : "var(--text-normal)", "important");
+    if (spanBold) span.style.setProperty("font-weight", "var(--bold-weight, 700)", "important");
     span.style.setProperty("text-decoration-line", "underline", "important");
     span.style.setProperty("text-decoration-style", "dotted", "important");
     span.style.setProperty("text-decoration-color", "var(--color-red)", "important");
@@ -22191,6 +22200,7 @@ function __ndw_renderNdMarkers(root) {
       if (match.index > last) fragment.appendChild(document.createTextNode(text.slice(last, match.index)));
       const span = document.createElement("span");
       span.className = "ndw-manual-link";
+      if (node.parentElement?.closest("strong, b")) span.classList.add("ndw-manual-bold");
       span.dataset.ndwWord = match[1];
       span.textContent = match[1];
       fragment.appendChild(span);

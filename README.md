@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.70
+# note-definitions_PXM 0.39.71
 
-- 注册/插入词条时识别并保留外层 **粗体** 标记，ND 组件按粗体显示，不再露出星号。
+- 粗体 ND 链接改用主题/Style Settings 的 --bold-color 和 --bold-weight，与其他粗体一致。
