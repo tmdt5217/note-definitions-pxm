@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.40.1
+# note-definitions_PXM 0.40.2
 
-- 光标在 ND 链接标记之后（视觉词尾）按 Delete/Backspace 也会删除最后一个可见字符，不再只碰隐藏括号。
+- 引用索引和引用替换不再写入 definition folder/core definitions 下的 shard 文件，避免 Definition shard changed before write 冲突。

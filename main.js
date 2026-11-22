@@ -22498,6 +22498,15 @@ let __ndwRefDbPromise = null;
 let __ndwRefBuildPromise = null;
 const __ndwRefKnownPaths = new Set();
 
+function __ndwIsDefinitionPath(path) {
+  const value = String(path || "").trim();
+  if (!value) return false;
+  const settings = window.NoteDefinition?.settings;
+  const def = String(settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u, "");
+  const core = String(settings?.coreDefFolder || "Attachments_all/core definitions").trim().replace(/\/+$/u, "");
+  return (def && (value === def || value.startsWith(`${def}/`))) || (core && (value === core || value.startsWith(`${core}/`)));
+}
+
 function __ndwRefWordsFromText(text) {
   const words = new Set();
   const re = /\{\{nd:([^{}\r\n]{1,120})\}\}/gu;
@@ -22562,6 +22571,7 @@ async function __ndwRemoveRefPath(path) {
 async function __ndwRefUpdateFromText(app, path, text, mtime = Date.now()) {
   if (!path) return;
   const db = await __ndwOpenRefDb();
+  if (__ndwIsDefinitionPath(path)) { await __ndwRefDelete(db, path); return; }
   const words = __ndwRefWordsFromText(text);
   if (!words.length) { await __ndwRefDelete(db, path); return; }
   await __ndwRefPut(db, { path, words, mtime: Number(mtime) || Date.now() });
@@ -22571,7 +22581,7 @@ async function __ndwEnsureRefIndex(app, { force = false } = {}) {
   if (__ndwRefBuildPromise && !force) return __ndwRefBuildPromise;
   __ndwRefBuildPromise = (async () => {
     const db = await __ndwOpenRefDb();
-    const files = app.vault.getMarkdownFiles();
+    const files = app.vault.getMarkdownFiles().filter((file) => !__ndwIsDefinitionPath(file.path));
     const live = new Set(files.map((file) => file.path));
     const tx = db.transaction(ND_REF_STORE, "readonly");
     const done = txDone(tx);
@@ -22625,7 +22635,7 @@ async function __ndwRefFilesForWords(app, words) {
         request.onerror = () => reject(request.error);
       });
       await done;
-      for (const row of rows) paths.add(row.path);
+      for (const row of rows) if (!__ndwIsDefinitionPath(row.path)) paths.add(row.path);
     }
     return [...paths];
   } catch (error) {
@@ -22648,6 +22658,7 @@ async function __ndw_replaceNdReferences(app, pairs) {
   let updatedFiles = 0;
   let processed = 0;
   for (const path of indexedPaths) {
+    if (__ndwIsDefinitionPath(path)) continue;
     if (++processed % 40 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
     const file = app.vault.getAbstractFileByPath(path);
     if (!file) { await __ndwRefUpdateFromText(app, path, "", 0); continue; }
@@ -22679,6 +22690,7 @@ async function __ndw_unwrapNdReferences(app, words) {
   if (paths === null) paths = app.vault.getMarkdownFiles().map((file) => file.path);
   let updated = 0;
   for (const path of paths) {
+    if (__ndwIsDefinitionPath(path)) continue;
     const file = app.vault.getAbstractFileByPath(path);
     if (!file) continue;
     let content = "";
@@ -22699,6 +22711,7 @@ async function __ndw_replaceNdReferencesFallback(app, unique) {
   let updatedFiles = 0;
   let processed = 0;
   for (const file of app.vault.getMarkdownFiles()) {
+    if (__ndwIsDefinitionPath(file.path)) continue;
     if (++processed % 40 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
     let content = "";
     try { content = await app.vault.cachedRead(file); } catch { continue; }
