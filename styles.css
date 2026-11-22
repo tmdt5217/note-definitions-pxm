@@ -3906,3 +3906,9 @@ a[data-ndw-manual-link] ~ .external-link-icon,
 .definition-popover {
   z-index: 10050 !important;
 }
+
+/* Settings section headings: darker than default muted gray */
+.ndw-settings-tab .setting-item-heading .setting-item-name,
+.ndw-settings-tab .setting-item-heading .setting-item-description {
+  color: var(--text-normal) !important;
+}

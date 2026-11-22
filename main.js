@@ -928,6 +928,7 @@ var require_pxm_main = __commonJS({
         var _a, _b, _c, _d, _e;
         let { containerEl } = this;
         containerEl.empty();
+        containerEl.addClass("ndw-settings-tab");
         new import_obsidian14.Setting(containerEl).setName("书籍搜索与微信读书").setHeading();
         const bookDirectorySettings = containerEl.createDiv();
         (_b = (_a = globalThis.__noteDefinitionsPXMScalability) == null ? void 0 : _a.mountBookSearchSettings) == null ? void 0 : _b.call(_a, bookDirectorySettings);
