@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.45
+# note-definitions_PXM 0.39.46
 
-- 关闭词条弹窗时阻止外部点击聚焦编辑器，不再调出键盘。
+- 弹窗关闭后增加焦点守卫，阻止后续 pointerup/click/focusin 重新聚焦编辑器并调出键盘。

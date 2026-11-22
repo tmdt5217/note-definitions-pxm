@@ -21819,6 +21819,7 @@ function __ndw_wordAtCursor(editor) {
 }
 
 let __ndwManualOpenedAt = 0;
+let __ndwDismissGuardUntil = 0;
 
 function __ndw_openManualWord(app, word, anchor) {
   if (!word) return;
@@ -21919,6 +21920,16 @@ function __ndw_blurEditorAfterPopover() {
   }
 }
 
+function __ndw_suppressAfterDismiss(event) {
+  if (Date.now() > __ndwDismissGuardUntil) return;
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  if (target.closest(".definition-popover, .ndw-manual-link, .def-decoration, .def-link-decoration")) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  __ndw_blurEditorAfterPopover();
+}
+
 function __ndw_closePopoverOutside(event) {
   const target = event.target;
   if (!(target instanceof Element)) return;
@@ -21929,6 +21940,7 @@ function __ndw_closePopoverOutside(event) {
     if (target === popover || target.classList.contains("definition-popover")) {
       event.preventDefault();
       event.stopImmediatePropagation();
+      __ndwDismissGuardUntil = Date.now() + 900;
       globalThis.__ndwGetDefinitionPopover?.()?.unmount?.();
       __ndw_blurEditorAfterPopover();
     }
@@ -21937,6 +21949,7 @@ function __ndw_closePopoverOutside(event) {
   if (target.closest(".ndw-manual-link") || target.closest(".def-decoration, .def-link-decoration")) return;
   event.preventDefault();
   event.stopImmediatePropagation();
+  __ndwDismissGuardUntil = Date.now() + 900;
   globalThis.__ndwGetDefinitionPopover?.()?.unmount?.();
   __ndw_blurEditorAfterPopover();
 }
@@ -22341,6 +22354,19 @@ async function __ndw_openDictionaryProtocol(app, params) {
     }, { capture: true, passive: false });
     this.registerDomEvent(document, "mousedown", (event) => {
       __ndw_closePopoverOutside(event);
+    }, true);
+    this.registerDomEvent(document, "pointerup", (event) => __ndw_suppressAfterDismiss(event), true);
+    this.registerDomEvent(document, "mouseup", (event) => __ndw_suppressAfterDismiss(event), true);
+    this.registerDomEvent(document, "touchend", (event) => __ndw_suppressAfterDismiss(event), { capture: true, passive: false });
+    this.registerDomEvent(document, "click", (event) => __ndw_suppressAfterDismiss(event), true);
+    this.registerDomEvent(document, "focusin", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (!document.querySelector(".definition-popover") && Date.now() > __ndwDismissGuardUntil) return;
+      if (target.closest(".definition-popover")) return;
+      if (!target.closest(".cm-editor, .markdown-source-view, input, textarea, [contenteditable=true], [contenteditable=plaintext-only]")) return;
+      event.stopImmediatePropagation();
+      __ndw_blurEditorAfterPopover();
     }, true);
     this.registerDomEvent(document, "pointerdown", (event) => {
       if (event.pointerType === "mouse" && event.button !== 0) return;
