@@ -21846,7 +21846,8 @@ function __ndw_alignPopoverAction(popover = document.querySelector(".definition-
 function __ndw_confinePopovers() {
   const app = window.NoteDefinition?.app;
   const activeLeaf = app?.workspace?.activeLeaf;
-  const activePane = activeLeaf?.view?.containerEl?.querySelector(".workspace-leaf-content") || activeLeaf?.view?.containerEl;
+  const activeContent = activeLeaf?.view?.contentEl;
+  const activePane = activeContent?.isConnected ? activeContent : activeLeaf?.view?.containerEl?.querySelector(".view-content") || activeLeaf?.view?.containerEl;
   const gap = 8;
   document.querySelectorAll(".definition-popover").forEach((popover) => {
     let pane = __ndwPopoverPanes.get(popover);
@@ -22273,12 +22274,13 @@ function __ndw_showDictionaryPopover(app, entry, anchorElement) {
         linkText: entry.filePath || entry.word
       }, anchorElement.getBoundingClientRect(), document, null);
       const popoverEl = document.querySelector(".definition-popover");
-      const anchorPane = anchorElement.closest(".workspace-leaf-content") || anchorElement.closest(".workspace-leaf");
+      const anchorPane = anchorElement.closest(".view-content, .markdown-source-view, .markdown-preview-view") || anchorElement.closest(".workspace-leaf-content") || anchorElement.closest(".workspace-leaf");
       if (popoverEl && anchorPane) __ndwPopoverPanes.set(popoverEl, anchorPane);
       if (popoverEl) __ndwPopoverAnchors.set(popoverEl, anchorElement);
       window.setTimeout(__ndw_confinePopovers, 0);
       window.setTimeout(__ndw_confinePopovers, 80);
       window.setTimeout(__ndw_confinePopovers, 300);
+      window.setTimeout(__ndw_confinePopovers, 700);
       return true;
     } catch (error) {
       console.warn("[note-definitions] dictionary link popover failed", error);

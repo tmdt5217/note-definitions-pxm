@@ -3901,3 +3901,8 @@ a[data-ndw-manual-link] ~ .external-link-icon,
 .definition-popover > h2 {
   padding-right: 44px;
 }
+
+/* Keep term popovers above tab headers and other pane chrome */
+.definition-popover {
+  z-index: 10050 !important;
+}
