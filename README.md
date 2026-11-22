@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.40.8
+# note-definitions_PXM 0.40.9
 
-- 停止启动时自动改写 shard 词条，避免保存时与后台清理竞争触发 Definition shard changed before write；清理键冲突改为手动命令。
+- 移除保存词条时自动修改其他 shard 的逻辑，避免与正在进行的写入产生 Definition shard changed before write。

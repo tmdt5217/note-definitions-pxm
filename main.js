@@ -22939,16 +22939,8 @@ function __ndw_installShardRenameSync(app) {
       if (oldWord && newWord && oldWord !== newWord) {
         const duplicate = await window.__ndwLookupIndexedDefinition?.(newWord);
         if (duplicate && __ndw_norm(duplicate.word) === __ndw_norm(newWord)) {
-          const isAliasOfSource = oldAliases.some((alias) => __ndw_norm(alias) === __ndw_norm(newWord));
-          const sameDefinition = sourceEntry && __ndw_norm(sourceEntry.definition) === __ndw_norm(duplicate.definition);
-          if (isAliasOfSource && sameDefinition) {
-            __ndwSkipShardDeleteUnwrap = true;
-            try { await this.delete({ path: duplicate.filePath, word: duplicate.word }); }
-            finally { __ndwSkipShardDeleteUnwrap = false; }
-          } else {
-            new __ndw_obsidian.Notice(`词条“${newWord}”已存在，改名失败。`, 6000);
-            throw new Error(`词条“${newWord}”已存在`);
-          }
+          new __ndw_obsidian.Notice(`词条“${newWord}”已存在，改名失败。`, 6000);
+          throw new Error(`词条“${newWord}”已存在`);
         }
       }
     } catch (error) {
@@ -23012,23 +23004,6 @@ function __ndw_installShardRenameSync(app) {
       return result;
     };
     writer.__ndwAddSnapshotPatched = true;
-  }
-  if (!writer.__ndwUpdateConflictPatched && typeof writer.update === "function") {
-    const originalUpdate = writer.update;
-    writer.update = async function(source, definition) {
-      try {
-        return await originalUpdate.call(this, source, definition);
-      } catch (error) {
-        const message = String(error?.message || "");
-        const match = /Definition key conflict: (?:title|alias) "([^"]+)"/u.exec(message);
-        if (!match) throw error;
-        const fixed = await __ndwRemoveConflictingAlias(app, match[1], source, originalUpdate.bind(this));
-        if (!fixed) throw error;
-        new __ndw_obsidian.Notice(`已移除其他词条中冲突的同义词“${match[1]}”。`, 5000);
-        return await originalUpdate.call(this, source, definition);
-      }
-    };
-    writer.__ndwUpdateConflictPatched = true;
   }
   return true;
 }
