@@ -12176,12 +12176,6 @@ var ShardedDefinitionWriter = class {
       throw new Error("The original definition location is required.");
     if (!candidate.word)
       throw new Error("A definition title is required.");
-    if (normalizeDefinitionKey(oldWord) !== normalizeDefinitionKey(candidate.word)) {
-      candidate.aliases = this.uniqueAliases(candidate.word, [
-        ...candidate.aliases,
-        oldWord
-      ]);
-    }
     for (let attempt = 1; attempt <= MAX_SHARD_WRITE_ATTEMPTS; attempt += 1) {
       try {
         return await this.renameOnce(source, candidate);
