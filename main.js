@@ -21633,6 +21633,11 @@ function __ndw_fixedOrigin(button) {
 }
 
 function __ndw_dockButtons(host) {
+  if (window.NoteDefinition?.settings?.manualLinkOnly === true) {
+    document.querySelectorAll(".ndw-ency-core").forEach((button) => {
+      button.style.setProperty("display", "none", "important");
+    });
+  }
   const activeView = window.NoteDefinition?.app?.workspace?.activeLeaf?.view;
   const activeEncyclopediaDefinition = activeView?.getViewType?.() === "nd-encyclopedia" && (activeView?._mode === "definition" || Boolean(activeView?._currentDef));
   if (activeEncyclopediaDefinition) {
@@ -21760,6 +21765,11 @@ function __ndw_installEncyclopediaButton(app) {
   let frame = 0;
   const ensure = () => {
     frame = 0;
+    if (window.NoteDefinition?.settings?.manualLinkOnly === true) {
+      document.querySelectorAll(".ndw-ency-core").forEach((button) => {
+        button.style.setProperty("display", "none", "important");
+      });
+    }
     const modalOpen = Boolean(document.querySelector(".modal-container, .modal"));
     document.querySelectorAll(".nd-definition-form").forEach((form) => {
       form.style.setProperty("padding-left", "16px", "important");
