@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.60
+# note-definitions_PXM 0.39.61
 
-- 仅手动链接模式下隐藏所有加入内库、移到外库及核心库操作按钮。
+- 强制隐藏核心库按钮，避免 hidden 属性被按钮样式覆盖。
