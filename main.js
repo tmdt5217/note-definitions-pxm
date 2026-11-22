@@ -23806,7 +23806,6 @@ async function __ndw_openDictionaryProtocol(app, params) {
       window.setTimeout(() => void __ndw_refreshAllNoteTerms(this.app), 1200);
       window.setTimeout(() => void __ndwEnsureRefIndex(this.app), 2500);
       window.setTimeout(() => void __ndwInitShardSnapshots(this.app), 3200);
-      window.setTimeout(() => void __ndwRepairDefinitionKeyConflicts(this.app), 6000);
     });
     this.addCommand({
       id: "refresh-note-terms",
