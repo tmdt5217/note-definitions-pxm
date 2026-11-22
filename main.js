@@ -23348,6 +23348,11 @@ function __ndw_chooseLinkText(entry, input) {
     .map((value) => String(value || "").trim())
     .filter(Boolean);
   if (candidates.some((value) => __ndw_norm(value) === target)) return typed;
+  const wordKey = __ndw_norm(entry?.word);
+  const displayKey = __ndw_norm(entry?.displayWord);
+  if ((wordKey && wordKey.includes(target)) || (displayKey && displayKey.includes(target))) {
+    return String(entry?.word || display || "").trim();
+  }
   const aliases = (Array.isArray(entry?.aliases) ? entry.aliases : [])
     .map((value) => String(value || "").trim())
     .filter((value) => value && __ndw_norm(value).includes(target));

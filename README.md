@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.41.0
+# note-definitions_PXM 0.41.1
 
-- 词条写入后 4 秒内暂停后台 shard 自动修复，避免连续两次保存时 repairMisplaced 与写入竞争触发 Definition shard changed before write。
+- 插入词条时，若输入匹配主词条，优先插入完整主词条；只有输入不匹配主词、但匹配同义词时才插入同义词。
