@@ -1702,7 +1702,23 @@ var require_pxm_main = __commonJS({
       { key: "Delete", run: (view) => __ndwBlockHiddenDelimiter(view, "Delete") },
       { key: "Backspace", run: (view) => __ndwBlockHiddenDelimiter(view, "Backspace") }
     ]));
-    globalThis.__ndwManualLinkExtension = [manualLinkMarker, manualNdMarker, __ndwDeleteKeyGuard];
+    const __ndwDeleteFilter = import_state4.EditorState.transactionFilter.of((tr) => {
+      if (!tr.docChanged) return tr;
+      let block = false;
+      try {
+        const oldDoc = tr.startState.doc;
+        tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
+          if (block || inserted.length) return;
+          const oldText = oldDoc.sliceString(fromA, toA);
+          if (!/^\}+$/u.test(oldText)) return;
+          const line = oldDoc.lineAt(fromA);
+          const before = oldDoc.sliceString(line.from, fromA);
+          if (before.includes("{{nd:") && !before.includes("}}")) block = true;
+        });
+      } catch {}
+      return block ? [] : tr;
+    });
+    globalThis.__ndwManualLinkExtension = [manualLinkMarker, manualNdMarker, __ndwDeleteKeyGuard, __ndwDeleteFilter];
     function getMarkedWordUnderCursor(editor) {
       const currWord = getWordByOffset(editor.posToOffset(editor.getCursor()));
       return normaliseWord(currWord);
