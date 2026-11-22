@@ -22729,6 +22729,7 @@ async function __ndw_replaceNdReferencesFallback(app, unique) {
 
 const __ndwShardSnapshots = new Map();
 const __ndwShardSnapshotTimers = new Map();
+let __ndwSkipShardDeleteUnwrap = false;
 
 function __ndwParseShardTerms(content) {
   const out = [];
@@ -22826,9 +22827,10 @@ function __ndw_installShardRenameSync(app) {
   const originalRename = writer.rename;
   writer.rename = async function(source, target) {
     let oldAliases = [];
+    let sourceEntry = null;
     try {
-      const existing = await window.__ndwLookupIndexedDefinition?.(source?.word);
-      oldAliases = Array.isArray(existing?.aliases) ? existing.aliases : [];
+      sourceEntry = await window.__ndwLookupIndexedDefinition?.(source?.word);
+      oldAliases = Array.isArray(sourceEntry?.aliases) ? sourceEntry.aliases : [];
     } catch {}
     try {
       const oldWord = String(source?.word || "").trim();
@@ -22836,8 +22838,16 @@ function __ndw_installShardRenameSync(app) {
       if (oldWord && newWord && oldWord !== newWord) {
         const duplicate = await window.__ndwLookupIndexedDefinition?.(newWord);
         if (duplicate && __ndw_norm(duplicate.word) === __ndw_norm(newWord)) {
-          new __ndw_obsidian.Notice(`词条“${newWord}”已存在，改名失败。`, 6000);
-          throw new Error(`词条“${newWord}”已存在`);
+          const isAliasOfSource = oldAliases.some((alias) => __ndw_norm(alias) === __ndw_norm(newWord));
+          const sameDefinition = sourceEntry && __ndw_norm(sourceEntry.definition) === __ndw_norm(duplicate.definition);
+          if (isAliasOfSource && sameDefinition) {
+            __ndwSkipShardDeleteUnwrap = true;
+            try { await this.delete({ path: duplicate.filePath, word: duplicate.word }); }
+            finally { __ndwSkipShardDeleteUnwrap = false; }
+          } else {
+            new __ndw_obsidian.Notice(`词条“${newWord}”已存在，改名失败。`, 6000);
+            throw new Error(`词条“${newWord}”已存在`);
+          }
         }
       }
     } catch (error) {
@@ -22878,6 +22888,7 @@ function __ndw_installShardRenameSync(app) {
       } catch {}
       const result = await originalDelete.call(this, source);
       try {
+        if (__ndwSkipShardDeleteUnwrap) return result;
         const words = [String(source?.word || "").trim(), ...aliases].filter(Boolean);
         const updated = await __ndw_unwrapNdReferences(app, words);
         if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
