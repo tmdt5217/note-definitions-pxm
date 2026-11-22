@@ -21809,7 +21809,7 @@ function __ndw_installEncyclopediaButton(app) {
         core.createSpan({ text: "加入内库" });
       }
       const currentDef = leafView?._currentDef;
-      const showingDefinition = Boolean(currentDef) || leafView?._mode === "definition";
+      const showingDefinition = Boolean(currentDef) || leafView?._mode === "definition" || Boolean(host.querySelector(".nd-ency-toolbar"));
       core.hidden = __ndw_coreDisabled() || !showingDefinition;
       if (__ndw_coreDisabled()) core.style.setProperty("display", "none", "important");
       else core.style.removeProperty("display");
