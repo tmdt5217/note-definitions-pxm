@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.92
+# note-definitions_PXM 0.39.93
 
-- 删除 ND marker 的一个收尾括号时立即清理残缺标记，不再等待 900ms 后才跳变。
+- 删除链接片段后残留的孤立 }} 也会立即清理，避免留下“哮喘}}”。

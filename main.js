@@ -22681,6 +22681,14 @@ function __ndwSourceLinesForFile(file) {
 function __ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines = new Set()) {
   if (!editor?.getLine || sourceLines.has(line)) return 0;
   let text = editor.getLine(line) || "";
+  if (!text.includes("{") && /\}[ \t]*$/u.test(text)) {
+    const match = /(\}\})[ \t]*$/u.exec(text) || /(\})[ \t]*$/u.exec(text);
+    if (match) {
+      const start = text.length - match[0].length;
+      editor.replaceRange("", { line, ch: start }, { line, ch: text.length });
+      return 1;
+    }
+  }
   let cursor = 0;
   let removed = 0;
   while (true) {
@@ -22745,7 +22753,8 @@ async function __ndw_cleanInvalidMarkersInEditor(app, editor, file) {
   for (let line = editor.lineCount() - 1; line >= 0; line -= 1) {
     if (sourceLines.has(line)) continue;
     let text = editor.getLine(line) || "";
-    if (!text.includes("{{nd:")) continue;
+    const danglingClose = !text.includes("{") && /\}[ \t]*$/u.test(text);
+    if (!text.includes("{{nd:") && !danglingClose) continue;
     if (__ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines)) text = editor.getLine(line) || "";
     const matches = [];
     const re = /\{\{nd:([^{}\r\n]+)\}\}/gu;
@@ -23209,7 +23218,9 @@ async function __ndw_openDictionaryProtocol(app, params) {
       const file = info?.file || this.app.workspace.getActiveFile();
       if (!file) return;
       const line = editor.getCursor().line;
-      if (!String(editor.getLine(line) || "").includes("{{nd:")) return;
+      const currentText = String(editor.getLine(line) || "");
+      const danglingClose = !currentText.includes("{") && /\}[ \t]*$/u.test(currentText);
+      if (!currentText.includes("{{nd:") && !danglingClose) return;
       const sourceLines = __ndwSourceLinesForFile(file);
       window.setTimeout(() => __ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines), 0);
     }));
