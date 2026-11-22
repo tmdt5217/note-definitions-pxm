@@ -22831,6 +22831,13 @@ async function __ndwRepairDefinitionKeyConflicts(app, { announce = false } = {})
   } finally {
     __ndwDefinitionConflictRepairRunning = false;
   }
+  if (repaired) {
+    try {
+      const idx = window.__ndwSharedTermIndex;
+      if (idx?.reset) await idx.reset();
+    } catch {}
+    window.__ndwSharedTermIndex = null;
+  }
   if (announce) new __ndw_obsidian.Notice(repaired ? `已清理 ${repaired} 个重复同义词冲突。` : "没有发现重复词条键冲突。");
   return repaired;
 }
