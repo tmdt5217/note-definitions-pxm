@@ -23691,6 +23691,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
       const line = editor.getCursor().line;
       const currentText = String(editor.getLine(line) || "");
       const danglingClose = !currentText.includes("{") && /\}[ \t]*$/u.test(currentText);
+      if (currentText.includes("{{nd:}}")) __ndw_cleanEmptyNdMarkersNearCursor(editor);
       if (!currentText.includes("{{nd:") && !danglingClose) return;
       const sourceLines = __ndwSourceLinesForFile(file);
       window.setTimeout(() => __ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines), 0);
@@ -23716,7 +23717,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
       const timer = window.setTimeout(() => {
         emptyMarkerTimers.delete(editor);
         __ndw_cleanEmptyNdMarkersNearCursor(editor);
-      }, 450);
+      }, 80);
       emptyMarkerTimers.set(editor, timer);
     }));
     __ndw_installShardRenameSync(this.app);
