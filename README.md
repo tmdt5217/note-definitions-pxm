@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.69
+# note-definitions_PXM 0.39.70
 
-- 修复右键菜单“注册ND词条”无反应：补上缺失的 view 参数。
+- 注册/插入词条时识别并保留外层 **粗体** 标记，ND 组件按粗体显示，不再露出星号。

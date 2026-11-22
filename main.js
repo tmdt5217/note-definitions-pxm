@@ -1602,18 +1602,20 @@ var require_pxm_main = __commonJS({
     });
     var NDW_ND_MARKER_RE = /\{\{nd:([^{}\r\n]{1,120})\}\}/gu;
     var NdLinkWidget = class extends import_view3.WidgetType {
-      constructor(word) {
+      constructor(word, bold = false) {
         super();
         this.word = word;
+        this.bold = bold;
       }
       eq(other) {
-        return other.word === this.word;
+        return other.word === this.word && other.bold === this.bold;
       }
       toDOM() {
         const span = document.createElement("span");
         span.className = "ndw-manual-link";
         span.setAttribute("data-ndw-word", this.word);
         span.textContent = this.word;
+        if (this.bold) span.style.setProperty("font-weight", "700", "important");
         return span;
       }
       ignoreEvent() {
@@ -1646,8 +1648,26 @@ var require_pxm_main = __commonJS({
           while ((match = NDW_ND_MARKER_RE.exec(text))) {
             const word = match[1];
             if (!word) continue;
-            builder.add(from + match.index, from + match.index + match[0].length, import_view3.Decoration.replace({
-              widget: new NdLinkWidget(word)
+            let start = from + match.index;
+            let end = start + match[0].length;
+            let bold = false;
+            const twoBefore = text.slice(start - from - 2, start - from);
+            const twoAfter = text.slice(end - from, end - from + 2);
+            if ((twoBefore === "**" || twoBefore === "__") && twoAfter === twoBefore) {
+              start -= 2;
+              end += 2;
+              bold = true;
+            } else {
+              const oneBefore = text.slice(start - from - 1, start - from);
+              const oneAfter = text.slice(end - from, end - from + 1);
+              if ((oneBefore === "*" || oneBefore === "_") && oneAfter === oneBefore) {
+                start -= 1;
+                end += 1;
+                bold = true;
+              }
+            }
+            builder.add(start, end, import_view3.Decoration.replace({
+              widget: new NdLinkWidget(word, bold)
             }));
           }
         }
@@ -22204,8 +22224,16 @@ async function __ndw_openNoteTermAt(app, entry) {
   return true;
 }
 
+function __ndw_splitWrappingMarkers(value) {
+  const text = String(value || "").trim();
+  const match = /^(\*\*|__|\*|_|~~)([\s\S]*?)\1$/u.exec(text);
+  if (!match) return { prefix: "", word: text, suffix: "" };
+  return { prefix: match[1], word: match[2].trim(), suffix: match[1] };
+}
+
 async function __ndw_registerNoteTerm(app, editor, view) {
-  const selected = String(editor?.getSelection?.() || "").trim();
+  const selection = __ndw_splitWrappingMarkers(editor?.getSelection?.() || "");
+  const selected = selection.word;
   if (!selected) {
     new __ndw_obsidian.Notice("请先选中一个词条名。");
     return;
@@ -22230,7 +22258,7 @@ async function __ndw_registerNoteTerm(app, editor, view) {
       if (m) { heading = m[1].trim(); break; }
     }
   }
-  editor.replaceSelection(`{{nd:${selected}}}`);
+  editor.replaceSelection(`${selection.prefix}{{nd:${selected}}}${selection.suffix}`);
   const lines = [];
   let i = termLine + 1;
   while (i < editor.lineCount() && !String(editor.getLine(i) || "").trim()) i += 1;
@@ -22267,7 +22295,8 @@ async function __ndw_registerNoteTerm(app, editor, view) {
 
 async function __ndw_insertDictionaryLink(app, editor) {
   if (!editor) return;
-  const selected = String(editor.getSelection() || "").trim();
+  const selection = __ndw_splitWrappingMarkers(editor.getSelection() || "");
+  const selected = selection.word;
   const cursor = editor.getCursor();
   if (!selected) {
     const atCursor = __ndw_wordAtCursor(editor);
@@ -22281,7 +22310,7 @@ async function __ndw_insertDictionaryLink(app, editor) {
     new __NdwDictionaryLinkSearchModal(app, editor, cursor, selected, null, { from, to }).open();
     return;
   }
-  editor.replaceSelection(__ndw_dictionaryMarker(String(entry.word || selected)));
+  editor.replaceSelection(`${selection.prefix}${__ndw_dictionaryMarker(String(entry.word || selected))}${selection.suffix}`);
   new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${entry.word}}}`);
 }
 
