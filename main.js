@@ -21809,7 +21809,8 @@ function __ndw_installEncyclopediaButton(app) {
         core.createSpan({ text: "加入内库" });
       }
       const currentDef = leafView?._currentDef;
-      core.hidden = __ndw_coreDisabled() || !(leafView?._mode === "definition" && currentDef);
+      const showingDefinition = Boolean(currentDef) || leafView?._mode === "definition";
+      core.hidden = __ndw_coreDisabled() || !showingDefinition;
       if (__ndw_coreDisabled()) core.style.setProperty("display", "none", "important");
       else core.style.removeProperty("display");
       if (currentDef && core.dataset.word !== currentDef.word) {
@@ -21834,7 +21835,7 @@ function __ndw_installEncyclopediaButton(app) {
         }
       };
       const inSearchUI = Boolean(host.querySelector(".nd-ency-search-input"));
-      const showFloating = !modalOpen && (leafView ? leafView._mode === "search" : inSearchUI);
+      const showFloating = !modalOpen && !showingDefinition && (leafView ? leafView._mode === "search" : inSearchUI);
       if (showFloating) {
         __ndw_dockButtons(host);
       } else {
