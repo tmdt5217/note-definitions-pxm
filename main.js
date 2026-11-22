@@ -22730,6 +22730,33 @@ async function __ndw_replaceNdReferencesFallback(app, unique) {
 const __ndwShardSnapshots = new Map();
 const __ndwShardSnapshotTimers = new Map();
 let __ndwSkipShardDeleteUnwrap = false;
+let __ndwShardRepairBlockedUntil = 0;
+const __ndwDeferredShardRepairs = new Set();
+
+function __ndwHoldShardRepair(ms = 4000) {
+  __ndwShardRepairBlockedUntil = Math.max(__ndwShardRepairBlockedUntil, Date.now() + ms);
+}
+
+function __ndwInstallShardRepairGuard(app) {
+  const plugin = app.plugins.plugins["note-definitions-pxm"];
+  if (!plugin || typeof plugin.queueShardRepair !== "function" || plugin.__ndwRepairGuardPatched) return false;
+  const original = plugin.queueShardRepair.bind(plugin);
+  plugin.queueShardRepair = function(file, writer) {
+    if (Date.now() >= __ndwShardRepairBlockedUntil) return original(file, writer);
+    const path = file?.path || "";
+    if (!__ndwDeferredShardRepairs.has(path)) {
+      __ndwDeferredShardRepairs.add(path);
+      window.setTimeout(() => {
+        __ndwDeferredShardRepairs.delete(path);
+        if (Date.now() >= __ndwShardRepairBlockedUntil) original(file, writer);
+        else this.queueShardRepair(file, writer);
+      }, 500);
+    }
+    return true;
+  };
+  plugin.__ndwRepairGuardPatched = true;
+  return true;
+}
 
 function __ndwParseShardTerms(content) {
   const out = [];
@@ -22927,6 +22954,7 @@ function __ndw_installShardRenameSync(app) {
   if (!writer.__ndwRenameSyncPatched && typeof writer.rename === "function") {
   const originalRename = writer.rename;
   writer.rename = async function(source, target) {
+    __ndwHoldShardRepair();
     let oldAliases = [];
     let sourceEntry = null;
     try {
@@ -22974,6 +23002,7 @@ function __ndw_installShardRenameSync(app) {
   if (!writer.__ndwDeleteSyncPatched && typeof writer.delete === "function") {
     const originalDelete = writer.delete;
     writer.delete = async function(source) {
+      __ndwHoldShardRepair();
       let aliases = [];
       try {
         const existing = await window.__ndwLookupIndexedDefinition?.(source?.word);
@@ -22994,9 +23023,28 @@ function __ndw_installShardRenameSync(app) {
     };
     writer.__ndwDeleteSyncPatched = true;
   }
+  if (!writer.__ndwUpdateHoldPatched && typeof writer.update === "function") {
+    const originalUpdate = writer.update;
+    writer.update = async function(source, definition) {
+      __ndwHoldShardRepair();
+      try { return await originalUpdate.call(this, source, definition); }
+      finally { __ndwHoldShardRepair(); }
+    };
+    writer.__ndwUpdateHoldPatched = true;
+  }
+  if (!writer.__ndwUpdateManyHoldPatched && typeof writer.updateMany === "function") {
+    const originalUpdateMany = writer.updateMany;
+    writer.updateMany = async function(updates, concurrency) {
+      __ndwHoldShardRepair();
+      try { return await originalUpdateMany.call(this, updates, concurrency); }
+      finally { __ndwHoldShardRepair(); }
+    };
+    writer.__ndwUpdateManyHoldPatched = true;
+  }
   if (!writer.__ndwAddSnapshotPatched && typeof writer.add === "function") {
     const originalAdd = writer.add;
     writer.add = async function(definition) {
+      __ndwHoldShardRepair();
       const result = await originalAdd.call(this, definition);
       const path = result?.path || result?.filePath || result?.file?.path;
       const file = path ? app.vault.getAbstractFileByPath(path) : null;
@@ -23005,6 +23053,7 @@ function __ndw_installShardRenameSync(app) {
     };
     writer.__ndwAddSnapshotPatched = true;
   }
+  __ndwInstallShardRepairGuard(app);
   return true;
 }
 

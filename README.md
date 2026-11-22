@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.40.9
+# note-definitions_PXM 0.41.0
 
-- 移除保存词条时自动修改其他 shard 的逻辑，避免与正在进行的写入产生 Definition shard changed before write。
+- 词条写入后 4 秒内暂停后台 shard 自动修复，避免连续两次保存时 repairMisplaced 与写入竞争触发 Definition shard changed before write。
