@@ -21911,6 +21911,14 @@ function __ndw_confinePopovers() {
   });
 }
 
+function __ndw_blurEditorAfterPopover() {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement)) return;
+  if (active.closest(".cm-editor, .markdown-source-view, input, textarea, [contenteditable=true], [contenteditable=plaintext-only]")) {
+    active.blur();
+  }
+}
+
 function __ndw_closePopoverOutside(event) {
   const target = event.target;
   if (!(target instanceof Element)) return;
@@ -21920,15 +21928,17 @@ function __ndw_closePopoverOutside(event) {
   if (inside) {
     if (target === popover || target.classList.contains("definition-popover")) {
       event.preventDefault();
-      event.stopPropagation();
+      event.stopImmediatePropagation();
       globalThis.__ndwGetDefinitionPopover?.()?.unmount?.();
+      __ndw_blurEditorAfterPopover();
     }
     return;
   }
   if (target.closest(".ndw-manual-link") || target.closest(".def-decoration, .def-link-decoration")) return;
   event.preventDefault();
-  event.stopPropagation();
+  event.stopImmediatePropagation();
   globalThis.__ndwGetDefinitionPopover?.()?.unmount?.();
+  __ndw_blurEditorAfterPopover();
 }
 
 function __ndw_styleManualLinks() {
@@ -22324,6 +22334,12 @@ async function __ndw_openDictionaryProtocol(app, params) {
       });
     }
     this.registerDomEvent(document, "pointerdown", (event) => {
+      __ndw_closePopoverOutside(event);
+    }, true);
+    this.registerDomEvent(document, "touchstart", (event) => {
+      __ndw_closePopoverOutside(event);
+    }, { capture: true, passive: false });
+    this.registerDomEvent(document, "mousedown", (event) => {
       __ndw_closePopoverOutside(event);
     }, true);
     this.registerDomEvent(document, "pointerdown", (event) => {
