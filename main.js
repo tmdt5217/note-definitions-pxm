@@ -20111,12 +20111,7 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
       this.layoutObserver = new ResizeObserver(() => this.positionInLeaf());
       this.layoutObserver.observe(this.ownerLeaf.view.contentEl);
     }
-    this.leafChangeRef = this.app.workspace.on("active-leaf-change", (leaf) => {
-      if (leaf !== this.ownerLeaf) {
-        this.setPaneVisible(false);
-        return;
-      }
-      this.setPaneVisible(true);
+    this.leafChangeRef = this.app.workspace.on("active-leaf-change", () => {
       if (this.ownerLeaf?.view?.getViewType?.() !== "ndw-concept-cards") this.close();
     });
     this.layoutChangeRef = this.app.workspace.on("layout-change", () => {
@@ -20140,6 +20135,14 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     this.cardEl.addEventListener("pointermove", (event) => this.onPointerMove(event));
     this.cardEl.addEventListener("pointerup", (event) => this.onPointerUp(event));
     this.cardEl.addEventListener("pointercancel", () => this.resetTransform());
+    this.outsidePointerHandler = (event) => {
+      const target = event.target;
+      if (!(target instanceof Element) || !this.modalEl || !this.ownerLeaf) return;
+      if (this.modalEl.contains(target)) return;
+      const ownerContent = this.ownerLeaf.view?.contentEl;
+      if (ownerContent?.contains(target)) this.close();
+    };
+    document.addEventListener("pointerdown", this.outsidePointerHandler, true);
     this.documentPointerMove = (event) => this.onPointerMove(event);
     this.documentPointerUp = (event) => this.onPointerUp(event);
     this.documentPointerCancel = () => { this.pointerStart = null; this.scrollTarget = null; this.resetTransform(); };
@@ -20183,17 +20186,30 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
       this.backdropEl.style.setProperty("height", `${Math.round(rect.height)}px`, "important");
     }
     this.modalEl.style.setProperty("position", "fixed", "important");
-    this.modalEl.style.setProperty("left", `${Math.round(rect.left + pad)}px`, "important");
-    this.modalEl.style.setProperty("top", `${Math.round(rect.top + pad)}px`, "important");
-    this.modalEl.style.setProperty("width", `${Math.round(rect.width - pad * 2)}px`, "important");
     const phoneReview = this.modalEl.hasClass("ndw-review-mobile") && !this.modalEl.hasClass("ndw-review-tablet");
+    const desktopReview = !__ndw_obsidian.Platform?.isMobile && !__ndw_obsidian.Platform?.isTablet;
+    const fullWidth = Math.round(rect.width - pad * 2);
+    const fullHeight = Math.round(rect.height - pad * 2);
+    let modalWidth = fullWidth;
+    let modalHeight = fullHeight;
+    let modalLeft = rect.left + pad;
+    let modalTop = rect.top + pad;
+    if (desktopReview) {
+      modalWidth = Math.min(fullWidth, Math.max(320, Math.round(fullWidth * 5 / 6)));
+      modalHeight = Math.min(fullHeight, Math.max(280, Math.round(fullHeight * 2 / 3)));
+      modalLeft = rect.left + Math.round((rect.width - modalWidth) / 2);
+      modalTop = rect.top + Math.round((rect.height - modalHeight) / 2);
+    }
+    this.modalEl.style.setProperty("left", `${Math.round(modalLeft)}px`, "important");
+    this.modalEl.style.setProperty("top", `${Math.round(modalTop)}px`, "important");
+    this.modalEl.style.setProperty("width", `${modalWidth}px`, "important");
     if (phoneReview) {
       this.modalEl.style.setProperty("height", "auto", "important");
-      this.modalEl.style.setProperty("max-height", `${Math.round(rect.height - pad * 2)}px`, "important");
+      this.modalEl.style.setProperty("max-height", `${fullHeight}px`, "important");
       this.modalEl.style.setProperty("top", `${Math.round(rect.top + rect.height / 2)}px`, "important");
       this.modalEl.style.setProperty("transform", "translateY(-50%)", "important");
     } else {
-      this.modalEl.style.setProperty("height", `${Math.round(rect.height - pad * 2)}px`, "important");
+      this.modalEl.style.setProperty("height", `${modalHeight}px`, "important");
       this.modalEl.style.setProperty("max-height", "none", "important");
       this.modalEl.style.setProperty("transform", "none", "important");
     }
@@ -20202,6 +20218,8 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
   }
 
   onClose() {
+    if (this.outsidePointerHandler) document.removeEventListener("pointerdown", this.outsidePointerHandler, true);
+    this.outsidePointerHandler = null;
     if (this.documentPointerMove) document.removeEventListener("pointermove", this.documentPointerMove, true);
     if (this.documentPointerUp) document.removeEventListener("pointerup", this.documentPointerUp, true);
     if (this.documentPointerCancel) document.removeEventListener("pointercancel", this.documentPointerCancel, true);
