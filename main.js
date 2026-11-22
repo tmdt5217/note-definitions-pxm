@@ -869,6 +869,7 @@ var require_pxm_main = __commonJS({
       highPerformanceMode: false,
       manualLinkOnly: false,
       manualLinkOnlyCoreFolder: "",
+      manualLinkOnlyPrevAuto: {},
       coreDefFolder: "Attachments_all/core definitions",
       enableInReadingView: true,
       enableOnLinks: true,
@@ -929,6 +930,16 @@ var require_pxm_main = __commonJS({
         let { containerEl } = this;
         containerEl.empty();
         containerEl.addClass("ndw-settings-tab");
+        if (this.settings.manualLinkOnly === true) {
+          let manualAutoChanged = false;
+          for (const key of ["enableInReadingView", "enableOnLinks", "enableSpellcheck", "enableAutocomplete", "scalabilityCompleteReadingView"]) {
+            if (this.settings[key] !== false) {
+              this.settings[key] = false;
+              manualAutoChanged = true;
+            }
+          }
+          if (manualAutoChanged) void this.saveCallback();
+        }
         new import_obsidian14.Setting(containerEl).setName("书籍搜索与微信读书").setHeading();
         const bookDirectorySettings = containerEl.createDiv();
         (_b = (_a = globalThis.__noteDefinitionsPXMScalability) == null ? void 0 : _a.mountBookSearchSettings) == null ? void 0 : _b.call(_a, bookDirectorySettings);
@@ -950,9 +961,22 @@ var require_pxm_main = __commonJS({
               if (!this.settings.manualLinkOnlyCoreFolder) {
                 this.settings.manualLinkOnlyCoreFolder = this.settings.coreDefFolder || "Attachments_all/core definitions";
               }
+              const previous = this.settings.manualLinkOnlyPrevAuto && typeof this.settings.manualLinkOnlyPrevAuto === "object" ? this.settings.manualLinkOnlyPrevAuto : {};
+              for (const key of ["enableInReadingView", "enableOnLinks", "enableSpellcheck", "enableAutocomplete", "scalabilityCompleteReadingView"]) {
+                if (!Object.prototype.hasOwnProperty.call(previous, key)) previous[key] = this.settings[key] !== false;
+                this.settings[key] = false;
+              }
+              this.settings.manualLinkOnlyPrevAuto = previous;
               this.settings.coreDefFolder = "Attachments_all/.nd-core-disabled";
             } else {
               this.settings.coreDefFolder = this.settings.manualLinkOnlyCoreFolder || "Attachments_all/core definitions";
+              const previous = this.settings.manualLinkOnlyPrevAuto && typeof this.settings.manualLinkOnlyPrevAuto === "object" ? this.settings.manualLinkOnlyPrevAuto : {};
+              this.settings.enableInReadingView = previous.enableInReadingView !== false;
+              this.settings.enableOnLinks = previous.enableOnLinks !== false;
+              this.settings.enableSpellcheck = previous.enableSpellcheck !== false;
+              this.settings.enableAutocomplete = previous.enableAutocomplete !== false;
+              this.settings.scalabilityCompleteReadingView = previous.scalabilityCompleteReadingView === true;
+              this.settings.manualLinkOnlyPrevAuto = {};
             }
             if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
             await this.saveCallback();
