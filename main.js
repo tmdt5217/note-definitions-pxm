@@ -21846,6 +21846,15 @@ function __ndw_confinePopovers() {
     if (!pane) return;
     const bounds = pane.getBoundingClientRect();
     if (bounds.width < 120 || bounds.height < 120) return;
+    let bottomLimit = bounds.bottom;
+    if (__ndw_obsidian.Platform?.isMobile && !__ndw_isTabletLike()) {
+      const vv = window.visualViewport;
+      const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      let keyboardInset = Math.max(0, window.innerHeight - visibleBottom);
+      if (keyboardInset < 80) keyboardInset = Math.round(window.innerHeight * 0.37);
+      bottomLimit = Math.min(bottomLimit, window.innerHeight - keyboardInset - 60);
+      if (bottomLimit < bounds.top + 120) bottomLimit = bounds.bottom;
+    }
     let rect = popover.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const maxWidth = Math.max(160, bounds.width - gap * 2);
@@ -21853,11 +21862,12 @@ function __ndw_confinePopovers() {
       popover.style.setProperty("max-width", `${maxWidth}px`, "important");
       rect = popover.getBoundingClientRect();
     }
-    const maxHeight = Math.max(120, bounds.height - gap * 2);
+    const maxHeight = Math.max(120, bottomLimit - bounds.top - gap * 2);
     popover.style.setProperty("max-height", `${maxHeight}px`, "important");
     popover.style.setProperty("overflow", "auto", "important");
+    rect = popover.getBoundingClientRect();
     const left = Math.min(Math.max(rect.left, bounds.left + gap), bounds.right - gap - rect.width);
-    const top = Math.min(Math.max(rect.top, bounds.top + gap), bounds.bottom - gap - rect.height);
+    const top = Math.min(Math.max(rect.top, bounds.top + gap), bottomLimit - gap - rect.height);
     popover.style.setProperty("left", `${Math.max(bounds.left + gap, left)}px`, "important");
     popover.style.setProperty("top", `${Math.max(bounds.top + gap, top)}px`, "important");
     popover.style.setProperty("right", "auto", "important");
@@ -22253,6 +22263,15 @@ async function __ndw_openDictionaryProtocol(app, params) {
       const manualStyleObserver = new MutationObserver(scheduleManualStyle);
       manualStyleObserver.observe(document.body, { childList: true, subtree: true });
       this.register(() => manualStyleObserver.disconnect());
+      const repositionPopovers = () => __ndw_confinePopovers();
+      window.addEventListener("resize", repositionPopovers);
+      window.visualViewport?.addEventListener("resize", repositionPopovers);
+      window.visualViewport?.addEventListener("scroll", repositionPopovers);
+      this.register(() => {
+        window.removeEventListener("resize", repositionPopovers);
+        window.visualViewport?.removeEventListener("resize", repositionPopovers);
+        window.visualViewport?.removeEventListener("scroll", repositionPopovers);
+      });
     }
     this.registerDomEvent(document, "pointerdown", (event) => {
       __ndw_closePopoverOutside(event);

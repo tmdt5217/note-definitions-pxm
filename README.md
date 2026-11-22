@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.38
+# note-definitions_PXM 0.39.39
 
-- iPad 上概念卡片和词条管理隐藏“退出”按钮；iPhone 保留。
+- 手机端词条弹窗避开键盘和底部工具栏，键盘出现/变化时自动重新定位。
