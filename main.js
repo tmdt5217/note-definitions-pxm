@@ -22379,6 +22379,68 @@ function __ndw_scheduleNoteTermSync(app, file) {
   __ndwNoteTermSyncTimers.set(file.path, timer);
 }
 
+async function __ndw_replaceNdReferences(app, pairs) {
+  const unique = new Map();
+  for (const pair of pairs) {
+    const oldText = String(pair?.old || "").trim();
+    const newText = String(pair?.new || "").trim();
+    if (!oldText || !newText || oldText === newText) continue;
+    unique.set(oldText, newText);
+  }
+  if (!unique.size) return 0;
+  let updatedFiles = 0;
+  for (const file of app.vault.getMarkdownFiles()) {
+    let content = "";
+    try { content = await app.vault.cachedRead(file); } catch { continue; }
+    if (!content.includes("{{nd:")) continue;
+    let next = content;
+    for (const [oldText, newText] of unique) {
+      next = next.split(`{{nd:${oldText}}}`).join(`{{nd:${newText}}}`);
+    }
+    if (next !== content) {
+      try { await app.vault.modify(file, next); updatedFiles += 1; } catch {}
+    }
+  }
+  return updatedFiles;
+}
+
+function __ndw_installShardRenameSync(app) {
+  const writer = window.NoteDefinition?.shardedDefinitions;
+  if (!writer || typeof writer.rename !== "function" || writer.__ndwRenameSyncPatched) return false;
+  const originalRename = writer.rename;
+  writer.rename = async function(source, target) {
+    let oldAliases = [];
+    try {
+      const existing = await window.__ndwLookupIndexedDefinition?.(source?.word);
+      oldAliases = Array.isArray(existing?.aliases) ? existing.aliases : [];
+    } catch {}
+    const result = await originalRename.call(this, source, target);
+    try {
+      const oldWord = String(source?.word || "").trim();
+      const newWord = String(target?.word || "").trim();
+      const newAliases = Array.isArray(target?.aliases) ? target.aliases.map((value) => String(value || "").trim()).filter(Boolean) : [];
+      if (!oldWord || !newWord) return result;
+      const pairs = [];
+      if (oldWord !== newWord) pairs.push({ old: oldWord, new: newWord });
+      for (const alias of oldAliases) {
+        if (!alias || alias === oldWord || newAliases.includes(alias)) continue;
+        pairs.push({ old: alias, new: newWord });
+      }
+      if (pairs.length) {
+        const updated = await __ndw_replaceNdReferences(app, pairs);
+        if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+        app.workspace.trigger("note-definitions-changed");
+        if (updated) new __ndw_obsidian.Notice(`词条已改名，并更新 ${updated} 个笔记中的 ND 引用。`, 6000);
+      }
+    } catch (error) {
+      console.warn("[note-definitions] shard rename reference sync failed", error);
+    }
+    return result;
+  };
+  writer.__ndwRenameSyncPatched = true;
+  return true;
+}
+
 async function __ndw_refreshAllNoteTerms(app) {
   const settings = window.NoteDefinition?.settings;
   const terms = Array.isArray(settings?.noteTerms) ? settings.noteTerms : [];
@@ -22802,6 +22864,9 @@ async function __ndw_openDictionaryProtocol(app, params) {
       }, 450);
       emptyMarkerTimers.set(editor, timer);
     }));
+    __ndw_installShardRenameSync(this.app);
+    window.setTimeout(() => __ndw_installShardRenameSync(this.app), 1000);
+    window.setTimeout(() => __ndw_installShardRenameSync(this.app), 3000);
     this.registerEvent(this.app.vault.on("modify", (file) => __ndw_scheduleNoteTermSync(this.app, file)));
     const liveNoteTermTimers = new WeakMap();
     this.registerEvent(this.app.workspace.on("editor-change", (editor, info) => {
