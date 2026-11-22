@@ -21864,6 +21864,14 @@ function __ndw_confinePopovers() {
       const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
       const keyboardInset = Math.max(0, window.innerHeight - visibleBottom);
       bottomLimit = Math.min(bottomLimit, window.innerHeight - keyboardInset);
+      const toolbar = document.querySelector(".mobile-toolbar, .mobile-toolbar-options-container, .mobile-toolbar-options-list");
+      const toolbarRect = toolbar?.getBoundingClientRect?.();
+      const toolbarTop = toolbarRect && toolbarRect.height > 0 ? toolbarRect.top : 0;
+      if (toolbarTop > 0 && (keyboardInset > 80 || toolbarTop < window.innerHeight - 140)) {
+        bottomLimit = Math.min(bottomLimit, toolbarTop - gap);
+      } else if (keyboardInset > 80) {
+        bottomLimit = Math.min(bottomLimit, window.innerHeight - keyboardInset - 56);
+      }
       if (bottomLimit < bounds.top + 120) bottomLimit = bounds.bottom;
     }
     let rect = popover.getBoundingClientRect();
