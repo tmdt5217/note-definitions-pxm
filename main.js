@@ -21833,6 +21833,15 @@ function __ndw_openManualWord(app, word, anchor) {
 const __ndwPopoverPanes = new WeakMap();
 const __ndwPopoverAnchors = new WeakMap();
 
+function __ndw_alignPopoverAction(popover = document.querySelector(".definition-popover")) {
+  if (!popover) return;
+  const title = popover.querySelector("h2");
+  const button = popover.querySelector(".popover-go-to-def-button");
+  if (!title || !button) return;
+  const top = title.offsetTop + (title.offsetHeight - button.offsetHeight) / 2;
+  button.style.setProperty("top", `${Math.max(0, top)}px`, "important");
+}
+
 function __ndw_confinePopovers() {
   const app = window.NoteDefinition?.app;
   const activeLeaf = app?.workspace?.activeLeaf;
@@ -21880,6 +21889,7 @@ function __ndw_confinePopovers() {
         top = Math.max(bounds.top + gap, bottomLimit - gap - rect2.height);
         popover.style.setProperty("top", `${top}px`, "important");
       }
+      __ndw_alignPopoverAction(popover);
       return;
     }
     const maxWidth = Math.max(160, bounds.width - gap * 2);
@@ -21897,6 +21907,7 @@ function __ndw_confinePopovers() {
     popover.style.setProperty("top", `${Math.max(bounds.top + gap, top)}px`, "important");
     popover.style.setProperty("right", "auto", "important");
     popover.style.setProperty("bottom", "auto", "important");
+    __ndw_alignPopoverAction(popover);
   });
 }
 
@@ -22211,6 +22222,7 @@ function __ndw_showDictionaryPopover(app, entry, anchorElement) {
       if (popoverEl) __ndwPopoverAnchors.set(popoverEl, anchorElement);
       window.setTimeout(__ndw_confinePopovers, 0);
       window.setTimeout(__ndw_confinePopovers, 80);
+      window.setTimeout(__ndw_confinePopovers, 300);
       return true;
     } catch (error) {
       console.warn("[note-definitions] dictionary link popover failed", error);

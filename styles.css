@@ -3896,3 +3896,8 @@ a[data-ndw-manual-link] ~ .external-link-icon,
 .cm-link:has(.ndw-manual-link) svg {
   display: none !important;
 }
+
+/* Keep popover title clear of the go-to-definition button */
+.definition-popover > h2 {
+  padding-right: 44px;
+}
