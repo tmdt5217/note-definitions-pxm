@@ -1652,27 +1652,22 @@ var require_pxm_main = __commonJS({
           while ((match = NDW_ND_MARKER_RE.exec(text))) {
             const word = match[1];
             if (!word) continue;
-            let start = from + match.index;
-            let end = start + match[0].length;
-            let bold = false;
+            const start = from + match.index;
+            const end = start + match[0].length;
+            const wordStart = start + 5;
+            const wordEnd = end - 2;
+            if (wordStart >= wordEnd) continue;
             const twoBefore = text.slice(start - from - 2, start - from);
             const twoAfter = text.slice(end - from, end - from + 2);
-            if ((twoBefore === "**" || twoBefore === "__") && twoAfter === twoBefore) {
-              start -= 2;
-              end += 2;
-              bold = true;
-            } else {
-              const oneBefore = text.slice(start - from - 1, start - from);
-              const oneAfter = text.slice(end - from, end - from + 1);
-              if ((oneBefore === "*" || oneBefore === "_") && oneAfter === oneBefore) {
-                start -= 1;
-                end += 1;
-                bold = true;
-              }
-            }
-            builder.add(start, end, import_view3.Decoration.replace({
-              widget: new NdLinkWidget(word, bold)
+            const oneBefore = text.slice(start - from - 1, start - from);
+            const oneAfter = text.slice(end - from, end - from + 1);
+            const bold = ((twoBefore === "**" || twoBefore === "__") && twoAfter === twoBefore) || ((oneBefore === "*" || oneBefore === "_") && oneAfter === oneBefore);
+            builder.add(start, wordStart, import_view3.Decoration.replace({}));
+            builder.add(wordStart, wordEnd, import_view3.Decoration.mark({
+              class: bold ? "ndw-manual-link ndw-manual-bold" : "ndw-manual-link",
+              attributes: { "data-ndw-word": word }
             }));
+            builder.add(wordEnd, end, import_view3.Decoration.replace({}));
           }
         }
         return builder.finish();

@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.71
+# note-definitions_PXM 0.39.72
 
-- 粗体 ND 链接改用主题/Style Settings 的 --bold-color 和 --bold-weight，与其他粗体一致。
+- ND 链接改为普通可选中文本，只隐藏 {{nd:}} 标记；支持局部选中和复制纯词条，不再复制源码标记。
