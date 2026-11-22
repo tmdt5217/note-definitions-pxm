@@ -22668,6 +22668,31 @@ function __ndw_cleanEmptyNdMarkers(editor) {
   return starts.length;
 }
 
+async function __ndw_removeInvalidMarkersNearCursor(app, editor, file, lineNumber = null) {
+  if (!editor?.getLine || !file) return 0;
+  const settings = window.NoteDefinition?.settings;
+  if (Array.isArray(settings?.noteTerms) && settings.noteTerms.some((item) => item?.notePath === file.path)) return 0;
+  const line = Number.isFinite(lineNumber) ? lineNumber : editor.getCursor().line;
+  const text = editor.getLine(line) || "";
+  if (!text.includes("{{nd:")) return 0;
+  const matches = [];
+  const re = /\{\{nd:([^{}\r\n]+)\}\}/gu;
+  let match;
+  while ((match = re.exec(text))) {
+    const word = match[1].trim();
+    if (word) matches.push({ word, start: match.index, end: match.index + match[0].length });
+  }
+  let removed = 0;
+  for (let i = matches.length - 1; i >= 0; i -= 1) {
+    const item = matches[i];
+    const entry = await window.__ndwLookupIndexedDefinition?.(item.word);
+    if (entry) continue;
+    editor.replaceRange(item.word, { line, ch: item.start }, { line, ch: item.end });
+    removed += 1;
+  }
+  return removed;
+}
+
 function __ndw_cleanEmptyNdMarkersNearCursor(editor) {
   if (!editor?.getCursor || !editor?.getLine) return 0;
   const cursor = editor.getCursor();
@@ -23096,6 +23121,20 @@ async function __ndw_openDictionaryProtocol(app, params) {
           void __ndw_registerNoteTerm(this.app, editor, view);
         });
       });
+    }));
+    const invalidMarkerTimers = new WeakMap();
+    this.registerEvent(this.app.workspace.on("editor-change", (editor, info) => {
+      const file = info?.file || this.app.workspace.getActiveFile();
+      if (!file) return;
+      const line = editor.getCursor().line;
+      if (!String(editor.getLine(line) || "").includes("{{nd:")) return;
+      const previous = invalidMarkerTimers.get(editor);
+      if (previous) window.clearTimeout(previous);
+      const timer = window.setTimeout(() => {
+        invalidMarkerTimers.delete(editor);
+        void __ndw_removeInvalidMarkersNearCursor(this.app, editor, file, line);
+      }, 900);
+      invalidMarkerTimers.set(editor, timer);
     }));
     const emptyMarkerTimers = new WeakMap();
     this.registerEvent(this.app.workspace.on("editor-change", (editor) => {
