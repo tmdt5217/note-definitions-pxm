@@ -21857,17 +21857,16 @@ function __ndw_confinePopovers() {
     const bounds = pane.getBoundingClientRect();
     if (bounds.width < 120 || bounds.height < 120) return;
     let bottomLimit = bounds.bottom;
-    if (__ndw_obsidian.Platform?.isMobile && !__ndw_isTabletLike()) {
+    const phone = __ndw_obsidian.Platform?.isMobile && !__ndw_isTabletLike();
+    if (phone) {
       const vv = window.visualViewport;
       const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
-      let keyboardInset = Math.max(0, window.innerHeight - visibleBottom);
-      if (keyboardInset < 80) keyboardInset = Math.round(window.innerHeight * 0.37);
-      bottomLimit = Math.min(bottomLimit, window.innerHeight - keyboardInset - 60);
+      const keyboardInset = Math.max(0, window.innerHeight - visibleBottom);
+      bottomLimit = Math.min(bottomLimit, window.innerHeight - keyboardInset);
       if (bottomLimit < bounds.top + 120) bottomLimit = bounds.bottom;
     }
     let rect = popover.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    const phone = __ndw_obsidian.Platform?.isMobile && !__ndw_isTabletLike();
     const anchor = __ndwPopoverAnchors.get(popover);
     if (phone && anchor?.isConnected) {
       const width = Math.max(180, bounds.width - gap * 2);
@@ -21879,14 +21878,15 @@ function __ndw_confinePopovers() {
       popover.style.setProperty("overflow", "auto", "important");
       const anchorRect = anchor.getBoundingClientRect();
       let rect2 = popover.getBoundingClientRect();
+      const safeTop = Math.max(bounds.top + gap, (window.visualViewport?.offsetTop || 0) + 52);
       let top = anchorRect.bottom + gap;
       if (top + rect2.height > bottomLimit) top = anchorRect.top - gap - rect2.height;
-      top = Math.min(Math.max(top, bounds.top + gap), Math.max(bounds.top + gap, bottomLimit - gap - rect2.height));
+      top = Math.min(Math.max(top, safeTop), Math.max(safeTop, bottomLimit - gap - rect2.height));
       popover.style.setProperty("top", `${top}px`, "important");
-      popover.style.setProperty("max-height", `${Math.max(120, bottomLimit - Math.max(bounds.top + gap, top) - gap)}px`, "important");
+      popover.style.setProperty("max-height", `${Math.max(120, bottomLimit - Math.max(safeTop, top) - gap)}px`, "important");
       rect2 = popover.getBoundingClientRect();
       if (top + rect2.height > bottomLimit) {
-        top = Math.max(bounds.top + gap, bottomLimit - gap - rect2.height);
+        top = Math.max(safeTop, bottomLimit - gap - rect2.height);
         popover.style.setProperty("top", `${top}px`, "important");
       }
       __ndw_alignPopoverAction(popover);
@@ -21914,9 +21914,21 @@ function __ndw_confinePopovers() {
 function __ndw_closePopoverOutside(event) {
   const target = event.target;
   if (!(target instanceof Element)) return;
-  if (target.closest(".definition-popover") || target.closest(".ndw-manual-link")) return;
   const popover = document.querySelector(".definition-popover");
-  if (popover) globalThis.__ndwGetDefinitionPopover?.()?.unmount?.();
+  if (!popover) return;
+  const inside = target.closest(".definition-popover");
+  if (inside) {
+    if (target === popover || target.classList.contains("definition-popover")) {
+      event.preventDefault();
+      event.stopPropagation();
+      globalThis.__ndwGetDefinitionPopover?.()?.unmount?.();
+    }
+    return;
+  }
+  if (target.closest(".ndw-manual-link") || target.closest(".def-decoration, .def-link-decoration")) return;
+  event.preventDefault();
+  event.stopPropagation();
+  globalThis.__ndwGetDefinitionPopover?.()?.unmount?.();
 }
 
 function __ndw_styleManualLinks() {
