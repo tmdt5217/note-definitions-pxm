@@ -22278,27 +22278,13 @@ function __ndw_noteTermDefinitionAt(lines, lineIndex) {
 
 async function __ndw_replaceNoteTermReferences(app, pairs) {
   if (!pairs.length) return 0;
-  const files = app.vault.getMarkdownFiles();
-  let updatedFiles = 0;
-  let processed = 0;
-  for (const file of files) {
-    if (++processed % 40 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
-    let content = "";
-    try { content = await app.vault.cachedRead(file); } catch { continue; }
-    if (!content.includes("{{nd:")) continue;
-    let next = content;
-    for (const pair of pairs) {
-      if (!pair.oldDisplay || pair.oldDisplay === pair.newDisplay) continue;
-      next = next.split(`{{nd:${pair.oldDisplay}}}`).join(`{{nd:${pair.newDisplay}}}`);
-      if (pair.oldWord && pair.oldWord !== pair.oldDisplay) {
-        next = next.split(`{{nd:${pair.oldWord}}}`).join(`{{nd:${pair.newDisplay}}}`);
-      }
-    }
-    if (next !== content) {
-      try { await app.vault.modify(file, next); updatedFiles += 1; } catch {}
-    }
+  const replacements = [];
+  for (const pair of pairs) {
+    if (!pair.oldDisplay || pair.oldDisplay === pair.newDisplay) continue;
+    replacements.push({ old: pair.oldDisplay, new: pair.newDisplay });
+    if (pair.oldWord && pair.oldWord !== pair.oldDisplay) replacements.push({ old: pair.oldWord, new: pair.newDisplay });
   }
-  return updatedFiles;
+  return __ndw_replaceNdReferences(app, replacements);
 }
 
 async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: providedText = null, rewriteReferences = true, skipRenames = false } = {}) {
@@ -22388,6 +22374,148 @@ function __ndw_scheduleNoteTermSync(app, file) {
   __ndwNoteTermSyncTimers.set(file.path, timer);
 }
 
+const ND_REF_DB_NAME = "ndw-nd-ref-index-v1";
+const ND_REF_STORE = "refs";
+let __ndwRefDbPromise = null;
+let __ndwRefBuildPromise = null;
+const __ndwRefKnownPaths = new Set();
+
+function __ndwRefWordsFromText(text) {
+  const words = new Set();
+  const re = /\{\{nd:([^{}\r\n]{1,120})\}\}/gu;
+  let match;
+  while ((match = re.exec(String(text || "")))) {
+    const word = match[1].trim();
+    if (word) words.add(word);
+  }
+  return [...words];
+}
+
+function __ndwOpenRefDb() {
+  if (__ndwRefDbPromise) return __ndwRefDbPromise;
+  __ndwRefDbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(ND_REF_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      const store = db.createObjectStore(ND_REF_STORE, { keyPath: "path" });
+      store.createIndex("words", "words", { multiEntry: true });
+      store.createIndex("mtime", "mtime", { unique: false });
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  return __ndwRefDbPromise;
+}
+
+async function __ndwRefGet(db, path) {
+  const tx = db.transaction(ND_REF_STORE, "readonly");
+  const done = txDone(tx);
+  const request = tx.objectStore(ND_REF_STORE).get(path);
+  const value = await new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+  await done;
+  return value;
+}
+
+async function __ndwRefPut(db, record) {
+  const tx = db.transaction(ND_REF_STORE, "readwrite");
+  const done = txDone(tx);
+  tx.objectStore(ND_REF_STORE).put(record);
+  await done;
+  __ndwRefKnownPaths.add(record.path);
+}
+
+async function __ndwRefDelete(db, path) {
+  const tx = db.transaction(ND_REF_STORE, "readwrite");
+  const done = txDone(tx);
+  tx.objectStore(ND_REF_STORE).delete(path);
+  await done;
+  __ndwRefKnownPaths.delete(path);
+}
+
+async function __ndwRemoveRefPath(path) {
+  if (!path) return;
+  const db = await __ndwOpenRefDb();
+  await __ndwRefDelete(db, path);
+}
+
+async function __ndwRefUpdateFromText(app, path, text, mtime = Date.now()) {
+  if (!path) return;
+  const db = await __ndwOpenRefDb();
+  const words = __ndwRefWordsFromText(text);
+  if (!words.length) { await __ndwRefDelete(db, path); return; }
+  await __ndwRefPut(db, { path, words, mtime: Number(mtime) || Date.now() });
+}
+
+async function __ndwEnsureRefIndex(app, { force = false } = {}) {
+  if (__ndwRefBuildPromise && !force) return __ndwRefBuildPromise;
+  __ndwRefBuildPromise = (async () => {
+    const db = await __ndwOpenRefDb();
+    const files = app.vault.getMarkdownFiles();
+    const live = new Set(files.map((file) => file.path));
+    const tx = db.transaction(ND_REF_STORE, "readonly");
+    const done = txDone(tx);
+    const store = tx.objectStore(ND_REF_STORE);
+    const keysRequest = store.getAllKeys();
+    const keys = await new Promise((resolve, reject) => {
+      keysRequest.onsuccess = () => resolve(keysRequest.result || []);
+      keysRequest.onerror = () => reject(keysRequest.error);
+    });
+    await done;
+    for (const path of keys) {
+      if (live.has(path)) __ndwRefKnownPaths.add(path);
+      else await __ndwRefDelete(db, path);
+    }
+    let processed = 0;
+    for (const file of files) {
+      if (++processed % 40 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+      const mtime = Number(file.stat?.mtime) || 0;
+      const existing = await __ndwRefGet(db, file.path);
+      if (!force && existing && Number(existing.mtime) === mtime) continue;
+      let text = "";
+      try { text = await app.vault.cachedRead(file); } catch { continue; }
+      const words = __ndwRefWordsFromText(text);
+      if (words.length) await __ndwRefPut(db, { path: file.path, words, mtime });
+      else if (existing) await __ndwRefDelete(db, file.path);
+    }
+    return true;
+  })().catch((error) => {
+    console.warn("[note-definitions] reference index build failed", error);
+    __ndwRefBuildPromise = null;
+    return false;
+  });
+  return __ndwRefBuildPromise;
+}
+
+async function __ndwRefFilesForWords(app, words) {
+  const unique = [...new Set((words || []).map((word) => String(word || "").trim()).filter(Boolean))];
+  if (!unique.length) return [];
+  try {
+    const ready = await __ndwEnsureRefIndex(app);
+    if (!ready) return null;
+    const db = await __ndwOpenRefDb();
+    const tx = db.transaction(ND_REF_STORE, "readonly");
+    const done = txDone(tx);
+    const index = tx.objectStore(ND_REF_STORE).index("words");
+    const paths = new Set();
+    for (const word of unique) {
+      const request = index.getAll(word);
+      const rows = await new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+      });
+      for (const row of rows) paths.add(row.path);
+    }
+    await done;
+    return [...paths];
+  } catch (error) {
+    console.warn("[note-definitions] reference index lookup failed", error);
+    return null;
+  }
+}
+
 async function __ndw_replaceNdReferences(app, pairs) {
   const unique = new Map();
   for (const pair of pairs) {
@@ -22397,6 +22525,36 @@ async function __ndw_replaceNdReferences(app, pairs) {
     unique.set(oldText, newText);
   }
   if (!unique.size) return 0;
+  const indexedPaths = await __ndwRefFilesForWords(app, [...unique.keys()]);
+  if (indexedPaths === null) return __ndw_replaceNdReferencesFallback(app, unique);
+  let updatedFiles = 0;
+  let processed = 0;
+  for (const path of indexedPaths) {
+    if (++processed % 40 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+    const file = app.vault.getAbstractFileByPath(path);
+    if (!file) { await __ndwRefUpdateFromText(app, path, "", 0); continue; }
+    let content = "";
+    try { content = await app.vault.cachedRead(file); } catch { continue; }
+    if (!content.includes("{{nd:")) {
+      await __ndwRefUpdateFromText(app, path, content, Number(file.stat?.mtime) || Date.now());
+      continue;
+    }
+    let next = content;
+    for (const [oldText, newText] of unique) {
+      next = next.split(`{{nd:${oldText}}}`).join(`{{nd:${newText}}}`);
+    }
+    if (next !== content) {
+      try {
+        await app.vault.modify(file, next);
+        await __ndwRefUpdateFromText(app, path, next, Number(file.stat?.mtime) || Date.now());
+        updatedFiles += 1;
+      } catch {}
+    }
+  }
+  return updatedFiles;
+}
+
+async function __ndw_replaceNdReferencesFallback(app, unique) {
   let updatedFiles = 0;
   let processed = 0;
   for (const file of app.vault.getMarkdownFiles()) {
@@ -22852,6 +23010,17 @@ async function __ndw_openDictionaryProtocol(app, params) {
       editorCallback: (editor) => void __ndw_insertDictionaryLink(this.app, editor)
     });
     this.addCommand({
+      id: "rebuild-nd-reference-index",
+      name: "重建ND引用索引",
+      icon: "database",
+      callback: async () => {
+        __ndwRefBuildPromise = null;
+        new __ndw_obsidian.Notice("正在重建 ND 引用索引…");
+        const ok = await __ndwEnsureRefIndex(this.app, { force: true });
+        new __ndw_obsidian.Notice(ok ? "ND 引用索引重建完成。" : "ND 引用索引重建失败。");
+      }
+    });
+    this.addCommand({
       id: "clean-empty-nd-markers",
       name: "清理空 ND 标记",
       icon: "eraser",
@@ -22903,6 +23072,65 @@ async function __ndw_openDictionaryProtocol(app, params) {
     window.setTimeout(() => __ndw_installShardRenameSync(this.app), 1000);
     window.setTimeout(() => __ndw_installShardRenameSync(this.app), 3000);
     this.registerEvent(this.app.vault.on("modify", (file) => __ndw_scheduleNoteTermSync(this.app, file)));
+    const refIndexEditorTimers = new WeakMap();
+    const refIndexFileTimers = new Map();
+    const scheduleRefIndexContent = (file, text, delay = 800) => {
+      if (!file || !text) return;
+      const previous = refIndexFileTimers.get(file.path);
+      if (previous) window.clearTimeout(previous);
+      const timer = window.setTimeout(() => {
+        refIndexFileTimers.delete(file.path);
+        void __ndwRefUpdateFromText(this.app, file.path, text, Number(file.stat?.mtime) || Date.now());
+      }, delay);
+      refIndexFileTimers.set(file.path, timer);
+    };
+    this.registerEvent(this.app.workspace.on("editor-change", (editor, info) => {
+      const file = info?.file || this.app.workspace.getActiveFile();
+      if (!file) return;
+      const text = editor.getValue();
+      if (!text.includes("{{nd:") && !__ndwRefKnownPaths.has(file.path)) return;
+      const previous = refIndexEditorTimers.get(editor);
+      if (previous) window.clearTimeout(previous);
+      const timer = window.setTimeout(() => {
+        refIndexEditorTimers.delete(editor);
+        scheduleRefIndexContent(file, editor.getValue(), 0);
+      }, 900);
+      refIndexEditorTimers.set(editor, timer);
+    }));
+    this.registerEvent(this.app.vault.on("modify", (file) => {
+      if (!file || file.extension !== "md") return;
+      const previous = refIndexFileTimers.get(file.path);
+      if (previous) window.clearTimeout(previous);
+      const timer = window.setTimeout(async () => {
+        refIndexFileTimers.delete(file.path);
+        let text = "";
+        try { text = await this.app.vault.cachedRead(file); } catch { return; }
+        if (!text.includes("{{nd:") && !__ndwRefKnownPaths.has(file.path)) return;
+        await __ndwRefUpdateFromText(this.app, file.path, text, Number(file.stat?.mtime) || Date.now());
+      }, 700);
+      refIndexFileTimers.set(file.path, timer);
+    }));
+    this.registerEvent(this.app.vault.on("create", (file) => {
+      if (file?.extension !== "md") return;
+      window.setTimeout(async () => {
+        let text = "";
+        try { text = await this.app.vault.cachedRead(file); } catch { return; }
+        if (text.includes("{{nd:")) await __ndwRefUpdateFromText(this.app, file.path, text, Number(file.stat?.mtime) || Date.now());
+      }, 300);
+    }));
+    this.registerEvent(this.app.vault.on("delete", (file) => {
+      if (file?.extension === "md") void __ndwRemoveRefPath(file.path);
+    }));
+    this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
+      void __ndwRemoveRefPath(oldPath);
+      if (file?.extension === "md") {
+        window.setTimeout(async () => {
+          let text = "";
+          try { text = await this.app.vault.cachedRead(file); } catch { return; }
+          if (text.includes("{{nd:")) await __ndwRefUpdateFromText(this.app, file.path, text, Number(file.stat?.mtime) || Date.now());
+        }, 300);
+      }
+    }));
     const liveNoteTermTimers = new WeakMap();
     this.registerEvent(this.app.workspace.on("editor-change", (editor, info) => {
       const file = info?.file || this.app.workspace.getActiveFile();
@@ -22928,6 +23156,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
     }));
     this.app.workspace.onLayoutReady(() => {
       window.setTimeout(() => void __ndw_refreshAllNoteTerms(this.app), 1200);
+      window.setTimeout(() => void __ndwEnsureRefIndex(this.app), 2500);
     });
     this.addCommand({
       id: "refresh-note-terms",
