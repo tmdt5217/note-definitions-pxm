@@ -22898,6 +22898,13 @@ function __ndw_chooseLinkText(entry, input) {
     .map((value) => String(value || "").trim())
     .filter(Boolean);
   if (candidates.some((value) => __ndw_norm(value) === target)) return typed;
+  const aliases = (Array.isArray(entry?.aliases) ? entry.aliases : [])
+    .map((value) => String(value || "").trim())
+    .filter((value) => value && __ndw_norm(value).includes(target));
+  if (aliases.length) {
+    aliases.sort((a, b) => a.length - b.length || a.localeCompare(b));
+    return aliases[0];
+  }
   return String(entry?.word || display).trim();
 }
 
