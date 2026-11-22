@@ -22277,7 +22277,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
       __ndw_closePopoverOutside(event);
     }, true);
     this.registerDomEvent(document, "pointerdown", (event) => {
-      if (event.pointerType !== "mouse" || event.button !== 0) return;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
       const manual = target.closest(".ndw-manual-link");
