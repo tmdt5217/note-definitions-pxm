@@ -22804,7 +22804,7 @@ function __ndw_chooseLinkText(entry, input) {
     .map((value) => String(value || "").trim())
     .filter(Boolean);
   if (candidates.some((value) => __ndw_norm(value) === target)) return typed;
-  return display;
+  return String(entry?.word || display).trim();
 }
 
 async function __ndw_insertDictionaryLink(app, editor) {
@@ -22975,7 +22975,7 @@ class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
     this.statusEl.setText(`${label ? label + "：" : ""}共 ${rows.length} 条，点击插入`);
     for (const row of rows) {
       const button = this.resultEl.createEl("button", { cls: "ndw-dict-link-row", attr: { type: "button" } });
-      button.createSpan({ cls: "ndw-dict-link-word", text: row.displayWord || row.word });
+      button.createSpan({ cls: "ndw-dict-link-word", text: row.word || row.displayWord });
       if (row.aliases?.length) button.createSpan({ cls: "ndw-dict-link-aliases", text: row.aliases.join("、") });
       const preview = String(row.definition || "").replace(/\s+/g, " ").trim().slice(0, 90);
       if (preview) button.createSpan({ cls: "ndw-dict-link-preview", text: preview });
