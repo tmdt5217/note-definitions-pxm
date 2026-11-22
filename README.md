@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.58
+# note-definitions_PXM 0.39.59
 
-- 选中已有词条插入链接时，使用词条规范大小写（如输入 pmdi 匹配 pMDI 后插入 pMDI）。
+- 移除“阅读知识库笔记目录”设置及书籍检索关联，不再读取阅读知识库笔记。

@@ -940,9 +940,6 @@ var require_pxm_main = __commonJS({
           }
           if (manualAutoChanged) void this.saveCallback();
         }
-        new import_obsidian14.Setting(containerEl).setName("书籍搜索与微信读书").setHeading();
-        const bookDirectorySettings = containerEl.createDiv();
-        (_b = (_a = globalThis.__noteDefinitionsPXMScalability) == null ? void 0 : _a.mountBookSearchSettings) == null ? void 0 : _b.call(_a, bookDirectorySettings);
         new import_obsidian14.Setting(containerEl).setName("核心库与写作模式").setHeading();
         new import_obsidian14.Setting(containerEl).setName("\u9AD8\u6027\u80FD\u6A21\u5F0F\uFF08\u5927\u8BCD\u5E93\uFF09").setDesc("\u9AD8\u6027\u80FD\u6A21\u5F0F\uFF1A\u5916\u5E93\u53EA\u641C\u7D22\uFF1B\u6838\u5FC3\u5E93\u4ECD\u4FDD\u7559\u6B63\u6587\u4E0B\u5212\u7EBF\u3001\u70B9\u51FB\u5B9A\u4E49\u548C\u81EA\u52A8\u8865\u5168\u3002\u540C\u65F6\u5173\u95ED\u6D4F\u89C8/\u968F\u673A\u6392\u5E8F\u3001\u968F\u673A\u590D\u4E60\u548C\u5B9A\u4E49\u6B63\u6587\u641C\u7D22\u3002\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
           component.setValue(this.settings.highPerformanceMode === true);
@@ -7979,7 +7976,7 @@ var BookSearchController = class {
   }
   directory() {
     const s = this.settings();
-    return validBookDirectory(s.readingKnowledgeDirectoryManual ? s.readingKnowledgeDirectory || "" : this.suggested());
+    return "";
   }
   async configure(value, manual = true) {
     const directory = validBookDirectory(value), s = this.settings(), old = [s.readingKnowledgeDirectory, s.readingKnowledgeDirectoryManual];
