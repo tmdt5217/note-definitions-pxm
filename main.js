@@ -21903,7 +21903,13 @@ function __ndw_confinePopovers() {
     }
     const tablet = __ndw_obsidian.Platform?.isMobile && __ndw_isTabletLike();
     if (tablet) {
-      const width = Math.min(Math.max(420, bounds.width - gap * 2), 680);
+      const textLength = String(popover.innerText || "").replace(/\s+/g, " ").trim().length;
+      const hasWideContent = Boolean(popover.querySelector("table, mjx-container, .math, pre, code"));
+      let desired = 360;
+      if (hasWideContent || textLength > 300) desired = 680;
+      else if (textLength > 200) desired = 560;
+      else if (textLength > 100) desired = 440;
+      const width = Math.min(bounds.width - gap * 2, Math.max(300, desired));
       popover.style.setProperty("width", `${width}px`, "important");
       popover.style.setProperty("max-width", `${width}px`, "important");
       rect = popover.getBoundingClientRect();
