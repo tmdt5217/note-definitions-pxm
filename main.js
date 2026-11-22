@@ -22699,6 +22699,41 @@ async function __ndw_removeInvalidMarkersNearCursor(app, editor, file, lineNumbe
   return removed;
 }
 
+async function __ndw_cleanInvalidMarkersInEditor(app, editor, file) {
+  if (!editor?.getLine || !file) return 0;
+  const settings = window.NoteDefinition?.settings;
+  const sourceLines = new Set(
+    (Array.isArray(settings?.noteTerms) ? settings.noteTerms : [])
+      .filter((item) => item?.notePath === file.path)
+      .map((item) => Number(item.line))
+      .filter(Number.isFinite)
+  );
+  let removed = 0;
+  let inspected = 0;
+  for (let line = editor.lineCount() - 1; line >= 0; line -= 1) {
+    if (sourceLines.has(line)) continue;
+    const text = editor.getLine(line) || "";
+    if (!text.includes("{{nd:")) continue;
+    const matches = [];
+    const re = /\{\{nd:([^{}\r\n]+)\}\}/gu;
+    let match;
+    while ((match = re.exec(text))) {
+      const word = match[1].trim();
+      if (word) matches.push({ word, start: match.index, end: match.index + match[0].length });
+    }
+    for (let i = matches.length - 1; i >= 0; i -= 1) {
+      if (++inspected > 200) return removed;
+      const item = matches[i];
+      const entry = await window.__ndwLookupIndexedDefinition?.(item.word);
+      if (entry) continue;
+      editor.replaceRange(item.word, { line, ch: item.start }, { line, ch: item.end });
+      removed += 1;
+    }
+    if (inspected % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return removed;
+}
+
 function __ndw_cleanEmptyNdMarkersNearCursor(editor) {
   if (!editor?.getCursor || !editor?.getLine) return 0;
   const cursor = editor.getCursor();
@@ -23234,7 +23269,13 @@ async function __ndw_openDictionaryProtocol(app, params) {
       liveNoteTermTimers.set(editor, timer);
     }));
     this.registerEvent(this.app.workspace.on("file-open", (file) => {
-      if (!file || !Array.isArray(window.NoteDefinition?.settings?.noteTerms)) return;
+      if (!file) return;
+      window.setTimeout(() => {
+        const view = this.app.workspace.getActiveViewOfType?.(__ndw_obsidian.MarkdownView);
+        const editor = view?.editor;
+        if (editor && view.file?.path === file.path) void __ndw_cleanInvalidMarkersInEditor(this.app, editor, file);
+      }, 900);
+      if (!Array.isArray(window.NoteDefinition?.settings?.noteTerms)) return;
       if (!window.NoteDefinition.settings.noteTerms.some((item) => item?.notePath === file.path)) return;
       window.setTimeout(() => void __ndw_syncNoteTermsForFile(this.app, file, { announce: false, rewriteReferences: true }), 500);
     }));

@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.88
+# note-definitions_PXM 0.39.89
 
-- 含已注册笔记词条的源笔记中，其他失效的 {{nd:...}} 引用也会自动移除；仅保护真正的源 marker。
+- 打开笔记时扫描并移除已失效的 {{nd:...}} 链接，保留源笔记已注册的源 marker。
