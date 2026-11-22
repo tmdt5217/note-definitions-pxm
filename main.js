@@ -22671,7 +22671,12 @@ function __ndw_cleanEmptyNdMarkers(editor) {
 async function __ndw_removeInvalidMarkersNearCursor(app, editor, file, lineNumber = null) {
   if (!editor?.getLine || !file) return 0;
   const settings = window.NoteDefinition?.settings;
-  if (Array.isArray(settings?.noteTerms) && settings.noteTerms.some((item) => item?.notePath === file.path)) return 0;
+  const sourceLines = new Set(
+    (Array.isArray(settings?.noteTerms) ? settings.noteTerms : [])
+      .filter((item) => item?.notePath === file.path)
+      .map((item) => Number(item.line))
+      .filter(Number.isFinite)
+  );
   const line = Number.isFinite(lineNumber) ? lineNumber : editor.getCursor().line;
   const text = editor.getLine(line) || "";
   if (!text.includes("{{nd:")) return 0;
@@ -22685,6 +22690,7 @@ async function __ndw_removeInvalidMarkersNearCursor(app, editor, file, lineNumbe
   let removed = 0;
   for (let i = matches.length - 1; i >= 0; i -= 1) {
     const item = matches[i];
+    if (sourceLines.has(line)) continue;
     const entry = await window.__ndwLookupIndexedDefinition?.(item.word);
     if (entry) continue;
     editor.replaceRange(item.word, { line, ch: item.start }, { line, ch: item.end });
