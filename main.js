@@ -21865,8 +21865,9 @@ function __ndw_installEncyclopediaButton(app) {
       }
       const currentDef = leafView?._currentDef;
       const showingDefinition = Boolean(currentDef) || leafView?._mode === "definition" || Boolean(host.querySelector(".nd-ency-toolbar"));
-      core.hidden = __ndw_coreDisabled() || !showingDefinition;
-      if (__ndw_coreDisabled()) core.style.setProperty("display", "none", "important");
+      const coreDisabled = window.NoteDefinition?.settings?.manualLinkOnly === true;
+      core.hidden = coreDisabled || !showingDefinition;
+      if (coreDisabled) core.style.setProperty("display", "none", "important");
       else core.style.removeProperty("display");
       if (currentDef && core.dataset.word !== currentDef.word) {
         core.dataset.word = currentDef.word;
@@ -21899,7 +21900,10 @@ function __ndw_installEncyclopediaButton(app) {
           button.style.setProperty("display", "none", "important");
         }
       }
-      del.hidden = !(leafView?._mode === "definition" && leafView?._currentDef);
+      const showDelete = Boolean(leafView?._currentDef) && (leafView?._mode === "definition" || Boolean(host.querySelector(".nd-ency-toolbar")));
+      del.hidden = !showDelete;
+      if (showDelete) del.style.removeProperty("display");
+      else del.style.setProperty("display", "none", "important");
       del.onclick = () => void __ndw_deleteEncyclopediaDefinition(app, leafView);
       const searchInput = host.querySelector(".nd-ency-search-input");
       if (searchInput && !searchInput.dataset.ndwKeyboardBound) {
