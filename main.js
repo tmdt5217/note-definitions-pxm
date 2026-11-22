@@ -22770,6 +22770,18 @@ async function __ndw_registerNoteTerm(app, editor, view) {
   new __ndw_obsidian.Notice(`已注册笔记词条：${selected}${definition ? "" : "（未找到连续定义段落）"}`, 5000);
 }
 
+function __ndw_chooseLinkText(entry, input) {
+  const typed = String(input || "").trim();
+  const display = String(entry?.displayWord || entry?.word || "").trim();
+  if (!typed) return display;
+  const target = __ndw_norm(typed);
+  const candidates = [entry?.word, entry?.displayWord, ...(entry?.aliases || [])]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  if (candidates.some((value) => __ndw_norm(value) === target)) return typed;
+  return display;
+}
+
 async function __ndw_insertDictionaryLink(app, editor) {
   if (!editor) return;
   const selection = __ndw_splitWrappingMarkers(editor.getSelection() || "");
@@ -22787,7 +22799,7 @@ async function __ndw_insertDictionaryLink(app, editor) {
     new __NdwDictionaryLinkSearchModal(app, editor, cursor, selected, null, { from, to }).open();
     return;
   }
-  const displayWord = String(entry.displayWord || entry.word || selected);
+  const displayWord = __ndw_chooseLinkText(entry, selected);
   editor.replaceSelection(`${selection.prefix}${__ndw_dictionaryMarker(displayWord)}${selection.suffix}`);
   new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${displayWord}}}`);
 }
@@ -22954,7 +22966,8 @@ class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
   }
 
   insert(row) {
-    const markdown = __ndw_dictionaryMarker(String(row.displayWord || row.word || ""));
+    const linkText = __ndw_chooseLinkText(row, this.input?.value || this.initialQuery);
+    const markdown = __ndw_dictionaryMarker(String(linkText || ""));
     if (this.replaceRange) this.editor.replaceRange(markdown, this.replaceRange.from, this.replaceRange.to);
     else {
       const sameAsCursorWord = this.cursorWord?.word && __ndw_norm(this.cursorWord.word) === __ndw_norm(row.word);
@@ -22962,7 +22975,7 @@ class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
       else this.editor.replaceRange(markdown, this.cursor);
     }
     this.close();
-    new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${row.displayWord || row.word}}}`);
+    new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${linkText}}}`);
   }
 
   onClose() {
