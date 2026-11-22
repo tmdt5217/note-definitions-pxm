@@ -22809,6 +22809,25 @@ async function __ndwRepairDefinitionKeyConflicts(app, { announce = false } = {})
         console.warn("[note-definitions] definition key conflict repair failed", term.word, error);
       }
     }
+    const current = new Map();
+    for (const term of terms) {
+      const key = `${__ndw_norm(term.word)}\u0000${__ndw_norm(term.definition)}`;
+      if (!current.has(key)) current.set(key, []);
+      current.get(key).push(term);
+    }
+    for (const group of current.values()) {
+      if (group.length < 2) continue;
+      group.sort((a, b) => a.word.length - b.word.length);
+      const short = group[0];
+      const long = group.find((term) => term !== short && term.word.length > short.word.length && term.word.startsWith(short.word));
+      if (!long) continue;
+      try {
+        await writer.delete({ path: short.path, word: short.word });
+        repaired += 1;
+      } catch (error) {
+        console.warn("[note-definitions] duplicate shorthand cleanup failed", short.word, error);
+      }
+    }
   } finally {
     __ndwDefinitionConflictRepairRunning = false;
   }
