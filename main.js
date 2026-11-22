@@ -22859,6 +22859,17 @@ async function __ndw_registerNoteTerm(app, editor, view) {
   new __ndw_obsidian.Notice(`已注册笔记词条：${selected}${definition ? "" : "（未找到连续定义段落）"}`, 5000);
 }
 
+function __ndw_expandSelectionToWord(editor, from, to) {
+  if (!editor?.getLine || !from || !to || from.line !== to.line) return { from, to };
+  const line = editor.getLine(from.line) || "";
+  const isWord = (ch) => /[\p{L}\p{N}_-]/u.test(ch || "");
+  let start = Math.min(from.ch, to.ch);
+  let end = Math.max(from.ch, to.ch);
+  while (start > 0 && isWord(line[start - 1])) start -= 1;
+  while (end < line.length && isWord(line[end])) end += 1;
+  return { from: { line: from.line, ch: start }, to: { line: from.line, ch: end } };
+}
+
 function __ndw_chooseLinkText(entry, input) {
   const typed = String(input || "").trim();
   const display = String(entry?.displayWord || entry?.word || "").trim();
@@ -22885,7 +22896,7 @@ async function __ndw_insertDictionaryLink(app, editor) {
   if (!entry) {
     const from = editor.getCursor("from");
     const to = editor.getCursor("to");
-    new __NdwDictionaryLinkSearchModal(app, editor, cursor, selected, null, { from, to }).open();
+    new __NdwDictionaryLinkSearchModal(app, editor, cursor, selected, null, __ndw_expandSelectionToWord(editor, from, to)).open();
     return;
   }
   const displayWord = __ndw_chooseLinkText(entry, selected);
@@ -23058,11 +23069,9 @@ class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
     const linkText = __ndw_chooseLinkText(row, this.input?.value || this.initialQuery);
     const markdown = __ndw_dictionaryMarker(String(linkText || ""));
     if (this.replaceRange) this.editor.replaceRange(markdown, this.replaceRange.from, this.replaceRange.to);
-    else {
-      const sameAsCursorWord = this.cursorWord?.word && __ndw_norm(this.cursorWord.word) === __ndw_norm(row.word);
-      if (sameAsCursorWord) this.editor.replaceRange(markdown, this.cursorWord.from, this.cursorWord.to);
-      else this.editor.replaceRange(markdown, this.cursor);
-    }
+    else if (this.cursorWord?.word && this.cursorWord.from && this.cursorWord.to) {
+      this.editor.replaceRange(markdown, this.cursorWord.from, this.cursorWord.to);
+    } else this.editor.replaceRange(markdown, this.cursor);
     this.close();
     new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${linkText}}}`);
   }
