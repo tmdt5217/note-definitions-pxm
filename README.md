@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.57
+# note-definitions_PXM 0.39.58
 
-- “标记潜在双链”也纳入仅手动链接模式的强制关闭项，并隐藏设置。
+- 选中已有词条插入链接时，使用词条规范大小写（如输入 pmdi 匹配 pMDI 后插入 pMDI）。

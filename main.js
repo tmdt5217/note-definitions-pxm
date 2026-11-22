@@ -22143,7 +22143,7 @@ async function __ndw_insertDictionaryLink(app, editor) {
     new __NdwDictionaryLinkSearchModal(app, editor, cursor, selected, null, { from, to }).open();
     return;
   }
-  editor.replaceSelection(__ndw_dictionaryMarker(selected));
+  editor.replaceSelection(__ndw_dictionaryMarker(String(entry.word || selected)));
   new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${entry.word}}}`);
 }
 
