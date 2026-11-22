@@ -22668,6 +22668,27 @@ function __ndw_cleanEmptyNdMarkers(editor) {
   return starts.length;
 }
 
+function __ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines = new Set()) {
+  if (!editor?.getLine || sourceLines.has(line)) return 0;
+  let text = editor.getLine(line) || "";
+  let cursor = 0;
+  let removed = 0;
+  while (true) {
+    const start = text.indexOf("{{nd:", cursor);
+    if (start < 0) break;
+    const complete = text.indexOf("}}", start + 5);
+    if (complete >= 0) { cursor = complete + 2; continue; }
+    const single = text.indexOf("}", start + 5);
+    const end = single >= 0 ? single + 1 : text.length;
+    const word = text.slice(start + 5, single >= 0 ? single : text.length).trim();
+    editor.replaceRange(word, { line, ch: start }, { line, ch: end });
+    text = editor.getLine(line) || "";
+    cursor = start + word.length;
+    removed += 1;
+  }
+  return removed;
+}
+
 async function __ndw_removeInvalidMarkersNearCursor(app, editor, file, lineNumber = null) {
   if (!editor?.getLine || !file) return 0;
   const settings = window.NoteDefinition?.settings;
@@ -22678,8 +22699,9 @@ async function __ndw_removeInvalidMarkersNearCursor(app, editor, file, lineNumbe
       .filter(Number.isFinite)
   );
   const line = Number.isFinite(lineNumber) ? lineNumber : editor.getCursor().line;
-  const text = editor.getLine(line) || "";
+  let text = editor.getLine(line) || "";
   if (!text.includes("{{nd:")) return 0;
+  if (__ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines)) text = editor.getLine(line) || "";
   const matches = [];
   const re = /\{\{nd:([^{}\r\n]+)\}\}/gu;
   let match;
@@ -22712,8 +22734,9 @@ async function __ndw_cleanInvalidMarkersInEditor(app, editor, file) {
   let inspected = 0;
   for (let line = editor.lineCount() - 1; line >= 0; line -= 1) {
     if (sourceLines.has(line)) continue;
-    const text = editor.getLine(line) || "";
+    let text = editor.getLine(line) || "";
     if (!text.includes("{{nd:")) continue;
+    if (__ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines)) text = editor.getLine(line) || "";
     const matches = [];
     const re = /\{\{nd:([^{}\r\n]+)\}\}/gu;
     let match;
