@@ -7277,6 +7277,7 @@ ${issues.join("\n")}`);
         window.__ndwSkipBaseIndex = false;
         await __ndw_migrateLegacyStateFiles(this.app);
         this.registerEvent(this.app.workspace.on("note-definitions-changed", () => {
+          if (window.__ndwSkipTermIndexInvalidate) return;
           if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
         }));
         if (typeof activeWindow !== "undefined" && activeWindow !== window) {
@@ -22279,7 +22280,9 @@ async function __ndw_replaceNoteTermReferences(app, pairs) {
   if (!pairs.length) return 0;
   const files = app.vault.getMarkdownFiles();
   let updatedFiles = 0;
+  let processed = 0;
   for (const file of files) {
+    if (++processed % 40 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
     let content = "";
     try { content = await app.vault.cachedRead(file); } catch { continue; }
     if (!content.includes("{{nd:")) continue;
@@ -22357,9 +22360,15 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
     const plugin = app.plugins.plugins["note-definitions-pxm"];
     await plugin?.saveData?.(settings);
   } catch {}
-  if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+  const idx = window.__ndwSharedTermIndex;
+  if (idx?.db && typeof idx.syncNoteTerms === "function") {
+    await idx.syncNoteTerms(file.path, settings.noteTerms.filter((item) => item?.notePath === file.path));
+  } else if (idx) {
+    idx.__ready = null;
+  }
   const updatedFiles = rewriteReferences ? await __ndw_replaceNoteTermReferences(app, pairs) : 0;
-  app.workspace.trigger("note-definitions-changed");
+  window.__ndwSkipTermIndexInvalidate = true;
+  try { app.workspace.trigger("note-definitions-changed"); } finally { window.__ndwSkipTermIndexInvalidate = false; }
   if (announce) {
     const renamed = pairs.length ? `，并更新 ${updatedFiles} 个引用文件` : "";
     new __ndw_obsidian.Notice(`已同步笔记词条${renamed}。`, 5000);
@@ -22389,7 +22398,9 @@ async function __ndw_replaceNdReferences(app, pairs) {
   }
   if (!unique.size) return 0;
   let updatedFiles = 0;
+  let processed = 0;
   for (const file of app.vault.getMarkdownFiles()) {
+    if (++processed % 40 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
     let content = "";
     try { content = await app.vault.cachedRead(file); } catch { continue; }
     if (!content.includes("{{nd:")) continue;
@@ -22479,6 +22490,26 @@ function __ndw_cleanEmptyNdMarkers(editor) {
   return starts.length;
 }
 
+function __ndw_cleanEmptyNdMarkersNearCursor(editor) {
+  if (!editor?.getCursor || !editor?.getLine) return 0;
+  const cursor = editor.getCursor();
+  const needle = "{{nd:}}";
+  let count = 0;
+  for (let line = Math.max(0, cursor.line - 1); line <= cursor.line + 1; line += 1) {
+    if (line >= editor.lineCount()) break;
+    const text = editor.getLine(line) || "";
+    if (!text.includes(needle)) continue;
+    const starts = [];
+    let index = text.indexOf(needle);
+    while (index >= 0) { starts.push(index); index = text.indexOf(needle, index + needle.length); }
+    for (let i = starts.length - 1; i >= 0; i -= 1) {
+      editor.replaceRange("", { line, ch: starts[i] }, { line, ch: starts[i] + needle.length });
+      count += 1;
+    }
+  }
+  return count;
+}
+
 async function __ndw_registerNoteTerm(app, editor, view) {
   const selection = __ndw_splitWrappingMarkers(editor?.getSelection?.() || "");
   const parsedTerm = __ndw_parseTermDisplay(selection.word);
@@ -22546,7 +22577,12 @@ async function __ndw_registerNoteTerm(app, editor, view) {
   } catch (error) {
     console.warn("[note-definitions] note term save failed", error);
   }
-  if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+  const idx = window.__ndwSharedTermIndex;
+  if (idx?.db && typeof idx.syncNoteTerms === "function") {
+    await idx.syncNoteTerms(file.path, settings.noteTerms.filter((item) => item?.notePath === file.path));
+  } else if (idx) {
+    idx.__ready = null;
+  }
   new __ndw_obsidian.Notice(`已注册笔记词条：${selected}${definition ? "" : "（未找到连续定义段落）"}`, 5000);
 }
 
@@ -22859,8 +22895,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
       if (previous) window.clearTimeout(previous);
       const timer = window.setTimeout(() => {
         emptyMarkerTimers.delete(editor);
-        if (!editor?.getValue?.().includes("{{nd:}}")) return;
-        __ndw_cleanEmptyNdMarkers(editor);
+        __ndw_cleanEmptyNdMarkersNearCursor(editor);
       }, 450);
       emptyMarkerTimers.set(editor, timer);
     }));
@@ -23325,6 +23360,31 @@ async function __ndw_clearCore(){
 window.__ndwCore = { promoteFirst: __ndw_promoteCoreFirst, promoteEntries: __ndw_promoteCoreEntries, demote: __ndw_demoteCoreWords, toggle: __ndw_toggleCoreEntry, contains: __ndw_coreContains, clear: __ndw_clearCore, read: __ndw_readCoreEntries, folder: __ndw_coreFolder, path: __ndw_coreShardPath };
 window.__ndwMountCoreButton = __ndw_mountCoreButton;
 window.__ndwLookupIndexedDefinition = __ndw_lookupIndexedDefinition;
+function __ndw_noteTermRecord(item) {
+  const rawWord = String(item?.word || "").trim();
+  const displayWord = String(item?.display || rawWord).trim() || rawWord;
+  const parsedTerm = __ndw_parseTermDisplay(displayWord);
+  const word = parsedTerm.word;
+  const aliases = parsedTerm.aliases;
+  const notePath = String(item?.notePath || "").trim();
+  const n = norm(word);
+  if (!n || !notePath) return null;
+  const line = Math.max(0, Number(item.line) || 0);
+  const createdAt = Number(item.addedAt) || Date.now();
+  const key = `note:${notePath}:${line}:${n}`;
+  return {
+    key, word, displayWord, norm: n, aliases, aliasesNorm: aliases.map(norm).filter(Boolean),
+    definition: String(item?.definition || ""),
+    filePath: notePath, notePath,
+    line, column: Math.max(0, Number(item.column) || 0),
+    heading: String(item?.heading || ""),
+    source: "note",
+    createdAt, updatedAt: createdAt,
+    sortKey: `${String(createdAt).padStart(16, "0")}\u0000${n}`,
+    tier: "external"
+  };
+}
+
 const DB_NAME = "ndw-term-index-v1";
 const DB_VERSION = 2;
 const TERMS = "terms";
@@ -23435,33 +23495,40 @@ window.__NdwTermIndex = class NdTermIndex {
         };
       });
       for (const item of noteTerms) {
-        const rawWord = String(item?.word || "").trim();
-        const displayWord = String(item?.display || rawWord).trim() || rawWord;
-        const parsedTerm = __ndw_parseTermDisplay(displayWord);
-        const word = parsedTerm.word;
-        const aliases = parsedTerm.aliases;
-        const notePath = String(item?.notePath || "").trim();
-        const n = norm(word);
-        if (!n || !notePath) continue;
-        const line = Math.max(0, Number(item.line) || 0);
-        const createdAt = Number(item.addedAt) || Date.now();
-        const key = `note:${notePath}:${line}:${n}`;
-        ts.put({
-          key, word, displayWord, norm: n, aliases, aliasesNorm: aliases.map(norm).filter(Boolean),
-          definition: String(item.definition || ""),
-          filePath: notePath, notePath,
-          line, column: Math.max(0, Number(item.column) || 0),
-          heading: String(item.heading || ""),
-          source: "note",
-          createdAt, updatedAt: createdAt,
-          sortKey: `${String(createdAt).padStart(16, "0")}\u0000${n}`,
-          tier: "external"
-        });
+        const record = __ndw_noteTermRecord(item);
+        if (record) ts.put(record);
       }
       await doneTx;
     }
     this.__progress={phase:"done",done,total:files.length,terms,at:Date.now()};
     return {files:files.length,terms,elapsed:performance.now()-t0};
+  }
+  async syncNoteTerms(notePath, items) {
+    await this.open();
+    const path = String(notePath || "").trim();
+    if (!path) return 0;
+    const tx = this.db.transaction(TERMS, "readwrite");
+    const done = txDone(tx);
+    const store = tx.objectStore(TERMS);
+    const lower = `note:${path}:`;
+    const range = IDBKeyRange.bound(lower, `${lower}\uffff`);
+    await new Promise((resolve, reject) => {
+      const request = store.openCursor(range);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) { resolve(); return; }
+        cursor.delete();
+        cursor.continue();
+      };
+    });
+    let count = 0;
+    for (const item of items || []) {
+      const record = __ndw_noteTermRecord(item);
+      if (record) { store.put(record); count += 1; }
+    }
+    await done;
+    return count;
   }
   async query({q="",limit=48,offset=0,sort="createdAt",order="desc"}={}){
     await this.open();
