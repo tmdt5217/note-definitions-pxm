@@ -21901,6 +21901,13 @@ function __ndw_confinePopovers() {
       __ndw_alignPopoverAction(popover);
       return;
     }
+    const tablet = __ndw_obsidian.Platform?.isMobile && __ndw_isTabletLike();
+    if (tablet) {
+      const width = Math.min(Math.max(420, bounds.width - gap * 2), 680);
+      popover.style.setProperty("width", `${width}px`, "important");
+      popover.style.setProperty("max-width", `${width}px`, "important");
+      rect = popover.getBoundingClientRect();
+    }
     const maxWidth = Math.max(160, bounds.width - gap * 2);
     if (rect.width > maxWidth) {
       popover.style.setProperty("max-width", `${maxWidth}px`, "important");

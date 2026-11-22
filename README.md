@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.47
+# note-definitions_PXM 0.39.48
 
-- 手机弹窗底部同时避开键盘上方的移动工具栏。
+- iPad 词条弹窗加宽到最多 680px，长内容更易读。
