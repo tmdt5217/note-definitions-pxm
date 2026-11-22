@@ -22321,6 +22321,30 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
     let match;
     while ((match = re.exec(lines[line]))) occurrences.push({ line, display: match[1].trim(), heading: currentHeading });
   }
+  if (!occurrences.length) {
+    const removedEntries = entries.splice(0, entries.length);
+    settings.noteTerms = settings.noteTerms.filter((item) => item?.notePath !== file.path);
+    try {
+      const plugin = app.plugins.plugins["note-definitions-pxm"];
+      await plugin?.saveData?.(settings);
+    } catch {}
+    const idx = window.__ndwSharedTermIndex;
+    if (idx?.db && typeof idx.syncNoteTerms === "function") {
+      await idx.syncNoteTerms(file.path, []);
+    } else if (idx) {
+      idx.__ready = null;
+    }
+    const words = [];
+    for (const entry of removedEntries) {
+      if (entry?.word) words.push(entry.word);
+      if (entry?.display && entry.display !== entry.word) words.push(entry.display);
+    }
+    const updated = await __ndw_unwrapNdReferences(app, words);
+    window.__ndwSkipTermIndexInvalidate = true;
+    try { app.workspace.trigger("note-definitions-changed"); } finally { window.__ndwSkipTermIndexInvalidate = false; }
+    if (announce) new __ndw_obsidian.Notice(`源词条已删除，并移除 ${updated} 个笔记中的引用。`, 5000);
+    return removedEntries.length;
+  }
   const used = new Set();
   const pairs = [];
   let changed = false;
@@ -22353,6 +22377,13 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
       definition
     };
     if (skipRenames && (entry.word !== next.word || (entry.display || entry.word) !== next.display)) continue;
+    if (next.word !== entry.word) {
+      const duplicate = await window.__ndwLookupIndexedDefinition?.(next.word);
+      if (duplicate && __ndw_norm(duplicate.word) === __ndw_norm(next.word)) {
+        if (announce) new __ndw_obsidian.Notice(`词条“${next.word}”已存在，改名失败。`, 6000);
+        continue;
+      }
+    }
     if (entry.word !== next.word || entry.display !== next.display || entry.definition !== next.definition || entry.aliases?.join("\u0000") !== next.aliases.join("\u0000")) {
       changed = true;
       if ((entry.display || entry.word) !== next.display || entry.word !== next.word) {
@@ -22574,6 +22605,29 @@ async function __ndw_replaceNdReferences(app, pairs) {
   return updatedFiles;
 }
 
+async function __ndw_unwrapNdReferences(app, words) {
+  const unique = [...new Set((words || []).map((word) => String(word || "").trim()).filter(Boolean))];
+  if (!unique.length) return 0;
+  let paths = await __ndwRefFilesForWords(app, unique);
+  if (paths === null) paths = app.vault.getMarkdownFiles().map((file) => file.path);
+  let updated = 0;
+  for (const path of paths) {
+    const file = app.vault.getAbstractFileByPath(path);
+    if (!file) continue;
+    let content = "";
+    try { content = await app.vault.cachedRead(file); } catch { continue; }
+    let next = content;
+    for (const word of unique) next = next.split(`{{nd:${word}}}`).join(word);
+    if (next === content) continue;
+    try {
+      await app.vault.modify(file, next);
+      await __ndwRefUpdateFromText(app, path, next, Number(file.stat?.mtime) || Date.now());
+      updated += 1;
+    } catch {}
+  }
+  return updated;
+}
+
 async function __ndw_replaceNdReferencesFallback(app, unique) {
   let updatedFiles = 0;
   let processed = 0;
@@ -22593,9 +22647,102 @@ async function __ndw_replaceNdReferencesFallback(app, unique) {
   return updatedFiles;
 }
 
+const __ndwShardSnapshots = new Map();
+const __ndwShardSnapshotTimers = new Map();
+
+function __ndwParseShardTerms(content) {
+  const out = [];
+  for (const block of String(content || "").split(/\r?\n[ \t]*---[ \t]*\r?\n/u)) {
+    const lines = block.split(/\r?\n/u);
+    const hi = lines.findIndex((line) => /^#\s+\S/u.test(line.trim()));
+    if (hi < 0) continue;
+    const word = lines[hi].trim().replace(/^#\s+/u, "").trim();
+    if (!word) continue;
+    let c = hi + 1;
+    while (c < lines.length && !lines[c].trim()) c += 1;
+    let aliases = [];
+    const match = c < lines.length ? /^\*(.*)\*$/u.exec(lines[c].trim()) : null;
+    if (match) {
+      aliases = match[1].split(/[,，;；\n]+/u).map((value) => value.trim()).filter(Boolean);
+      c += 1;
+    }
+    out.push({ word, aliases, definition: lines.slice(c).join("\n").trim() });
+  }
+  return out;
+}
+
+function __ndwIsShardFile(file) {
+  if (!file || file.extension !== "md") return false;
+  const settings = window.NoteDefinition?.settings;
+  const def = String(settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u, "");
+  const core = String(settings?.coreDefFolder || "Attachments_all/core definitions").trim().replace(/\/+$/u, "");
+  return (def && (file.path === def || file.path.startsWith(`${def}/`))) || (core && (file.path === core || file.path.startsWith(`${core}/`)));
+}
+
+function __ndwTermSnapshotEntry(term) {
+  return { word: String(term?.word || "").trim(), aliases: [...(term?.aliases || [])], definition: String(term?.definition || "") };
+}
+
+async function __ndwSnapshotShardFile(app, file) {
+  if (!__ndwIsShardFile(file)) return;
+  try {
+    const text = await app.vault.cachedRead(file);
+    __ndwShardSnapshots.set(file.path, __ndwParseShardTerms(text).map(__ndwTermSnapshotEntry));
+  } catch {}
+}
+
+async function __ndwInitShardSnapshots(app) {
+  for (const file of app.vault.getMarkdownFiles()) {
+    if (!__ndwIsShardFile(file)) continue;
+    await __ndwSnapshotShardFile(app, file);
+  }
+}
+
+async function __ndwProcessShardSnapshotChange(app, file) {
+  if (!__ndwIsShardFile(file)) return;
+  let text = "";
+  try { text = await app.vault.cachedRead(file); } catch { return; }
+  const nextTerms = __ndwParseShardTerms(text).map(__ndwTermSnapshotEntry);
+  const previous = __ndwShardSnapshots.get(file.path);
+  __ndwShardSnapshots.set(file.path, nextTerms);
+  if (!previous) return;
+  const oldByWord = new Map(previous.map((term) => [__ndw_norm(term.word), term]));
+  const newByWord = new Map(nextTerms.map((term) => [__ndw_norm(term.word), term]));
+  const removed = previous.filter((term) => !newByWord.has(__ndw_norm(term.word)));
+  const added = nextTerms.filter((term) => !oldByWord.has(__ndw_norm(term.word)));
+  const used = new Set();
+  const pairs = [];
+  for (const oldTerm of removed) {
+    let match = added.find((term) => !used.has(term.word) && oldTerm.aliases.some((alias) => term.aliases.includes(alias)));
+    if (!match) match = added.find((term) => !used.has(term.word) && term.definition && term.definition === oldTerm.definition);
+    if (match) { used.add(match.word); pairs.push({ old: oldTerm.word, new: match.word }); }
+  }
+  let updated = 0;
+  if (pairs.length) updated = await __ndw_replaceNdReferences(app, pairs);
+  const removedWords = removed.filter((term) => !pairs.some((pair) => pair.old === term.word)).map((term) => term.word);
+  if (removedWords.length) updated += await __ndw_unwrapNdReferences(app, removedWords);
+  if (pairs.length || removedWords.length) {
+    if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+    app.workspace.trigger("note-definitions-changed");
+    if (updated) new __ndw_obsidian.Notice(`检测到 shard 直接修改，已更新 ${updated} 个 ND 引用。`, 6000);
+  }
+}
+
+function __ndwScheduleShardSnapshot(app, file) {
+  if (!__ndwIsShardFile(file)) return;
+  const previous = __ndwShardSnapshotTimers.get(file.path);
+  if (previous) window.clearTimeout(previous);
+  const timer = window.setTimeout(() => {
+    __ndwShardSnapshotTimers.delete(file.path);
+    void __ndwProcessShardSnapshotChange(app, file);
+  }, 800);
+  __ndwShardSnapshotTimers.set(file.path, timer);
+}
+
 function __ndw_installShardRenameSync(app) {
   const writer = window.NoteDefinition?.shardedDefinitions;
-  if (!writer || typeof writer.rename !== "function" || writer.__ndwRenameSyncPatched) return false;
+  if (!writer) return false;
+  if (!writer.__ndwRenameSyncPatched && typeof writer.rename === "function") {
   const originalRename = writer.rename;
   writer.rename = async function(source, target) {
     let oldAliases = [];
@@ -22603,6 +22750,19 @@ function __ndw_installShardRenameSync(app) {
       const existing = await window.__ndwLookupIndexedDefinition?.(source?.word);
       oldAliases = Array.isArray(existing?.aliases) ? existing.aliases : [];
     } catch {}
+    try {
+      const oldWord = String(source?.word || "").trim();
+      const newWord = String(target?.word || "").trim();
+      if (oldWord && newWord && oldWord !== newWord) {
+        const duplicate = await window.__ndwLookupIndexedDefinition?.(newWord);
+        if (duplicate && __ndw_norm(duplicate.word) === __ndw_norm(newWord)) {
+          new __ndw_obsidian.Notice(`词条“${newWord}”已存在，改名失败。`, 6000);
+          throw new Error(`词条“${newWord}”已存在`);
+        }
+      }
+    } catch (error) {
+      if (String(error?.message || "").includes("已存在")) throw error;
+    }
     const result = await originalRename.call(this, source, target);
     try {
       const oldWord = String(source?.word || "").trim();
@@ -22627,6 +22787,40 @@ function __ndw_installShardRenameSync(app) {
     return result;
   };
   writer.__ndwRenameSyncPatched = true;
+  }
+  if (!writer.__ndwDeleteSyncPatched && typeof writer.delete === "function") {
+    const originalDelete = writer.delete;
+    writer.delete = async function(source) {
+      let aliases = [];
+      try {
+        const existing = await window.__ndwLookupIndexedDefinition?.(source?.word);
+        aliases = Array.isArray(existing?.aliases) ? existing.aliases : [];
+      } catch {}
+      const result = await originalDelete.call(this, source);
+      try {
+        const words = [String(source?.word || "").trim(), ...aliases].filter(Boolean);
+        const updated = await __ndw_unwrapNdReferences(app, words);
+        if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+        app.workspace.trigger("note-definitions-changed");
+        if (updated) new __ndw_obsidian.Notice(`词条已删除，并移除 ${updated} 个笔记中的 ND 引用。`, 6000);
+      } catch (error) {
+        console.warn("[note-definitions] shard delete reference cleanup failed", error);
+      }
+      return result;
+    };
+    writer.__ndwDeleteSyncPatched = true;
+  }
+  if (!writer.__ndwAddSnapshotPatched && typeof writer.add === "function") {
+    const originalAdd = writer.add;
+    writer.add = async function(definition) {
+      const result = await originalAdd.call(this, definition);
+      const path = result?.path || result?.filePath || result?.file?.path;
+      const file = path ? app.vault.getAbstractFileByPath(path) : null;
+      if (file) await __ndwSnapshotShardFile(app, file);
+      return result;
+    };
+    writer.__ndwAddSnapshotPatched = true;
+  }
   return true;
 }
 
@@ -22678,10 +22872,10 @@ function __ndwSourceLinesForFile(file) {
   );
 }
 
-function __ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines = new Set()) {
+function __ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines = new Set(), { allowDangling = true } = {}) {
   if (!editor?.getLine || sourceLines.has(line)) return 0;
   let text = editor.getLine(line) || "";
-  if (!text.includes("{") && /\}[ \t]*$/u.test(text)) {
+  if (allowDangling && !text.includes("{") && /\}[ \t]*$/u.test(text)) {
     const match = /(\}\})[ \t]*$/u.exec(text) || /(\})[ \t]*$/u.exec(text);
     if (match) {
       const start = text.length - match[0].length;
@@ -22739,7 +22933,7 @@ async function __ndw_removeInvalidMarkersNearCursor(app, editor, file, lineNumbe
   return removed;
 }
 
-async function __ndw_cleanInvalidMarkersInEditor(app, editor, file) {
+async function __ndw_cleanInvalidMarkersInEditor(app, editor, file, { checkTerms = true } = {}) {
   if (!editor?.getLine || !file) return 0;
   const settings = window.NoteDefinition?.settings;
   const sourceLines = new Set(
@@ -22753,9 +22947,9 @@ async function __ndw_cleanInvalidMarkersInEditor(app, editor, file) {
   for (let line = editor.lineCount() - 1; line >= 0; line -= 1) {
     if (sourceLines.has(line)) continue;
     let text = editor.getLine(line) || "";
-    const danglingClose = !text.includes("{") && /\}[ \t]*$/u.test(text);
-    if (!text.includes("{{nd:") && !danglingClose) continue;
-    if (__ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines)) text = editor.getLine(line) || "";
+    if (!text.includes("{{nd:")) continue;
+    if (__ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines, { allowDangling: false })) text = editor.getLine(line) || "";
+    if (!checkTerms) continue;
     const matches = [];
     const re = /\{\{nd:([^{}\r\n]+)\}\}/gu;
     let match;
@@ -23057,6 +23251,15 @@ class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
           rows = await idx.query({ q: text.slice(0, length), limit: 60 });
         }
       }
+      const qnorm = __ndw_norm(query);
+      if (qnorm.length >= 2) {
+        const hasAliasHit = rows.some((row) => (row.aliases || []).some((alias) => __ndw_norm(alias).includes(qnorm)));
+        if (!hasAliasHit) {
+          const extras = await idx.queryContains({ q: query, limit: 60 });
+          const seen = new Set(rows.map((row) => row.key));
+          for (const row of extras) if (!seen.has(row.key)) { seen.add(row.key); rows.push(row); }
+        }
+      }
       if (token !== this.queryToken) return;
       this.renderResults(rows, rows.length && query.trim() ? "相近词条" : "");
     } catch (error) {
@@ -23259,6 +23462,20 @@ async function __ndw_openDictionaryProtocol(app, params) {
     window.setTimeout(() => __ndw_installShardRenameSync(this.app), 1000);
     window.setTimeout(() => __ndw_installShardRenameSync(this.app), 3000);
     this.registerEvent(this.app.vault.on("modify", (file) => __ndw_scheduleNoteTermSync(this.app, file)));
+    this.registerEvent(this.app.vault.on("modify", (file) => __ndwScheduleShardSnapshot(this.app, file)));
+    this.registerEvent(this.app.vault.on("create", (file) => {
+      if (__ndwIsShardFile(file)) window.setTimeout(() => void __ndwSnapshotShardFile(this.app, file), 300);
+    }));
+    this.registerEvent(this.app.vault.on("delete", (file) => {
+      if (__ndwIsShardFile(file)) __ndwShardSnapshots.delete(file.path);
+    }));
+    this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
+      const snapshot = __ndwShardSnapshots.get(oldPath);
+      if (snapshot && __ndwIsShardFile(file)) {
+        __ndwShardSnapshots.delete(oldPath);
+        __ndwShardSnapshots.set(file.path, snapshot);
+      }
+    }));
     const refIndexEditorTimers = new WeakMap();
     const refIndexFileTimers = new Map();
     const scheduleRefIndexContent = (file, text, delay = 800) => {
@@ -23341,7 +23558,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
       window.setTimeout(() => {
         const view = this.app.workspace.getActiveViewOfType?.(__ndw_obsidian.MarkdownView);
         const editor = view?.editor;
-        if (editor && view.file?.path === file.path) void __ndw_cleanInvalidMarkersInEditor(this.app, editor, file);
+        if (editor && view.file?.path === file.path) void __ndw_cleanInvalidMarkersInEditor(this.app, editor, file, { checkTerms: false });
       }, 900);
       if (!Array.isArray(window.NoteDefinition?.settings?.noteTerms)) return;
       if (!window.NoteDefinition.settings.noteTerms.some((item) => item?.notePath === file.path)) return;
@@ -23350,6 +23567,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
     this.app.workspace.onLayoutReady(() => {
       window.setTimeout(() => void __ndw_refreshAllNoteTerms(this.app), 1200);
       window.setTimeout(() => void __ndwEnsureRefIndex(this.app), 2500);
+      window.setTimeout(() => void __ndwInitShardSnapshots(this.app), 3200);
     });
     this.addCommand({
       id: "refresh-note-terms",
@@ -24014,6 +24232,26 @@ window.__NdwTermIndex = class NdTermIndex {
         if(skipped<offset){skipped++;cur.continue();return;}
         out.push(cur.value);
         if(out.length>=limit){res();return;}
+        cur.continue();
+      };
+    });
+    await done;
+    return out;
+  }
+  async queryContains({q="",limit=60}={}){
+    await this.open();
+    const n=norm(q), out=[];
+    if(!n) return out;
+    const tx=this.db.transaction(TERMS,"readonly"), done=txDone(tx), store=tx.objectStore(TERMS);
+    await new Promise((resolve,reject)=>{
+      const request=store.index("sortKey").openCursor();
+      request.onerror=()=>reject(request.error);
+      request.onsuccess=()=>{
+        const cur=request.result;
+        if(!cur||out.length>=limit){resolve();return;}
+        const value=cur.value;
+        const hay=`${value.word||""} ${(value.aliases||[]).join(" ")}`.toLowerCase();
+        if(hay.includes(n)) out.push(value);
         cur.continue();
       };
     });

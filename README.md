@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.95
+# note-definitions_PXM 0.39.96
 
-- 修复 ND 引用索引一次查询多个旧词时可能出现的 IndexedDB 事务失效。
+- 删除源笔记 marker 时移除注册并清理引用；删除 shard 词条时清理引用；改名重复主词条会阻止；支持直接编辑 shard 的改名同步；收紧孤立 }} 清理；打开笔记不再逐个校验全部链接；改进缩写子串搜索。
