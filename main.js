@@ -22273,11 +22273,20 @@ function __ndw_splitWrappingMarkers(value) {
 const __ndwNoteTermSyncTimers = new Map();
 
 function __ndw_noteTermDefinitionAt(lines, lineIndex) {
+  const line = String(lines[lineIndex] || "");
+  const markerEnd = line.lastIndexOf("}}");
+  const inline = markerEnd >= 0
+    ? line.slice(markerEnd + 2).replace(/^(\*\*|__|\*|_|~~)/u, "").replace(/^[：:\s]+/u, "").trim()
+    : "";
+  const parts = [];
+  if (inline) parts.push(inline);
   let i = lineIndex + 1;
-  while (i < lines.length && !String(lines[i] || "").trim()) i += 1;
-  const start = i;
-  while (i < lines.length && String(lines[i] || "").trim()) i += 1;
-  return lines.slice(start, i).join("\n").trim();
+  if (!inline) while (i < lines.length && !String(lines[i] || "").trim()) i += 1;
+  while (i < lines.length && String(lines[i] || "").trim()) {
+    parts.push(String(lines[i] || ""));
+    i += 1;
+  }
+  return parts.join("\n").trim();
 }
 
 async function __ndw_replaceNoteTermReferences(app, pairs) {
@@ -22302,16 +22311,27 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
   }
   const lines = text.split(/\r?\n/u);
   const occurrences = [];
+  const headings = [];
+  let currentHeading = "";
   for (let line = 0; line < lines.length; line += 1) {
+    const headingMatch = /^#{1,6}\s+(.+?)\s*$/u.exec(lines[line] || "");
+    if (headingMatch) currentHeading = headingMatch[1].replace(/\{\{nd:[^{}\r\n]+\}\}/gu, "").trim();
+    headings[line] = currentHeading;
     const re = /\{\{nd:([^{}\r\n]+)\}\}/gu;
     let match;
-    while ((match = re.exec(lines[line]))) occurrences.push({ line, display: match[1].trim() });
+    while ((match = re.exec(lines[line]))) occurrences.push({ line, display: match[1].trim(), heading: currentHeading });
   }
   const used = new Set();
   const pairs = [];
   let changed = false;
   for (const entry of entries) {
-    let occurrence = occurrences.find((item) => !used.has(item.line) && (item.display === entry.display || item.display === entry.word));
+    const oldHeading = String(entry.heading || "").trim();
+    const headingMatches = oldHeading ? occurrences.filter((item) => !used.has(item.line) && item.heading === oldHeading) : [];
+    let occurrence = headingMatches.find((item) => __ndw_noteTermDefinitionAt(lines, item.line).trim())
+      || headingMatches.find((item) => item.display === entry.display || item.display === entry.word)
+      || headingMatches[0]
+      || null;
+    if (!occurrence) occurrence = occurrences.find((item) => !used.has(item.line) && (item.display === entry.display || item.display === entry.word));
     if (!occurrence) {
       occurrence = occurrences
         .filter((item) => !used.has(item.line))
@@ -22321,11 +22341,7 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
     used.add(occurrence.line);
     const parsed = __ndw_parseTermDisplay(occurrence.display);
     if (!parsed.word) continue;
-    let heading = "";
-    for (let i = occurrence.line; i >= 0; i -= 1) {
-      const m = /^#{1,6}\s+(.+?)\s*$/u.exec(lines[i] || "");
-      if (m) { heading = m[1].replace(/\{\{nd:[^{}\r\n]+\}\}/gu, "").trim(); break; }
-    }
+    const heading = occurrence.heading || "";
     const definition = __ndw_noteTermDefinitionAt(lines, occurrence.line);
     const next = {
       ...entry,
@@ -22708,8 +22724,14 @@ async function __ndw_registerNoteTerm(app, editor, view) {
   }
   editor.replaceSelection(`${selection.prefix}{{nd:${displayWord}}}${selection.suffix}`);
   const lines = [];
+  const markerLine = editor.getLine(termLine) || "";
+  const markerEnd = markerLine.lastIndexOf("}}");
+  const inlineDefinition = markerEnd >= 0
+    ? markerLine.slice(markerEnd + 2).replace(/^(\*\*|__|\*|_|~~)/u, "").replace(/^[：:\s]+/u, "").trim()
+    : "";
+  if (inlineDefinition) lines.push(inlineDefinition);
   let i = termLine + 1;
-  while (i < editor.lineCount() && !String(editor.getLine(i) || "").trim()) i += 1;
+  if (!inlineDefinition) while (i < editor.lineCount() && !String(editor.getLine(i) || "").trim()) i += 1;
   while (i < editor.lineCount()) {
     const line = editor.getLine(i) || "";
     if (!line.trim()) break;

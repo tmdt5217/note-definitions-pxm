@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.83
+# note-definitions_PXM 0.39.84
 
-- 百科搜索页不再显示“删除词条”按钮；修复百科按钮初始化时 __ndw_coreDisabled 未定义导致后续逻辑中断的问题。
+- 修复源笔记中已有引用干扰：优先识别同标题、带定义正文的源 marker；支持 marker 同一行冒号后的定义。
