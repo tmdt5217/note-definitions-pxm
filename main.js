@@ -971,6 +971,9 @@ var require_pxm_main = __commonJS({
         });
         }
         new import_obsidian14.Setting(containerEl).setName("编辑器与阅读视图").setHeading();
+        if (this.settings.manualLinkOnly === true) {
+          new import_obsidian14.Setting(containerEl).setName("自动识别已关闭").setDesc("仅手动链接模式下，阅读视图标记、链接高亮、拼写检查和输入自动补全均不生效；关闭该模式后可重新配置。");
+        } else {
         new import_obsidian14.Setting(containerEl).setName("\u5728\u9605\u8BFB\u89C6\u56FE\u4E2D\u542F\u7528").setDesc(
           "\u5141\u8BB8\u5728\u9605\u8BFB\u89C6\u56FE\u4E2D\u663E\u793A\u5DF2\u5B9A\u4E49\u77ED\u8BED\u548C\u8BCD\u6761\u5F39\u7A97"
         ).addToggle((component) => {
@@ -1009,6 +1012,7 @@ var require_pxm_main = __commonJS({
             await this.saveCallback();
           });
         });
+        }
         new import_obsidian14.Setting(containerEl).setName("索引、性能与后台任务").setHeading();
         new import_obsidian14.Setting(containerEl).setName("\u767E\u4E07\u8BCD\u6761\u6A21\u5F0F").setDesc("\u4F7F\u7528\u6301\u4E45\u7D22\u5F15\u5E76\u5173\u95ED\u65E7\u7684\u5168\u91CF\u5185\u5B58\u4ED3\u50A8\u3002\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
           component.setValue(this.settings.scalabilityMode === true);
@@ -1025,7 +1029,7 @@ var require_pxm_main = __commonJS({
             component.setButtonText("\u5237\u65B0\u72B6\u6001");
             component.onClick(() => this.display());
           });
-          new import_obsidian14.Setting(containerEl).setName("\u5B8C\u6574\u6807\u8BB0\u5F53\u524D\u6587\u7AE0").setDesc("\u5728\u9605\u8BFB\u89C6\u56FE\u4E2D\u5206\u9875\u904D\u5386\u5F53\u524D\u6587\u7AE0\u6D89\u53CA\u7684\u7D22\u5F15\u8303\u56F4\uFF0C\u6700\u7EC8\u6807\u8BB0\u5168\u90E8\u53EF\u8BC6\u522B\u8BCD\u6761\u3002\u9996\u6B21\u5904\u7406\u957F\u6587\u53EF\u80FD\u8F83\u6162\uFF1B\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
+          const completeArticleSetting = new import_obsidian14.Setting(containerEl).setName("\u5B8C\u6574\u6807\u8BB0\u5F53\u524D\u6587\u7AE0").setDesc("\u5728\u9605\u8BFB\u89C6\u56FE\u4E2D\u5206\u9875\u904D\u5386\u5F53\u524D\u6587\u7AE0\u6D89\u53CA\u7684\u7D22\u5F15\u8303\u56F4\uFF0C\u6700\u7EC8\u6807\u8BB0\u5168\u90E8\u53EF\u8BC6\u522B\u8BCD\u6761\u3002\u9996\u6B21\u5904\u7406\u957F\u6587\u53EF\u80FD\u8F83\u6162\uFF1B\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
             component.setValue(this.settings.scalabilityCompleteReadingView === true);
             component.onChange(async (val) => {
               this.settings.scalabilityCompleteReadingView = val;
@@ -1033,6 +1037,7 @@ var require_pxm_main = __commonJS({
               new import_obsidian14.Notice("\u5B8C\u6574\u6807\u8BB0\u8BBE\u7F6E\u5C06\u5728\u91CD\u65B0\u542F\u52A8 Obsidian \u540E\u751F\u6548");
             });
           });
+          if (this.settings.manualLinkOnly === true) completeArticleSetting.settingEl.hide();
           new import_obsidian14.Setting(containerEl).setName("\u6807\u8BB0\u6F5C\u5728\u53CC\u94FE").setDesc("\u5728\u666E\u901A Markdown \u6B63\u6587\u4E2D\uFF0C\u5C06\u4E0E\u5168\u5E93\u5176\u4ED6\u7B14\u8BB0\u6807\u9898\u3001title\u3001aliases \u6216 alias \u5B8C\u5168\u5339\u914D\u7684\u672A\u94FE\u63A5\u6587\u5B57\u6807\u4E3A\u7EFF\u8272\u865A\u7EBF\u3002\u53EA\u5EFA\u7ACB\u6807\u9898\u5143\u6570\u636E\u7D22\u5F15\uFF0C\u4E0D\u626B\u63CF\u6216\u4FDD\u5B58\u6B63\u6587\uFF1B\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
             component.setValue(this.settings.enablePotentialNoteLinks === true);
             component.onChange(async (val) => {
@@ -1387,7 +1392,7 @@ var require_pxm_main = __commonJS({
       } else {
         attributes.onmouseenter = triggerFunc2;
       }
-      if (!settings.enableSpellcheck || settings.highPerformanceMode === true) {
+      if (!settings.enableSpellcheck || settings.highPerformanceMode === true || settings.manualLinkOnly === true) {
         attributes.spellcheck = "false";
       }
       return attributes;
@@ -3289,7 +3294,7 @@ var require_pxm_main = __commonJS({
         return;
       if (window.NoteDefinition.settings.scalabilityMode === true)
         return;
-      const shouldRunPostProcessor = window.NoteDefinition.settings.enableInReadingView;
+      const shouldRunPostProcessor = window.NoteDefinition.settings.enableInReadingView && window.NoteDefinition.settings.manualLinkOnly !== true;
       if (!shouldRunPostProcessor) {
         return;
       }
@@ -3319,7 +3324,7 @@ var require_pxm_main = __commonJS({
       if (parent.nodeName === "A" && ((_a = parent.classList) == null ? void 0 : _a.contains("internal-link"))) {
         return;
       }
-      if (!getSettings2().enableOnLinks && parent.nodeName === "A") {
+      if ((!getSettings2().enableOnLinks || getSettings2().manualLinkOnly === true) && parent.nodeName === "A") {
         return;
       }
       if (isInsideKatex(parent)) {
@@ -12564,7 +12569,7 @@ function getDecorationAttrs(phrase) {
   } else {
     attributes.onmouseenter = triggerFunc;
   }
-  if (!settings.enableSpellcheck) {
+  if (!settings.enableSpellcheck || settings.manualLinkOnly === true) {
     attributes.spellcheck = "false";
   }
   return attributes;
@@ -14456,7 +14461,7 @@ function collectTextNodes(parent, targets, insideLink = false) {
     const isLink = child.nodeName.toUpperCase() === "A";
     if (isLink && child.classList.contains("internal-link"))
       continue;
-    if (isLink && !getSettings().enableOnLinks)
+    if (isLink && (!getSettings().enableOnLinks || getSettings().manualLinkOnly === true))
       continue;
     if (shouldSkipElement(child))
       continue;
@@ -14548,7 +14553,7 @@ var PersistentReadingViewDecoration = class {
   async process(element, context) {
     var _a, _b;
     const settings = getSettings();
-    if (!settings.enableInReadingView || settings.scalabilityMode !== true)
+    if (!settings.enableInReadingView || settings.scalabilityMode !== true || settings.manualLinkOnly === true)
       return;
     const isDefinitionPopup = element.getAttribute("ctx") === "def-popup";
     const definitionAvailable = this.index.isSearchAvailable();
@@ -15834,7 +15839,7 @@ var NoteDefinitionsPXM = class extends LegacyPlugin {
         )
       );
     }
-    const showArticleIndexProgress = bootstrapPolicy.enabled && window.NoteDefinition.settings.scalabilityCompleteReadingView === true;
+    const showArticleIndexProgress = bootstrapPolicy.enabled && window.NoteDefinition.settings.scalabilityCompleteReadingView === true && window.NoteDefinition.settings.manualLinkOnly !== true;
     if (showArticleIndexProgress) {
       this.articleIndexStatusBar = this.addStatusBarItem();
       this.articleIndexStatusBar.classList.add(
