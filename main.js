@@ -19393,6 +19393,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       this.applyFilter();
     });
     const coreMenu = toolbar.createDiv({ cls: "ndw-core-menu" });
+    if (window.NoteDefinition?.settings?.manualLinkOnly === true) coreMenu.hidden = true;
     const coreMain = coreMenu.createEl("button", {
       cls: "ndw-filter-reset ndw-core-main",
       text: "核心库",
@@ -21787,7 +21788,7 @@ function __ndw_installEncyclopediaButton(app) {
         core.createSpan({ text: "加入内库" });
       }
       const currentDef = leafView?._currentDef;
-      core.hidden = !(leafView?._mode === "definition" && currentDef);
+      core.hidden = __ndw_coreDisabled() || !(leafView?._mode === "definition" && currentDef);
       if (currentDef && core.dataset.word !== currentDef.word) {
         core.dataset.word = currentDef.word;
         core.setText("检查核心库…");
@@ -22743,6 +22744,10 @@ async function __ndw_toggleCoreEntry(entry){
 }
 
 async function __ndw_mountCoreButton(parent, entry, options = {}){
+  if (__ndw_coreDisabled()) {
+    if (parent instanceof HTMLElement) parent.hidden = true;
+    return { button: null, update: () => {} };
+  }
   const app=window.NoteDefinition?.app;
   const button=parent.createEl("button",{text:"检查核心库…",cls:options.cls||""});
   let current=entry;
