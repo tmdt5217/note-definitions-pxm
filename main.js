@@ -22668,6 +22668,16 @@ function __ndw_cleanEmptyNdMarkers(editor) {
   return starts.length;
 }
 
+function __ndwSourceLinesForFile(file) {
+  const settings = window.NoteDefinition?.settings;
+  return new Set(
+    (Array.isArray(settings?.noteTerms) ? settings.noteTerms : [])
+      .filter((item) => item?.notePath === file?.path)
+      .map((item) => Number(item.line))
+      .filter(Number.isFinite)
+  );
+}
+
 function __ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines = new Set()) {
   if (!editor?.getLine || sourceLines.has(line)) return 0;
   let text = editor.getLine(line) || "";
@@ -23194,6 +23204,14 @@ async function __ndw_openDictionaryProtocol(app, params) {
           void __ndw_registerNoteTerm(this.app, editor, view);
         });
       });
+    }));
+    this.registerEvent(this.app.workspace.on("editor-change", (editor, info) => {
+      const file = info?.file || this.app.workspace.getActiveFile();
+      if (!file) return;
+      const line = editor.getCursor().line;
+      if (!String(editor.getLine(line) || "").includes("{{nd:")) return;
+      const sourceLines = __ndwSourceLinesForFile(file);
+      window.setTimeout(() => __ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines), 0);
     }));
     const invalidMarkerTimers = new WeakMap();
     this.registerEvent(this.app.workspace.on("editor-change", (editor, info) => {
