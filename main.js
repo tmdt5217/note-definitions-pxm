@@ -870,6 +870,7 @@ var require_pxm_main = __commonJS({
       manualLinkOnly: false,
       manualLinkOnlyCoreFolder: "",
       manualLinkOnlyPrevAuto: {},
+      noteTerms: [],
       coreDefFolder: "Attachments_all/core definitions",
       enableInReadingView: true,
       enableOnLinks: true,
@@ -6300,6 +6301,10 @@ ${issues.join("\n")}`);
       // ── 导航 ──
       _navigateTo(def, trackHistory = true) {
         var _a, _b;
+        if (def.source === "note" && (def.notePath || def.filePath)) {
+          void __ndw_openNoteTermAt(this.app, def);
+          return;
+        }
         if (def.__readingKnowledge) {
           (_b = (_a = globalThis.__noteDefinitionsPXMScalability) == null ? void 0 : _a.showBookPreview) == null ? void 0 : _b.call(_a, def);
           return;
@@ -6791,8 +6796,13 @@ ${issues.join("\n")}`);
               word: entry.word,
               aliases: entry.aliases || [],
               definition: entry.definition,
-              filePath: entry.filePath,
-              file: this.app.vault.getAbstractFileByPath(entry.filePath)
+              filePath: entry.notePath || entry.filePath,
+              notePath: entry.notePath || "",
+              line: entry.line,
+              column: entry.column,
+              heading: entry.heading || "",
+              source: entry.source || "",
+              file: this.app.vault.getAbstractFileByPath(entry.notePath || entry.filePath)
             }
           }));
         } catch (error) {
@@ -6804,7 +6814,7 @@ ${issues.join("\n")}`);
             const aliases = Array.isArray(entry.aliases) ? entry.aliases : [];
             const aliasHit = aliases.find((alias) => __ndw_norm(alias).includes(q));
             if (!word.includes(q) && !aliasHit && !__ndw_norm(entry.definition).includes(q)) continue;
-            out.push({ label: entry.word, aliasHit: aliasHit || null, def: { key: word, word: entry.word, aliases, definition: entry.definition, filePath: entry.filePath, file: this.app.vault.getAbstractFileByPath(entry.filePath) } });
+            out.push({ label: entry.word, aliasHit: aliasHit || null, def: { key: word, word: entry.word, aliases, definition: entry.definition, filePath: entry.notePath || entry.filePath, notePath: entry.notePath || "", line: entry.line, column: entry.column, heading: entry.heading || "", source: entry.source || "", file: this.app.vault.getAbstractFileByPath(entry.notePath || entry.filePath) } });
             if (out.length >= 30) break;
           }
           return out;
@@ -22173,6 +22183,88 @@ function __ndw_renderNdMarkers(root) {
   }
 }
 
+async function __ndw_openNoteTermAt(app, entry) {
+  const notePath = String(entry?.notePath || entry?.filePath || "").trim();
+  if (!notePath) return false;
+  const file = app.vault.getAbstractFileByPath(notePath);
+  if (!file) {
+    new __ndw_obsidian.Notice(`找不到笔记：${notePath}`);
+    return false;
+  }
+  const leaf = app.workspace.getLeaf("tab") || app.workspace.getLeaf(true);
+  await leaf.openFile(file);
+  const line = Math.max(0, Number(entry?.line) || 0);
+  window.setTimeout(() => {
+    const editor = leaf.view?.editor;
+    if (!editor) return;
+    const target = { line: Math.min(line, Math.max(0, editor.lineCount() - 1)), ch: 0 };
+    editor.setCursor(target);
+    try { editor.scrollIntoView({ from: target, to: target }, true); } catch {}
+  }, 60);
+  return true;
+}
+
+async function __ndw_registerNoteTerm(app, editor, view) {
+  const selected = String(editor?.getSelection?.() || "").trim();
+  if (!selected) {
+    new __ndw_obsidian.Notice("请先选中一个词条名。");
+    return;
+  }
+  if (/\r|\n/u.test(selected)) {
+    new __ndw_obsidian.Notice("词条名不能包含换行。");
+    return;
+  }
+  const file = view?.file || app.workspace.getActiveFile();
+  if (!file) {
+    new __ndw_obsidian.Notice("当前没有活动笔记。");
+    return;
+  }
+  const from = editor.getCursor("from");
+  const termLine = from.line;
+  const originalLine = editor.getLine(termLine) || "";
+  const headingMatch = /^#{1,6}\s+(.+?)\s*$/u.exec(originalLine);
+  let heading = headingMatch ? headingMatch[1].trim() : "";
+  if (!heading) {
+    for (let i = termLine - 1; i >= 0; i -= 1) {
+      const m = /^#{1,6}\s+(.+?)\s*$/u.exec(editor.getLine(i) || "");
+      if (m) { heading = m[1].trim(); break; }
+    }
+  }
+  editor.replaceSelection(`{{nd:${selected}}}`);
+  const lines = [];
+  let i = termLine + 1;
+  while (i < editor.lineCount() && !String(editor.getLine(i) || "").trim()) i += 1;
+  while (i < editor.lineCount()) {
+    const line = editor.getLine(i) || "";
+    if (!line.trim()) break;
+    lines.push(line);
+    i += 1;
+  }
+  const definition = lines.join("\n").trim();
+  const settings = window.NoteDefinition?.settings;
+  if (!settings) return;
+  if (!Array.isArray(settings.noteTerms)) settings.noteTerms = [];
+  const entry = {
+    word: selected,
+    notePath: file.path,
+    line: termLine,
+    column: from.ch,
+    heading,
+    definition,
+    addedAt: Date.now()
+  };
+  settings.noteTerms = settings.noteTerms.filter((item) => !(item && item.notePath === file.path && String(item.word || "") === selected));
+  settings.noteTerms.push(entry);
+  try {
+    const plugin = app.plugins.plugins["note-definitions-pxm"];
+    await plugin?.saveData?.(settings);
+  } catch (error) {
+    console.warn("[note-definitions] note term save failed", error);
+  }
+  if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+  new __ndw_obsidian.Notice(`已注册笔记词条：${selected}${definition ? "" : "（未找到连续定义段落）"}`, 5000);
+}
+
 async function __ndw_insertDictionaryLink(app, editor) {
   if (!editor) return;
   const selected = String(editor.getSelection() || "").trim();
@@ -22384,12 +22476,21 @@ function __ndw_showDictionaryPopover(app, entry, anchorElement) {
         aliases: entry.aliases || [],
         definition: entry.definition || "",
         file,
-        linkText: entry.filePath || entry.word
+        linkText: entry.source === "note" && entry.heading ? `${entry.filePath}#${entry.heading}` : entry.filePath || entry.word
       }, anchorElement.getBoundingClientRect(), document, null);
       const popoverEl = document.querySelector(".definition-popover");
       const anchorPane = anchorElement.closest(".view-content, .markdown-source-view, .markdown-preview-view") || anchorElement.closest(".workspace-leaf-content") || anchorElement.closest(".workspace-leaf");
       if (popoverEl && anchorPane) __ndwPopoverPanes.set(popoverEl, anchorPane);
       if (popoverEl) __ndwPopoverAnchors.set(popoverEl, anchorElement);
+      if (popoverEl && entry.source === "note" && (entry.notePath || entry.filePath)) {
+        const goto = popoverEl.querySelector(".popover-go-to-def-button");
+        goto?.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          globalThis.__ndwGetDefinitionPopover?.()?.unmount?.();
+          void __ndw_openNoteTermAt(app, entry);
+        }, true);
+      }
       window.setTimeout(__ndw_confinePopovers, 0);
       window.setTimeout(__ndw_confinePopovers, 80);
       window.setTimeout(__ndw_confinePopovers, 300);
@@ -22428,6 +22529,12 @@ async function __ndw_openDictionaryProtocol(app, params) {
       editorCallback: (editor) => void __ndw_insertDictionaryLink(this.app, editor)
     });
     this.addCommand({
+      id: "register-note-term",
+      name: "注册ND词条",
+      icon: "book-plus",
+      editorCallback: (editor, view) => void __ndw_registerNoteTerm(this.app, editor, view)
+    });
+    this.addCommand({
       id: "convert-selection-to-dictionary-link",
       name: "将选中词汇转为ND链接",
       icon: "book-open",
@@ -22442,6 +22549,11 @@ async function __ndw_openDictionaryProtocol(app, params) {
       menu.addItem((item) => {
         item.setTitle("插入ND链接").setIcon("book-open").onClick(() => {
           void __ndw_insertDictionaryLink(this.app, editor);
+        });
+      });
+      menu.addItem((item) => {
+        item.setTitle("注册ND词条").setIcon("book-plus").onClick(() => {
+          void __ndw_registerNoteTerm(this.app, editor, view);
         });
       });
     }));
@@ -22745,9 +22857,11 @@ async function __ndw_lookupIndexedDefinition(word){
     if(!idx.__ready) idx.__ready=idx.build(String(window.NoteDefinition?.settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u,""));
     await idx.__ready;
     const rows=await idx.query({q:word,limit:20});
-    const hit=rows.find(entry=>String(entry.word||"").trim().toLowerCase()===target || (entry.aliases||[]).some(alias=>String(alias||"").trim().toLowerCase()===target));
+    const matches=rows.filter(entry=>String(entry.word||"").trim().toLowerCase()===target || (entry.aliases||[]).some(alias=>String(alias||"").trim().toLowerCase()===target));
+    const hit=matches.find(entry=>entry.source==="note")||matches[0];
     if(!hit) return null;
-    return { key:hit.norm||hit.key||target, word:hit.word, aliases:hit.aliases||[], definition:hit.definition||"", filePath:hit.filePath||"", file:app.vault.getAbstractFileByPath(hit.filePath||"")||null };
+    const sourcePath=hit.notePath||hit.filePath||"";
+    return { key:hit.norm||hit.key||target, word:hit.word, aliases:hit.aliases||[], definition:hit.definition||"", filePath:sourcePath, notePath:hit.notePath||"", line:hit.line, column:hit.column, heading:hit.heading||"", source:hit.source||"", file:app.vault.getAbstractFileByPath(sourcePath)||null };
   }catch{return null;}
 }
 
@@ -22948,6 +23062,44 @@ window.__NdwTermIndex = class NdTermIndex {
       const tx=db.transaction([TERMS,FILES],"readwrite"); const done=txDone(tx); const ts=tx.objectStore(TERMS), fs=tx.objectStore(FILES);
       for(const p of stale){const keys=await req(ts.index("filePath").getAllKeys(p));for(const k of keys) ts.delete(k);fs.delete(p);}
       await done;
+    }
+    const noteTerms = Array.isArray(window.NoteDefinition?.settings?.noteTerms) ? window.NoteDefinition.settings.noteTerms : [];
+    {
+      const tx = db.transaction(TERMS, "readwrite");
+      const doneTx = txDone(tx);
+      const ts = tx.objectStore(TERMS);
+      await new Promise((resolve, reject) => {
+        const range = IDBKeyRange.bound("note:", "note:\uffff");
+        const request = ts.openCursor(range);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const cursor = request.result;
+          if (!cursor) { resolve(); return; }
+          cursor.delete();
+          cursor.continue();
+        };
+      });
+      for (const item of noteTerms) {
+        const word = String(item?.word || "").trim();
+        const notePath = String(item?.notePath || "").trim();
+        const n = norm(word);
+        if (!n || !notePath) continue;
+        const line = Math.max(0, Number(item.line) || 0);
+        const createdAt = Number(item.addedAt) || Date.now();
+        const key = `note:${notePath}:${line}:${n}`;
+        ts.put({
+          key, word, norm: n, aliases: [], aliasesNorm: [],
+          definition: String(item.definition || ""),
+          filePath: notePath, notePath,
+          line, column: Math.max(0, Number(item.column) || 0),
+          heading: String(item.heading || ""),
+          source: "note",
+          createdAt, updatedAt: createdAt,
+          sortKey: `${String(createdAt).padStart(16, "0")}\u0000${n}`,
+          tier: "external"
+        });
+      }
+      await doneTx;
     }
     this.__progress={phase:"done",done,total:files.length,terms,at:Date.now()};
     return {files:files.length,terms,elapsed:performance.now()-t0};
