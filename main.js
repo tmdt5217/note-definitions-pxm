@@ -932,7 +932,7 @@ var require_pxm_main = __commonJS({
         containerEl.addClass("ndw-settings-tab");
         if (this.settings.manualLinkOnly === true) {
           let manualAutoChanged = false;
-          for (const key of ["enableInReadingView", "enableOnLinks", "enableSpellcheck", "enableAutocomplete", "scalabilityCompleteReadingView"]) {
+          for (const key of ["enableInReadingView", "enableOnLinks", "enableSpellcheck", "enableAutocomplete", "scalabilityCompleteReadingView", "enablePotentialNoteLinks"]) {
             if (this.settings[key] !== false) {
               this.settings[key] = false;
               manualAutoChanged = true;
@@ -962,7 +962,7 @@ var require_pxm_main = __commonJS({
                 this.settings.manualLinkOnlyCoreFolder = this.settings.coreDefFolder || "Attachments_all/core definitions";
               }
               const previous = this.settings.manualLinkOnlyPrevAuto && typeof this.settings.manualLinkOnlyPrevAuto === "object" ? this.settings.manualLinkOnlyPrevAuto : {};
-              for (const key of ["enableInReadingView", "enableOnLinks", "enableSpellcheck", "enableAutocomplete", "scalabilityCompleteReadingView"]) {
+              for (const key of ["enableInReadingView", "enableOnLinks", "enableSpellcheck", "enableAutocomplete", "scalabilityCompleteReadingView", "enablePotentialNoteLinks"]) {
                 if (!Object.prototype.hasOwnProperty.call(previous, key)) previous[key] = this.settings[key] !== false;
                 this.settings[key] = false;
               }
@@ -976,6 +976,7 @@ var require_pxm_main = __commonJS({
               this.settings.enableSpellcheck = previous.enableSpellcheck !== false;
               this.settings.enableAutocomplete = previous.enableAutocomplete !== false;
               this.settings.scalabilityCompleteReadingView = previous.scalabilityCompleteReadingView === true;
+              this.settings.enablePotentialNoteLinks = previous.enablePotentialNoteLinks === true;
               this.settings.manualLinkOnlyPrevAuto = {};
             }
             if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
@@ -1062,7 +1063,7 @@ var require_pxm_main = __commonJS({
             });
           });
           if (this.settings.manualLinkOnly === true) completeArticleSetting.settingEl.hide();
-          new import_obsidian14.Setting(containerEl).setName("\u6807\u8BB0\u6F5C\u5728\u53CC\u94FE").setDesc("\u5728\u666E\u901A Markdown \u6B63\u6587\u4E2D\uFF0C\u5C06\u4E0E\u5168\u5E93\u5176\u4ED6\u7B14\u8BB0\u6807\u9898\u3001title\u3001aliases \u6216 alias \u5B8C\u5168\u5339\u914D\u7684\u672A\u94FE\u63A5\u6587\u5B57\u6807\u4E3A\u7EFF\u8272\u865A\u7EBF\u3002\u53EA\u5EFA\u7ACB\u6807\u9898\u5143\u6570\u636E\u7D22\u5F15\uFF0C\u4E0D\u626B\u63CF\u6216\u4FDD\u5B58\u6B63\u6587\uFF1B\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
+          const potentialLinkSetting = new import_obsidian14.Setting(containerEl).setName("\u6807\u8BB0\u6F5C\u5728\u53CC\u94FE").setDesc("\u5728\u666E\u901A Markdown \u6B63\u6587\u4E2D\uFF0C\u5C06\u4E0E\u5168\u5E93\u5176\u4ED6\u7B14\u8BB0\u6807\u9898\u3001title\u3001aliases \u6216 alias \u5B8C\u5168\u5339\u914D\u7684\u672A\u94FE\u63A5\u6587\u5B57\u6807\u4E3A\u7EFF\u8272\u865A\u7EBF\u3002\u53EA\u5EFA\u7ACB\u6807\u9898\u5143\u6570\u636E\u7D22\u5F15\uFF0C\u4E0D\u626B\u63CF\u6216\u4FDD\u5B58\u6B63\u6587\uFF1B\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
             component.setValue(this.settings.enablePotentialNoteLinks === true);
             component.onChange(async (val) => {
               this.settings.enablePotentialNoteLinks = val;
@@ -1070,6 +1071,7 @@ var require_pxm_main = __commonJS({
               new import_obsidian14.Notice("\u6F5C\u5728\u53CC\u94FE\u6807\u8BB0\u8BBE\u7F6E\u5C06\u5728\u91CD\u65B0\u542F\u52A8 Obsidian \u540E\u751F\u6548");
             });
           });
+          if (this.settings.manualLinkOnly === true) potentialLinkSetting.settingEl.hide();
           new import_obsidian14.Setting(containerEl).setName("\u786E\u5B9A\u6027\u54C8\u5E0C\u5206\u7247").setDesc("\u65B0\u589E\u8BCD\u6761\u6309\u6807\u9898\u81EA\u52A8\u5199\u5165\u8BCD\u5E93\u6839\u76EE\u5F55\u4E0B\u7684 shards \u5206\u7247\uFF1B\u6BCF\u4E2A Markdown \u6700\u591A 1000 \u6761\u3002\u542F\u7528\u524D\u8BF7\u5148\u5B8C\u6210\u8FC1\u79FB\u9884\u6F14\u3002\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
             component.setValue(this.settings.deterministicShardingMode === true);
             component.onChange(async (val) => {
@@ -15792,7 +15794,7 @@ var NoteDefinitionsPXM = class extends LegacyPlugin {
       () => window.NoteDefinition.settings.deterministicShardingMode === true,
       this.backgroundScheduler
     );
-    if (bootstrapPolicy.enabled && savedSettings.enablePotentialNoteLinks === true && savedSettings.highPerformanceMode !== true) {
+    if (bootstrapPolicy.enabled && savedSettings.enablePotentialNoteLinks === true && savedSettings.highPerformanceMode !== true && savedSettings.manualLinkOnly !== true) {
       this.persistentNoteTitleIndex = new PersistentNoteTitleIndex(
         this.app,
         () => window.NoteDefinition.settings.defFolder,
