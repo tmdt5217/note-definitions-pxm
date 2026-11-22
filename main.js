@@ -928,8 +928,10 @@ var require_pxm_main = __commonJS({
         var _a, _b, _c, _d, _e;
         let { containerEl } = this;
         containerEl.empty();
+        new import_obsidian14.Setting(containerEl).setName("书籍搜索与微信读书").setHeading();
         const bookDirectorySettings = containerEl.createDiv();
         (_b = (_a = globalThis.__noteDefinitionsPXMScalability) == null ? void 0 : _a.mountBookSearchSettings) == null ? void 0 : _b.call(_a, bookDirectorySettings);
+        new import_obsidian14.Setting(containerEl).setName("核心库与写作模式").setHeading();
         new import_obsidian14.Setting(containerEl).setName("\u9AD8\u6027\u80FD\u6A21\u5F0F\uFF08\u5927\u8BCD\u5E93\uFF09").setDesc("\u9AD8\u6027\u80FD\u6A21\u5F0F\uFF1A\u5916\u5E93\u53EA\u641C\u7D22\uFF1B\u6838\u5FC3\u5E93\u4ECD\u4FDD\u7559\u6B63\u6587\u4E0B\u5212\u7EBF\u3001\u70B9\u51FB\u5B9A\u4E49\u548C\u81EA\u52A8\u8865\u5168\u3002\u540C\u65F6\u5173\u95ED\u6D4F\u89C8/\u968F\u673A\u6392\u5E8F\u3001\u968F\u673A\u590D\u4E60\u548C\u5B9A\u4E49\u6B63\u6587\u641C\u7D22\u3002\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
           component.setValue(this.settings.highPerformanceMode === true);
           component.onChange(async (val) => {
@@ -967,6 +969,7 @@ var require_pxm_main = __commonJS({
           });
         });
         }
+        new import_obsidian14.Setting(containerEl).setName("编辑器与阅读视图").setHeading();
         new import_obsidian14.Setting(containerEl).setName("\u5728\u9605\u8BFB\u89C6\u56FE\u4E2D\u542F\u7528").setDesc(
           "\u5141\u8BB8\u5728\u9605\u8BFB\u89C6\u56FE\u4E2D\u663E\u793A\u5DF2\u5B9A\u4E49\u77ED\u8BED\u548C\u8BCD\u6761\u5F39\u7A97"
         ).addToggle((component) => {
@@ -1005,6 +1008,7 @@ var require_pxm_main = __commonJS({
             await this.saveCallback();
           });
         });
+        new import_obsidian14.Setting(containerEl).setName("索引、性能与后台任务").setHeading();
         new import_obsidian14.Setting(containerEl).setName("\u767E\u4E07\u8BCD\u6761\u6A21\u5F0F").setDesc("\u4F7F\u7528\u6301\u4E45\u7D22\u5F15\u5E76\u5173\u95ED\u65E7\u7684\u5168\u91CF\u5185\u5B58\u4ED3\u50A8\u3002\u4FEE\u6539\u540E\u9700\u8981\u91CD\u65B0\u542F\u52A8 Obsidian\u3002").addToggle((component) => {
           component.setValue(this.settings.scalabilityMode === true);
           component.onChange(async (val) => {
@@ -1121,6 +1125,7 @@ var require_pxm_main = __commonJS({
             refreshScanTasks();
           }, 500);
         }
+        new import_obsidian14.Setting(containerEl).setName("词库文件").setHeading();
         new import_obsidian14.Setting(containerEl).setName("\u8BCD\u5E93\u6587\u4EF6\u5939").setDesc(
           `\u5F53\u524D\u9009\u62E9\uFF1A${this.settings.defFolder || DEFAULT_DEF_FOLDER}\u3002\u9009\u62E9\u8BCD\u5E93\u6839\u76EE\u5F55\uFF1B\u8BE5\u76EE\u5F55\u53CA\u5176\u5B50\u76EE\u5F55\u4E2D\u7684 Markdown \u6587\u4EF6\u4F1A\u88AB\u89E3\u6790\u4E3A\u8BCD\u6761`
         ).addButton((component) => {
