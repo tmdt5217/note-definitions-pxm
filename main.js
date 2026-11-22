@@ -22265,6 +22265,34 @@ function __ndw_splitWrappingMarkers(value) {
   return { prefix: match[1], word: match[2].trim(), suffix: match[1] };
 }
 
+function __ndw_cleanEmptyNdMarkers(editor) {
+  if (!editor?.getValue || !editor?.replaceRange) return 0;
+  const text = editor.getValue();
+  const needle = "{{nd:}}";
+  if (!text.includes(needle)) return 0;
+  const starts = [];
+  let index = text.indexOf(needle);
+  while (index >= 0) {
+    starts.push(index);
+    index = text.indexOf(needle, index + needle.length);
+  }
+  if (!starts.length) return 0;
+  const lineStarts = [0];
+  for (let i = 0; i < text.length; i += 1) if (text[i] === "\n") lineStarts.push(i + 1);
+  const posAt = (offset) => {
+    let lo = 0, hi = lineStarts.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (lineStarts[mid] <= offset) lo = mid; else hi = mid - 1;
+    }
+    return { line: lo, ch: offset - lineStarts[lo] };
+  };
+  for (let i = starts.length - 1; i >= 0; i -= 1) {
+    editor.replaceRange("", posAt(starts[i]), posAt(starts[i] + needle.length));
+  }
+  return starts.length;
+}
+
 async function __ndw_registerNoteTerm(app, editor, view) {
   const selection = __ndw_splitWrappingMarkers(editor?.getSelection?.() || "");
   const parsedTerm = __ndw_parseTermDisplay(selection.word);
@@ -22602,6 +22630,15 @@ async function __ndw_openDictionaryProtocol(app, params) {
       editorCallback: (editor) => void __ndw_insertDictionaryLink(this.app, editor)
     });
     this.addCommand({
+      id: "clean-empty-nd-markers",
+      name: "清理空 ND 标记",
+      icon: "eraser",
+      editorCallback: (editor) => {
+        const count = __ndw_cleanEmptyNdMarkers(editor);
+        new __ndw_obsidian.Notice(count ? `已清理 ${count} 个空 ND 标记。` : "没有空 ND 标记。");
+      }
+    });
+    this.addCommand({
       id: "register-note-term",
       name: "注册ND词条",
       icon: "book-plus",
@@ -22629,6 +22666,17 @@ async function __ndw_openDictionaryProtocol(app, params) {
           void __ndw_registerNoteTerm(this.app, editor, view);
         });
       });
+    }));
+    const emptyMarkerTimers = new WeakMap();
+    this.registerEvent(this.app.workspace.on("editor-change", (editor) => {
+      const previous = emptyMarkerTimers.get(editor);
+      if (previous) window.clearTimeout(previous);
+      const timer = window.setTimeout(() => {
+        emptyMarkerTimers.delete(editor);
+        if (!editor?.getValue?.().includes("{{nd:}}")) return;
+        __ndw_cleanEmptyNdMarkers(editor);
+      }, 450);
+      emptyMarkerTimers.set(editor, timer);
     }));
     this.registerDomEvent(document, "copy", (event) => __ndw_copyPlainLinkSelection(event), true);
     this.registerMarkdownPostProcessor((el) => {
