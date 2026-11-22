@@ -22119,6 +22119,24 @@ function __ndw_closePopoverOutside(event) {
   __ndw_blurEditorAfterPopover();
 }
 
+function __ndw_copyPlainLinkSelection(event) {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
+  const links = document.querySelectorAll(".ndw-manual-link");
+  let touchesLink = false;
+  for (const link of links) {
+    try {
+      if (selection.containsNode(link, true)) { touchesLink = true; break; }
+    } catch {}
+  }
+  if (!touchesLink) return;
+  const text = selection.toString();
+  if (!text) return;
+  event.clipboardData?.setData("text/plain", text);
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}
+
 function __ndw_styleManualLinks() {
   document.querySelectorAll('a[href^="https://note-definitions.invalid/"], a[href^="obsidian://note-definitions"]').forEach((anchor) => {
     anchor.classList.add("ndw-manual-link");
@@ -22607,6 +22625,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
         });
       });
     }));
+    this.registerDomEvent(document, "copy", (event) => __ndw_copyPlainLinkSelection(event), true);
     this.registerMarkdownPostProcessor((el) => {
       __ndw_renderNdMarkers(el);
       el.querySelectorAll('a[href^="https://note-definitions.invalid/"], a[href^="obsidian://note-definitions"]').forEach((anchor) => {

@@ -3954,3 +3954,9 @@ b .ndw-manual-link,
   color: var(--bold-color, var(--text-normal)) !important;
   font-weight: var(--bold-weight, 700) !important;
 }
+
+/* Allow normal character-level selection inside ND links */
+.ndw-manual-link {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
