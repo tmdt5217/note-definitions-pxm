@@ -1019,7 +1019,7 @@ var require_pxm_main = __commonJS({
           });
         });
         if (this.settings.scalabilityMode === true) {
-          const indexStatusText = ((_c = globalThis.__noteDefinitionsPXMScalability) == null ? void 0 : _c.indexStatusText) || "\u8BCD\u5178\u7D22\u5F15\uFF1A\u6B63\u5728\u542F\u52A8";
+          const indexStatusText = this.settings.manualLinkOnly === true ? "仅手动链接模式：核心库自动索引已关闭" : ((_c = globalThis.__noteDefinitionsPXMScalability) == null ? void 0 : _c.indexStatusText) || "\u8BCD\u5178\u7D22\u5F15\uFF1A\u6B63\u5728\u542F\u52A8";
           new import_obsidian14.Setting(containerEl).setName("\u8BCD\u5178\u7D22\u5F15\u72B6\u6001").setDesc(indexStatusText).addButton((component) => {
             component.setButtonText("\u5237\u65B0\u72B6\u6001");
             component.onClick(() => this.display());
@@ -1097,6 +1097,10 @@ var require_pxm_main = __commonJS({
             });
           });
           const scanContainer = containerEl.createDiv({ cls: "note-definitions-pxm-scan-tasks" });
+          if (this.settings.manualLinkOnly === true) {
+            scanSetting.settingEl.hide();
+            scanContainer.hide();
+          }
           const scanRows = [];
           for (const task of scanTasks) {
             const row = scanContainer.createDiv({ cls: "note-definitions-pxm-scan-task" });
