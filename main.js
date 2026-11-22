@@ -22281,10 +22281,31 @@ async function __ndw_openDictionaryProtocol(app, params) {
       const target = event.target;
       if (!(target instanceof Element)) return;
       const manual = target.closest(".ndw-manual-link");
-      if (!manual) return;
+      if (manual) {
+        event.preventDefault();
+        event.stopPropagation();
+        __ndw_openManualWord(this.app, manual.getAttribute("data-ndw-word") || "", manual);
+        return;
+      }
+      const auto = target.closest(".def-decoration, .def-link-decoration");
+      if (auto) {
+        const word = auto.getAttribute("def") || auto.getAttribute("data-def") || auto.textContent || "";
+        if (!word.trim()) return;
+        event.preventDefault();
+        event.stopPropagation();
+        __ndw_openManualWord(this.app, word.trim(), auto);
+      }
+    }, true);
+    this.registerDomEvent(document, "click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const auto = target.closest(".def-decoration, .def-link-decoration");
+      if (!auto) return;
       event.preventDefault();
-      event.stopPropagation();
-      __ndw_openManualWord(this.app, manual.getAttribute("data-ndw-word") || "", manual);
+      event.stopImmediatePropagation();
+      if (Date.now() - __ndwManualOpenedAt < 500) return;
+      const word = auto.getAttribute("def") || auto.getAttribute("data-def") || auto.textContent || "";
+      if (word.trim()) __ndw_openManualWord(this.app, word.trim(), auto);
     }, true);
     this.registerDomEvent(document, "click", (event) => {
       const target = event.target;
