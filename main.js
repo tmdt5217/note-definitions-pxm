@@ -22545,7 +22545,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
         void __ndw_openDictionaryProtocol(this.app, params);
       });
     }
-    this.registerEvent(this.app.workspace.on("editor-menu", (menu, editor) => {
+    this.registerEvent(this.app.workspace.on("editor-menu", (menu, editor, view) => {
       menu.addItem((item) => {
         item.setTitle("插入ND链接").setIcon("book-open").onClick(() => {
           void __ndw_insertDictionaryLink(this.app, editor);
