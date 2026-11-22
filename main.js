@@ -21831,6 +21831,7 @@ function __ndw_openManualWord(app, word, anchor) {
 }
 
 const __ndwPopoverPanes = new WeakMap();
+const __ndwPopoverAnchors = new WeakMap();
 
 function __ndw_confinePopovers() {
   const app = window.NoteDefinition?.app;
@@ -21857,6 +21858,30 @@ function __ndw_confinePopovers() {
     }
     let rect = popover.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
+    const phone = __ndw_obsidian.Platform?.isMobile && !__ndw_isTabletLike();
+    const anchor = __ndwPopoverAnchors.get(popover);
+    if (phone && anchor?.isConnected) {
+      const width = Math.max(180, bounds.width - gap * 2);
+      popover.style.setProperty("width", `${width}px`, "important");
+      popover.style.setProperty("max-width", `${width}px`, "important");
+      popover.style.setProperty("left", `${bounds.left + gap}px`, "important");
+      popover.style.setProperty("right", "auto", "important");
+      popover.style.setProperty("bottom", "auto", "important");
+      popover.style.setProperty("overflow", "auto", "important");
+      const anchorRect = anchor.getBoundingClientRect();
+      let rect2 = popover.getBoundingClientRect();
+      let top = anchorRect.bottom + gap;
+      if (top + rect2.height > bottomLimit) top = anchorRect.top - gap - rect2.height;
+      top = Math.min(Math.max(top, bounds.top + gap), Math.max(bounds.top + gap, bottomLimit - gap - rect2.height));
+      popover.style.setProperty("top", `${top}px`, "important");
+      popover.style.setProperty("max-height", `${Math.max(120, bottomLimit - Math.max(bounds.top + gap, top) - gap)}px`, "important");
+      rect2 = popover.getBoundingClientRect();
+      if (top + rect2.height > bottomLimit) {
+        top = Math.max(bounds.top + gap, bottomLimit - gap - rect2.height);
+        popover.style.setProperty("top", `${top}px`, "important");
+      }
+      return;
+    }
     const maxWidth = Math.max(160, bounds.width - gap * 2);
     if (rect.width > maxWidth) {
       popover.style.setProperty("max-width", `${maxWidth}px`, "important");
@@ -22183,6 +22208,7 @@ function __ndw_showDictionaryPopover(app, entry, anchorElement) {
       const popoverEl = document.querySelector(".definition-popover");
       const anchorPane = anchorElement.closest(".workspace-leaf-content") || anchorElement.closest(".workspace-leaf");
       if (popoverEl && anchorPane) __ndwPopoverPanes.set(popoverEl, anchorPane);
+      if (popoverEl) __ndwPopoverAnchors.set(popoverEl, anchorElement);
       window.setTimeout(__ndw_confinePopovers, 0);
       window.setTimeout(__ndw_confinePopovers, 80);
       return true;
