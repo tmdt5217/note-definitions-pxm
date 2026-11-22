@@ -22516,19 +22516,19 @@ async function __ndwRefFilesForWords(app, words) {
     const ready = await __ndwEnsureRefIndex(app);
     if (!ready) return null;
     const db = await __ndwOpenRefDb();
-    const tx = db.transaction(ND_REF_STORE, "readonly");
-    const done = txDone(tx);
-    const index = tx.objectStore(ND_REF_STORE).index("words");
     const paths = new Set();
     for (const word of unique) {
+      const tx = db.transaction(ND_REF_STORE, "readonly");
+      const done = txDone(tx);
+      const index = tx.objectStore(ND_REF_STORE).index("words");
       const request = index.getAll(word);
       const rows = await new Promise((resolve, reject) => {
         request.onsuccess = () => resolve(request.result || []);
         request.onerror = () => reject(request.error);
       });
+      await done;
       for (const row of rows) paths.add(row.path);
     }
-    await done;
     return [...paths];
   } catch (error) {
     console.warn("[note-definitions] reference index lookup failed", error);

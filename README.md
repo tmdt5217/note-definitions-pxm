@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.39.94
+# note-definitions_PXM 0.39.95
 
-- 用缩写片段搜索时优先插入匹配的同义词缩写，例如输入 mdi 插入 pMDI，而不是主词“压力定量吸入剂”。
+- 修复 ND 引用索引一次查询多个旧词时可能出现的 IndexedDB 事务失效。
