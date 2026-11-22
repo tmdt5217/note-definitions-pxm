@@ -21633,6 +21633,20 @@ function __ndw_fixedOrigin(button) {
 }
 
 function __ndw_dockButtons(host) {
+  const activeView = window.NoteDefinition?.app?.workspace?.activeLeaf?.view;
+  const activeEncyclopediaDefinition = activeView?.getViewType?.() === "nd-encyclopedia" && (activeView?._mode === "definition" || Boolean(activeView?._currentDef));
+  if (activeEncyclopediaDefinition) {
+    document.querySelectorAll(".ndw-ency-entry, .ndw-ency-all-terms, .ndw-ency-cards").forEach((button) => {
+      button.style.setProperty("display", "none", "important");
+    });
+    return;
+  }
+  if (host.querySelector(".nd-ency-toolbar")) {
+    for (const selector of [".ndw-ency-entry", ".ndw-ency-all-terms", ".ndw-ency-cards"]) {
+      host.querySelector(selector)?.style.setProperty("display", "none", "important");
+    }
+    return;
+  }
   const pane = host.closest(".workspace-leaf-content");
   if (!pane) return;
   const entry = host.querySelector(".ndw-ency-entry");
