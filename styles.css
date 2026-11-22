@@ -3912,3 +3912,37 @@ a[data-ndw-manual-link] ~ .external-link-icon,
 .ndw-settings-tab .setting-item-heading .setting-item-description {
   color: var(--text-normal) !important;
 }
+
+/* Plugin inputs: thin border; focus changes color only, no thick ring */
+.ndw-cards-view input:not([type="checkbox"]):not([type="radio"]),
+.ndw-all-terms-view input:not([type="checkbox"]):not([type="radio"]),
+.ndw-dict-link-modal input:not([type="checkbox"]):not([type="radio"]),
+.ndw-random-settings input:not([type="checkbox"]):not([type="radio"]),
+.ndw-review-settings input:not([type="checkbox"]):not([type="radio"]),
+.ndw-cards-view select,
+.ndw-all-terms-view select,
+.ndw-dict-link-modal select,
+.ndw-random-settings select,
+.ndw-review-settings select {
+  border: 1px solid var(--background-modifier-border) !important;
+  border-radius: var(--radius-s) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background-color: var(--background-primary) !important;
+  transition: border-color 0.12s ease;
+}
+
+.ndw-cards-view input:not([type="checkbox"]):not([type="radio"]):focus,
+.ndw-all-terms-view input:not([type="checkbox"]):not([type="radio"]):focus,
+.ndw-dict-link-modal input:not([type="checkbox"]):not([type="radio"]):focus,
+.ndw-random-settings input:not([type="checkbox"]):not([type="radio"]):focus,
+.ndw-review-settings input:not([type="checkbox"]):not([type="radio"]):focus,
+.ndw-cards-view select:focus,
+.ndw-all-terms-view select:focus,
+.ndw-dict-link-modal select:focus,
+.ndw-random-settings select:focus,
+.ndw-review-settings select:focus {
+  border-color: var(--interactive-accent-hover) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
