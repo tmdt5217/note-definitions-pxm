@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.40.4
+# note-definitions_PXM 0.40.5
 
-- 保存词条遇到 Definition key conflict 时，自动移除其他词条中冲突的同义词并重试一次。
+- 新增启动自动清理词条键冲突和“清理词条键冲突”命令：当某词条的别名等于另一个词条主词时，移除该别名。

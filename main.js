@@ -22772,6 +22772,50 @@ async function __ndwSnapshotShardFile(app, file) {
   } catch {}
 }
 
+let __ndwDefinitionConflictRepairRunning = false;
+
+async function __ndwRepairDefinitionKeyConflicts(app, { announce = false } = {}) {
+  if (__ndwDefinitionConflictRepairRunning) return 0;
+  const writer = window.NoteDefinition?.shardedDefinitions;
+  if (!writer?.update) return 0;
+  __ndwDefinitionConflictRepairRunning = true;
+  let repaired = 0;
+  try {
+    const terms = [];
+    for (const file of app.vault.getMarkdownFiles()) {
+      if (!__ndwIsDefinitionPath(file.path)) continue;
+      let text = "";
+      try { text = await app.vault.cachedRead(file); } catch { continue; }
+      for (const term of __ndwParseShardTerms(text)) terms.push({ ...term, path: file.path });
+    }
+    const titles = new Map();
+    for (const term of terms) if (term.word) titles.set(__ndw_norm(term.word), term);
+    for (const term of terms) {
+      const aliases = (term.aliases || []).filter((alias) => {
+        const key = __ndw_norm(alias);
+        if (!key) return false;
+        const other = titles.get(key);
+        return !other || other === term;
+      });
+      if (aliases.length === (term.aliases || []).length) continue;
+      try {
+        await writer.update({ path: term.path, word: term.word }, {
+          word: term.word,
+          aliases,
+          definition: term.definition
+        });
+        repaired += 1;
+      } catch (error) {
+        console.warn("[note-definitions] definition key conflict repair failed", term.word, error);
+      }
+    }
+  } finally {
+    __ndwDefinitionConflictRepairRunning = false;
+  }
+  if (announce) new __ndw_obsidian.Notice(repaired ? `已清理 ${repaired} 个重复同义词冲突。` : "没有发现重复词条键冲突。");
+  return repaired;
+}
+
 async function __ndwInitShardSnapshots(app) {
   for (const file of app.vault.getMarkdownFiles()) {
     if (!__ndwIsShardFile(file)) continue;
@@ -23549,6 +23593,12 @@ async function __ndw_openDictionaryProtocol(app, params) {
       }
     });
     this.addCommand({
+      id: "repair-definition-key-conflicts",
+      name: "清理词条键冲突",
+      icon: "wrench",
+      callback: () => void __ndwRepairDefinitionKeyConflicts(this.app, { announce: true })
+    });
+    this.addCommand({
       id: "clean-empty-nd-markers",
       name: "清理空 ND 标记",
       icon: "eraser",
@@ -23730,6 +23780,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
       window.setTimeout(() => void __ndw_refreshAllNoteTerms(this.app), 1200);
       window.setTimeout(() => void __ndwEnsureRefIndex(this.app), 2500);
       window.setTimeout(() => void __ndwInitShardSnapshots(this.app), 3200);
+      window.setTimeout(() => void __ndwRepairDefinitionKeyConflicts(this.app), 6000);
     });
     this.addCommand({
       id: "refresh-note-terms",
