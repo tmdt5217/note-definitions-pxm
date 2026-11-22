@@ -22820,6 +22820,37 @@ function __ndwScheduleShardSnapshot(app, file) {
   __ndwShardSnapshotTimers.set(file.path, timer);
 }
 
+async function __ndwRemoveConflictingAlias(app, key, source, updateFn) {
+  try {
+    const targetKey = __ndw_norm(key);
+    if (!targetKey) return false;
+    const idx = window.__ndwSharedTermIndex;
+    if (!idx) return false;
+    if (!idx.__ready) {
+      const folder = String(window.NoteDefinition?.settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u, "");
+      idx.__ready = idx.build(folder).catch(() => null);
+    }
+    await idx.__ready;
+    const rows = await idx.query({ q: key, limit: 50 });
+    const target = rows.find((row) => {
+      if (!row || row.source === "note") return false;
+      if (__ndw_norm(row.word) === targetKey) return false;
+      return (row.aliases || []).some((alias) => __ndw_norm(alias) === targetKey);
+    });
+    if (!target || !target.filePath || !target.word) return false;
+    const aliases = (target.aliases || []).filter((alias) => __ndw_norm(alias) !== targetKey);
+    await updateFn({ path: target.filePath, word: target.word }, {
+      word: target.word,
+      aliases,
+      definition: target.definition || ""
+    });
+    return true;
+  } catch (error) {
+    console.warn("[note-definitions] conflict alias cleanup failed", error);
+    return false;
+  }
+}
+
 function __ndw_installShardRenameSync(app) {
   const writer = window.NoteDefinition?.shardedDefinitions;
   if (!writer) return false;
@@ -22911,6 +22942,23 @@ function __ndw_installShardRenameSync(app) {
       return result;
     };
     writer.__ndwAddSnapshotPatched = true;
+  }
+  if (!writer.__ndwUpdateConflictPatched && typeof writer.update === "function") {
+    const originalUpdate = writer.update;
+    writer.update = async function(source, definition) {
+      try {
+        return await originalUpdate.call(this, source, definition);
+      } catch (error) {
+        const message = String(error?.message || "");
+        const match = /Definition key conflict: (?:title|alias) "([^"]+)"/u.exec(message);
+        if (!match) throw error;
+        const fixed = await __ndwRemoveConflictingAlias(app, match[1], source, originalUpdate.bind(this));
+        if (!fixed) throw error;
+        new __ndw_obsidian.Notice(`已移除其他词条中冲突的同义词“${match[1]}”。`, 5000);
+        return await originalUpdate.call(this, source, definition);
+      }
+    };
+    writer.__ndwUpdateConflictPatched = true;
   }
   return true;
 }

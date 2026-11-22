@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.40.3
+# note-definitions_PXM 0.40.4
 
-- 词条改名回原主词时，如果旧主词被自动保留为同义词并存在完全相同的重复词条，会先合并重复词条再改名，避免 Definition key conflict。
+- 保存词条遇到 Definition key conflict 时，自动移除其他词条中冲突的同义词并重试一次。
