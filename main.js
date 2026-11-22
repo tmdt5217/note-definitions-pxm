@@ -6815,6 +6815,7 @@ ${issues.join("\n")}`);
               word: entry.word,
               aliases: entry.aliases || [],
               definition: entry.definition,
+              displayWord: entry.displayWord || entry.word,
               filePath: entry.notePath || entry.filePath,
               notePath: entry.notePath || "",
               line: entry.line,
@@ -22229,6 +22230,16 @@ async function __ndw_openNoteTermAt(app, entry) {
   return true;
 }
 
+function __ndw_parseTermDisplay(value) {
+  const text = String(value || "").trim();
+  const match = /^(.+?)\s*[（(]\s*([^（）()]*?)\s*[）)]\s*$/u.exec(text);
+  if (!match) return { word: text, display: text, aliases: [] };
+  const word = match[1].trim();
+  const aliases = match[2].split(/[，,;；]/u).map((part) => part.trim()).filter(Boolean);
+  if (!word || aliases.length === 0) return { word: text, display: text, aliases: [] };
+  return { word, display: text, aliases: [...new Set(aliases)] };
+}
+
 function __ndw_splitWrappingMarkers(value) {
   const text = String(value || "").trim();
   const match = /^(\*\*|__|\*|_|~~)([\s\S]*?)\1$/u.exec(text);
@@ -22238,7 +22249,9 @@ function __ndw_splitWrappingMarkers(value) {
 
 async function __ndw_registerNoteTerm(app, editor, view) {
   const selection = __ndw_splitWrappingMarkers(editor?.getSelection?.() || "");
-  const selected = selection.word;
+  const parsedTerm = __ndw_parseTermDisplay(selection.word);
+  const selected = parsedTerm.word;
+  const displayWord = parsedTerm.display;
   if (!selected) {
     new __ndw_obsidian.Notice("请先选中一个词条名。");
     return;
@@ -22263,7 +22276,7 @@ async function __ndw_registerNoteTerm(app, editor, view) {
       if (m) { heading = m[1].trim(); break; }
     }
   }
-  editor.replaceSelection(`${selection.prefix}{{nd:${selected}}}${selection.suffix}`);
+  editor.replaceSelection(`${selection.prefix}{{nd:${displayWord}}}${selection.suffix}`);
   const lines = [];
   let i = termLine + 1;
   while (i < editor.lineCount() && !String(editor.getLine(i) || "").trim()) i += 1;
@@ -22279,6 +22292,8 @@ async function __ndw_registerNoteTerm(app, editor, view) {
   if (!Array.isArray(settings.noteTerms)) settings.noteTerms = [];
   const entry = {
     word: selected,
+    display: displayWord,
+    aliases: parsedTerm.aliases,
     notePath: file.path,
     line: termLine,
     column: from.ch,
@@ -22315,8 +22330,9 @@ async function __ndw_insertDictionaryLink(app, editor) {
     new __NdwDictionaryLinkSearchModal(app, editor, cursor, selected, null, { from, to }).open();
     return;
   }
-  editor.replaceSelection(`${selection.prefix}${__ndw_dictionaryMarker(String(entry.word || selected))}${selection.suffix}`);
-  new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${entry.word}}}`);
+  const displayWord = String(entry.displayWord || entry.word || selected);
+  editor.replaceSelection(`${selection.prefix}${__ndw_dictionaryMarker(displayWord)}${selection.suffix}`);
+  new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${displayWord}}}`);
 }
 
 class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
@@ -22465,7 +22481,7 @@ class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
     this.statusEl.setText(`${label ? label + "：" : ""}共 ${rows.length} 条，点击插入`);
     for (const row of rows) {
       const button = this.resultEl.createEl("button", { cls: "ndw-dict-link-row", attr: { type: "button" } });
-      button.createSpan({ cls: "ndw-dict-link-word", text: row.word });
+      button.createSpan({ cls: "ndw-dict-link-word", text: row.displayWord || row.word });
       if (row.aliases?.length) button.createSpan({ cls: "ndw-dict-link-aliases", text: row.aliases.join("、") });
       const preview = String(row.definition || "").replace(/\s+/g, " ").trim().slice(0, 90);
       if (preview) button.createSpan({ cls: "ndw-dict-link-preview", text: preview });
@@ -22481,7 +22497,7 @@ class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
   }
 
   insert(row) {
-    const markdown = __ndw_dictionaryMarker(String(row.word || ""));
+    const markdown = __ndw_dictionaryMarker(String(row.displayWord || row.word || ""));
     if (this.replaceRange) this.editor.replaceRange(markdown, this.replaceRange.from, this.replaceRange.to);
     else {
       const sameAsCursorWord = this.cursorWord?.word && __ndw_norm(this.cursorWord.word) === __ndw_norm(row.word);
@@ -22489,7 +22505,7 @@ class __NdwDictionaryLinkSearchModal extends __ndw_obsidian.Modal {
       else this.editor.replaceRange(markdown, this.cursor);
     }
     this.close();
-    new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${row.word}}}`);
+    new __ndw_obsidian.Notice(`已插入 ND 链接：{{nd:${row.displayWord || row.word}}}`);
   }
 
   onClose() {
@@ -22890,12 +22906,18 @@ async function __ndw_lookupIndexedDefinition(word){
     const idx=window.__ndwSharedTermIndex || (window.__ndwSharedTermIndex=new window.__NdwTermIndex(app));
     if(!idx.__ready) idx.__ready=idx.build(String(window.NoteDefinition?.settings?.defFolder || "Attachments_all/definition folder").trim().replace(/\/+$/u,""));
     await idx.__ready;
-    const rows=await idx.query({q:word,limit:20});
-    const matches=rows.filter(entry=>String(entry.word||"").trim().toLowerCase()===target || (entry.aliases||[]).some(alias=>String(alias||"").trim().toLowerCase()===target));
+    const parsed = __ndw_parseTermDisplay(word);
+    const queries = [...new Set([word, parsed.word, ...parsed.aliases].map((value) => String(value || "").trim()).filter(Boolean))];
+    const rows = [];
+    for (const query of queries) {
+      const found = await idx.query({q:query,limit:20});
+      for (const entry of found) if (!rows.some((row) => row.key === entry.key)) rows.push(entry);
+    }
+    const matches=rows.filter(entry=>String(entry.word||"").trim().toLowerCase()===target || String(entry.displayWord||"").trim().toLowerCase()===target || (entry.aliases||[]).some(alias=>String(alias||"").trim().toLowerCase()===target));
     const hit=matches.find(entry=>entry.source==="note")||matches[0];
     if(!hit) return null;
     const sourcePath=hit.notePath||hit.filePath||"";
-    return { key:hit.norm||hit.key||target, word:hit.word, aliases:hit.aliases||[], definition:hit.definition||"", filePath:sourcePath, notePath:hit.notePath||"", line:hit.line, column:hit.column, heading:hit.heading||"", source:hit.source||"", file:app.vault.getAbstractFileByPath(sourcePath)||null };
+    return { key:hit.norm||hit.key||target, word:hit.word, displayWord:hit.displayWord||hit.word, aliases:hit.aliases||[], definition:hit.definition||"", filePath:sourcePath, notePath:hit.notePath||"", line:hit.line, column:hit.column, heading:hit.heading||"", source:hit.source||"", file:app.vault.getAbstractFileByPath(sourcePath)||null };
   }catch{return null;}
 }
 
@@ -23114,7 +23136,11 @@ window.__NdwTermIndex = class NdTermIndex {
         };
       });
       for (const item of noteTerms) {
-        const word = String(item?.word || "").trim();
+        const rawWord = String(item?.word || "").trim();
+        const displayWord = String(item?.display || rawWord).trim() || rawWord;
+        const parsedTerm = __ndw_parseTermDisplay(displayWord);
+        const word = parsedTerm.word;
+        const aliases = parsedTerm.aliases;
         const notePath = String(item?.notePath || "").trim();
         const n = norm(word);
         if (!n || !notePath) continue;
@@ -23122,7 +23148,7 @@ window.__NdwTermIndex = class NdTermIndex {
         const createdAt = Number(item.addedAt) || Date.now();
         const key = `note:${notePath}:${line}:${n}`;
         ts.put({
-          key, word, norm: n, aliases: [], aliasesNorm: [],
+          key, word, displayWord, norm: n, aliases, aliasesNorm: aliases.map(norm).filter(Boolean),
           definition: String(item.definition || ""),
           filePath: notePath, notePath,
           line, column: Math.max(0, Number(item.column) || 0),
