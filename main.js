@@ -1686,9 +1686,18 @@ var require_pxm_main = __commonJS({
         const after = view.state.sliceDoc(sel.head, line.to);
         if (!before.includes("{{nd:")) return false;
         if (key === "Delete") {
-          if (!after.startsWith("}")) return false;
           const open = before.lastIndexOf("{{nd:");
-          if (open < 0 || before.indexOf("}}", open) >= 0) return false;
+          if (open < 0) return false;
+          const close = before.indexOf("}}", open);
+          if (!after.startsWith("}") && close >= 0 && close + 2 === before.length && !after) {
+            const wordPart = before.slice(open + 5, close);
+            if (!wordPart) return true;
+            const chars = Array.from(wordPart);
+            const last = chars.pop();
+            view.dispatch({ changes: { from: sel.head - 2 - last.length, to: sel.head - 2 } });
+            return true;
+          }
+          if (!after.startsWith("}") || close >= 0) return false;
           const wordPart = before.slice(open + 5).replace(/\}+$/u, "");
           if (!wordPart) return true;
           const chars = Array.from(wordPart);
@@ -1697,6 +1706,16 @@ var require_pxm_main = __commonJS({
           return true;
         }
         if (key === "Backspace") {
+          const close = before.lastIndexOf("}}");
+          if (close >= 0 && close + 2 === before.length) {
+            const open = before.lastIndexOf("{{nd:", close);
+            const wordPart = open >= 0 ? before.slice(open + 5, close) : "";
+            if (!wordPart) return true;
+            const chars = Array.from(wordPart);
+            const last = chars.pop();
+            view.dispatch({ changes: { from: sel.head - 2 - last.length, to: sel.head - 2 } });
+            return true;
+          }
           if (!/\{\{nd:?$/.test(before)) return false;
           const open = before.lastIndexOf("{{nd:");
           return open >= 0 && before.indexOf("}}", open) < 0;
