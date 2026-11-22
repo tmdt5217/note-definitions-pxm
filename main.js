@@ -22283,6 +22283,11 @@ async function __ndw_registerNoteTerm(app, editor, view) {
     new __ndw_obsidian.Notice("当前没有活动笔记。");
     return;
   }
+  const duplicate = await window.__ndwLookupIndexedDefinition?.(selected);
+  if (duplicate && String(duplicate.word || "").trim().toLowerCase() === selected.toLowerCase()) {
+    new __ndw_obsidian.Notice(`词条“${selected}”已存在，注册失败。同义词重复不会阻止注册。`, 6000);
+    return;
+  }
   const from = editor.getCursor("from");
   const termLine = from.line;
   const originalLine = editor.getLine(termLine) || "";
