@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.41.4
+# note-definitions_PXM 0.41.5
 
-- 当快速切换器/模态框打开时，词条自动补全不再拦截 Enter 等按键，避免 Command+O 搜到文件却无法打开。
+- Command/Ctrl+O 打开快速切换器前移除词条自动补全浮层，避免浮层挡住鼠标点击。

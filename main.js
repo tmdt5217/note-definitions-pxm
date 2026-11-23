@@ -7681,7 +7681,7 @@ ${issues.join("\n")}`);
           }
         }, true);
         this.registerDomEvent(document, "click", (event) => {
-          if (definitionAutocomplete.isVisible) {
+          if (definitionAutocomplete.isVisible && !document.querySelector(".prompt, .modal-container, .modal")) {
             const container = definitionAutocomplete.container;
             if (container && !container.contains(event.target)) {
               removeAutocompleteContainer();
@@ -23842,6 +23842,11 @@ async function __ndw_openDictionaryProtocol(app, params) {
         new __ndw_obsidian.Notice(count ? "当前笔记的ND词条已刷新。" : "当前笔记没有已注册的ND词条。");
       }
     });
+    this.registerDomEvent(document, "keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && String(event.key || "").toLowerCase() === "o") {
+        document.querySelectorAll(".def-autocomplete-container").forEach((node) => node.remove());
+      }
+    }, true);
     this.registerDomEvent(document, "copy", (event) => __ndw_copyPlainLinkSelection(event), true);
     this.registerMarkdownPostProcessor((el) => {
       __ndw_renderNdMarkers(el);
