@@ -7672,7 +7672,7 @@ ${issues.join("\n")}`);
           const editor = activeView.editor;
           if (!editor)
             return;
-          if (definitionAutocomplete.isVisible) {
+          if (definitionAutocomplete.isVisible && !document.querySelector(".prompt, .modal-container, .modal")) {
             const handled = handleAutocompleteKeydown(event, editor);
             if (handled) {
               event.preventDefault();
