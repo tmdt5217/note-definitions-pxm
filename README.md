@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.42.1
+# note-definitions_PXM 0.42.2
 
-- 删除 ND 链接前半段后残留的 HEPA}} 一类尾随括号会立即清理，包括完整链接后多出的 }。
+- 删除链接前文时如果误删 {{nd: 开头，残留的 HEPA}} 会自动补回为 {{nd:HEPA}}，保留链接。

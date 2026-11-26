@@ -23197,10 +23197,15 @@ function __ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines = new Set()
     const close = lastOpen >= 0 ? text.indexOf("}}", lastOpen + 5) : -1;
     const tail = close >= 0 ? text.slice(close + 2) : "";
     const tailOnlyBraces = close >= 0 && /^\}+[ \t]*$/u.test(tail);
-    if (tailOnlyBraces || (!text.includes("{{nd:") && !text.includes("{"))) {
-      const start = tailOnlyBraces ? close + 2 : text.search(/\}+[ \t]*$/u);
-      if (start >= 0) {
-        editor.replaceRange("", { line, ch: start }, { line, ch: text.length });
+    if (tailOnlyBraces) {
+      editor.replaceRange("", { line, ch: close + 2 }, { line, ch: text.length });
+      return 1;
+    }
+    if (!text.includes("{{nd:") && !text.includes("{")) {
+      const danglingWord = /([^\s{}]+)(\}+)[ \t]*$/u.exec(text);
+      if (danglingWord) {
+        const start = text.length - danglingWord[0].length;
+        editor.replaceRange(`{{nd:${danglingWord[1]}}}`, { line, ch: start }, { line, ch: text.length });
         return 1;
       }
     }
