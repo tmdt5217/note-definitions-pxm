@@ -17364,7 +17364,11 @@ ${this.payload.definition}`;
 }
 
 function __ndw_citationDefinition(body, source, allowEmptySource = false) {
-  const text = String(body || "").trim();
+  const text = __ndw_stripTrailingFootnoteRefs(body)
+    .split(/\r?\n/u)
+    .map((line) => line.replace(/^[ \t]*[-*+][ \t]*$/u, "").trimEnd())
+    .join("\n")
+    .trim();
   const sourceText = String(source || "").trim();
   if (!text) return "";
   if (!sourceText && !allowEmptySource) return text;
