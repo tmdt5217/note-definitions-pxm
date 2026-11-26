@@ -17380,8 +17380,16 @@ function __ndw_smearUnits(text) {
   return value.match(/[A-Za-z]+(?:['’\-][A-Za-z]+)*|\d+(?:[.,]\d+)*|[\s\S]/gu) || [];
 }
 
+function __ndw_stripTrailingFootnoteRefs(body) {
+  return String(body || "")
+    .split(/\r?\n/u)
+    .map((line) => line.replace(/[ \t]*\[\^[^\]\s]+\][ \t]*$/u, "").trimEnd())
+    .join("\n")
+    .trim();
+}
+
 function __ndw_plainDefinition(body) {
-  const text = String(body || "").trim();
+  const text = __ndw_stripTrailingFootnoteRefs(body);
   if (!text) return "";
   return /^[-*+]\s/u.test(text) ? text : `- ${text.replace(/\s+/gu, " ").trim()}`;
 }
@@ -17741,9 +17749,10 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
     }
     if (role === "definition") {
       if (!this.definitionInput) return;
+      const cleanSelected = __ndw_stripTrailingFootnoteRefs(selected);
       this.definitionInput.value = this.citationInput?.checked
-        ? __ndw_citationDefinition(selected, this.source, this.blankCitationSource)
-        : __ndw_plainDefinition(selected);
+        ? __ndw_citationDefinition(cleanSelected, this.source, this.blankCitationSource)
+        : __ndw_plainDefinition(cleanSelected);
       this.definitionInput.focus();
       this.clearSelection();
       return;
