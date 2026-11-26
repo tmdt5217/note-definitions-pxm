@@ -3949,8 +3949,13 @@ a[data-ndw-manual-link] ~ .external-link-icon,
 
 /* Bold ND links follow the theme/Style Settings bold color */
 strong .ndw-manual-link,
+strong .ndw-manual-link .cm-underline,
 b .ndw-manual-link,
-.ndw-manual-link.ndw-manual-bold {
+b .ndw-manual-link .cm-underline,
+.ndw-manual-link.ndw-manual-bold,
+.ndw-manual-bold .cm-underline,
+.ndw-manual-link.cm-strong,
+.ndw-manual-link.cm-strong .cm-underline {
   color: var(--bold-color, var(--text-normal)) !important;
   font-weight: var(--bold-weight, 700) !important;
 }
