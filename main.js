@@ -17477,6 +17477,8 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
     this.autoScrollSpeed = 0;
     this.lastPointerX = 0;
     this.lastPointerY = 0;
+    this.definitionPreviewTimer = null;
+    this.definitionPreviewToken = 0;
     this._pointerUp = () => {
       this.dragging = false;
       this.stopAutoScroll();
@@ -17585,12 +17587,16 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
       this.definitionInput.value = this.citationInput.checked
         ? __ndw_citationDefinition(this.definitionInput.value, this.source, this.blankCitationSource)
         : __ndw_stripCitation(this.definitionInput.value);
+      this.scheduleDefinitionPreview();
     });
     definitionSetting.addTextArea((text) => {
       this.definitionInput = text.inputEl;
       text.inputEl.rows = 12;
       text.inputEl.value = __ndw_plainDefinition(this.highlight.text.trim());
+      text.inputEl.addEventListener("input", () => this.scheduleDefinitionPreview());
     });
+    this.contentEl.createDiv({ cls: "ndw-definition-preview-title", text: "定义预览" });
+    this.definitionPreviewEl = this.contentEl.createDiv({ cls: "ndw-definition-preview markdown-rendered" });
 
     const actions = this.contentEl.createDiv({ cls: "ndw-actions" });
     const cancel = actions.createEl("button", { text: "取消" });
@@ -17602,6 +17608,7 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
       event.stopPropagation();
       if (!this.saveButton.disabled) void this.save();
     });
+    this.scheduleDefinitionPreview();
     window.setTimeout(() => {
       if (__ndw_obsidian.Platform.isMobile) {
         this.termInput?.blur();
@@ -17611,6 +17618,22 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
         this.termInput?.focus();
       }
     }, 0);
+  }
+
+  scheduleDefinitionPreview() {
+    if (this.definitionPreviewTimer) window.clearTimeout(this.definitionPreviewTimer);
+    const token = ++this.definitionPreviewToken;
+    this.definitionPreviewTimer = window.setTimeout(() => {
+      this.definitionPreviewTimer = null;
+      if (token !== this.definitionPreviewToken || !this.definitionPreviewEl) return;
+      __ndw_renderDefinitionPreview(
+        this.app,
+        this.definitionPreviewEl,
+        this.definitionInput?.value || "",
+        this.note?.file?.path || "",
+        this
+      );
+    }, 120);
   }
 
   addDragRange() {
@@ -17763,6 +17786,7 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
       this.definitionInput.value = this.citationInput?.checked
         ? __ndw_citationDefinition(cleanSelected, this.source, this.blankCitationSource)
         : __ndw_plainDefinition(cleanSelected);
+      this.scheduleDefinitionPreview();
       this.definitionInput.focus();
       this.clearSelection();
       return;
@@ -17796,6 +17820,9 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
   }
 
   onClose() {
+    if (this.definitionPreviewTimer) window.clearTimeout(this.definitionPreviewTimer);
+    this.definitionPreviewTimer = null;
+    this.definitionPreviewToken += 1;
     this.stopAutoScroll();
     document.removeEventListener("pointerup", this._pointerUp);
     document.removeEventListener("pointermove", this._pointerMove);
