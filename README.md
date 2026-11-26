@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.42.2
+# note-definitions_PXM 0.42.3
 
-- 删除链接前文时如果误删 {{nd: 开头，残留的 HEPA}} 会自动补回为 {{nd:HEPA}}，保留链接。
+- 启动时不再全库建立 ND 引用索引，也不再立刻扫描 shard 快照；改为首次改名词条时按需建索引、空闲时初始化 shard 快照，显著缩短移动端启动时间。

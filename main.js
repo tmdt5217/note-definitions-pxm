@@ -23904,9 +23904,9 @@ async function __ndw_openDictionaryProtocol(app, params) {
       window.setTimeout(() => void __ndw_syncNoteTermsForFile(this.app, file, { announce: false, rewriteReferences: true }), 500);
     }));
     this.app.workspace.onLayoutReady(() => {
-      window.setTimeout(() => void __ndw_refreshAllNoteTerms(this.app), 1200);
-      window.setTimeout(() => void __ndwEnsureRefIndex(this.app), 2500);
-      window.setTimeout(() => void __ndwInitShardSnapshots(this.app), 3200);
+      window.setTimeout(() => void __ndw_refreshAllNoteTerms(this.app), 5000);
+      const idle = window.requestIdleCallback || ((fn) => window.setTimeout(fn, 20000));
+      idle(() => { void __ndwInitShardSnapshots(this.app); }, { timeout: 60000 });
     });
     this.addCommand({
       id: "refresh-note-terms",
