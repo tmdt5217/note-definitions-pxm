@@ -22401,20 +22401,14 @@ function __ndw_splitWrappingMarkers(value) {
 const __ndwNoteTermSyncTimers = new Map();
 
 function __ndw_noteTermDefinitionAt(lines, lineIndex) {
-  const line = String(lines[lineIndex] || "");
-  const markerEnd = line.lastIndexOf("}}");
-  const inline = markerEnd >= 0
-    ? line.slice(markerEnd + 2).replace(/^(\*\*|__|\*|_|~~)/u, "").replace(/^[：:\s]+/u, "").trim()
-    : "";
-  const parts = [];
-  if (inline) parts.push(inline);
-  let i = lineIndex + 1;
-  if (!inline) while (i < lines.length && !String(lines[i] || "").trim()) i += 1;
-  while (i < lines.length && String(lines[i] || "").trim()) {
-    parts.push(String(lines[i] || ""));
-    i += 1;
-  }
-  return parts.join("\n").trim();
+  let start = Math.max(0, Math.min(lines.length - 1, lineIndex));
+  let end = start;
+  while (start > 0 && String(lines[start - 1] || "").trim()) start -= 1;
+  while (end + 1 < lines.length && String(lines[end + 1] || "").trim()) end += 1;
+  return lines.slice(start, end + 1)
+    .join("\n")
+    .replace(/\{\{nd:([^{}\r\n]+)\}\}/gu, "$1")
+    .trim();
 }
 
 async function __ndw_replaceNoteTermReferences(app, pairs) {
@@ -23352,22 +23346,9 @@ async function __ndw_registerNoteTerm(app, editor, view) {
     }
   }
   editor.replaceSelection(`${selection.prefix}{{nd:${displayWord}}}${selection.suffix}`);
-  const lines = [];
-  const markerLine = editor.getLine(termLine) || "";
-  const markerEnd = markerLine.lastIndexOf("}}");
-  const inlineDefinition = markerEnd >= 0
-    ? markerLine.slice(markerEnd + 2).replace(/^(\*\*|__|\*|_|~~)/u, "").replace(/^[：:\s]+/u, "").trim()
-    : "";
-  if (inlineDefinition) lines.push(inlineDefinition);
-  let i = termLine + 1;
-  if (!inlineDefinition) while (i < editor.lineCount() && !String(editor.getLine(i) || "").trim()) i += 1;
-  while (i < editor.lineCount()) {
-    const line = editor.getLine(i) || "";
-    if (!line.trim()) break;
-    lines.push(line);
-    i += 1;
-  }
-  const definition = lines.join("\n").trim();
+  const allLines = [];
+  for (let i = 0; i < editor.lineCount(); i += 1) allLines.push(editor.getLine(i) || "");
+  const definition = __ndw_noteTermDefinitionAt(allLines, termLine);
   const settings = window.NoteDefinition?.settings;
   if (!settings) return;
   if (!Array.isArray(settings.noteTerms)) settings.noteTerms = [];
