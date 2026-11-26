@@ -4625,6 +4625,12 @@ ${conflictLines}
             textarea.setRangeText(value, 0, textarea.value.length, "preserve");
             return true;
           },
+          set(value) {
+            textarea.value = String(value || "");
+          },
+          focus() {
+            textarea.focus();
+          },
           destroy() {
           }
         };
@@ -4783,6 +4789,19 @@ ${conflictLines}
             editor.replaceRange(value, { line: 0, ch: 0 });
             return true;
           },
+          set(value) {
+            clearTimeout(initialValueTimer);
+            const editor = getEditor();
+            if (editor && typeof editor.setValue === "function") {
+              editor.setValue(String(value || ""));
+            } else if (typeof embed.setViewData === "function") {
+              embed.setViewData(String(value || ""), false);
+            }
+          },
+          focus() {
+            const content = container.querySelector(".cm-content");
+            if (content && typeof content.focus === "function") content.focus();
+          },
           destroy() {
             clearTimeout(initialValueTimer);
             container.removeEventListener("paste", imagePasteHandler, true);
@@ -4799,6 +4818,7 @@ ${conflictLines}
         return createFallback();
       }
     }
+    globalThis.__ndwCreateDefinitionMarkdownEditor = createDefinitionMarkdownEditor;
     function attachRelatedTermAutocomplete(input, menuEl, getCurrentWord) {
       let candidates = [];
       let selectedIndex = 0;
@@ -17477,8 +17497,7 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
     this.autoScrollSpeed = 0;
     this.lastPointerX = 0;
     this.lastPointerY = 0;
-    this.definitionPreviewTimer = null;
-    this.definitionPreviewToken = 0;
+    this.definitionEditor = null;
     this._pointerUp = () => {
       this.dragging = false;
       this.stopAutoScroll();
@@ -17583,20 +17602,26 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
     citationLabel.createSpan({ text: "插入引文" });
     this.citationInput.addEventListener("change", () => {
       this.citationBox?.classList.toggle("is-checked", this.citationInput.checked);
-      if (!this.definitionInput) return;
-      this.definitionInput.value = this.citationInput.checked
-        ? __ndw_citationDefinition(this.definitionInput.value, this.source, this.blankCitationSource)
-        : __ndw_stripCitation(this.definitionInput.value);
-      this.scheduleDefinitionPreview();
+      if (!this.definitionEditor && !this.definitionInput) return;
+      const current = this.getDefinitionValue();
+      this.setDefinitionValue(this.citationInput.checked
+        ? __ndw_citationDefinition(current, this.source, this.blankCitationSource)
+        : __ndw_stripCitation(current));
     });
-    definitionSetting.addTextArea((text) => {
-      this.definitionInput = text.inputEl;
-      text.inputEl.rows = 12;
-      text.inputEl.value = __ndw_plainDefinition(this.highlight.text.trim());
-      text.inputEl.addEventListener("input", () => this.scheduleDefinitionPreview());
-    });
-    this.contentEl.createDiv({ cls: "ndw-definition-preview-title", text: "定义预览" });
-    this.definitionPreviewEl = this.contentEl.createDiv({ cls: "ndw-definition-preview markdown-rendered" });
+    const initialDefinition = __ndw_plainDefinition(this.highlight.text.trim());
+    this.definitionEditor = globalThis.__ndwCreateDefinitionMarkdownEditor?.(
+      this.app,
+      this.contentEl,
+      initialDefinition,
+      this.note?.file?.path || ""
+    ) || null;
+    if (!this.definitionEditor) {
+      this.definitionInput = this.contentEl.createEl("textarea", {
+        cls: "edit-modal-textarea",
+        attr: { rows: "12", placeholder: "Add definition here" }
+      });
+      this.definitionInput.value = initialDefinition;
+    }
 
     const actions = this.contentEl.createDiv({ cls: "ndw-actions" });
     const cancel = actions.createEl("button", { text: "取消" });
@@ -17608,7 +17633,6 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
       event.stopPropagation();
       if (!this.saveButton.disabled) void this.save();
     });
-    this.scheduleDefinitionPreview();
     window.setTimeout(() => {
       if (__ndw_obsidian.Platform.isMobile) {
         this.termInput?.blur();
@@ -17620,20 +17644,19 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
     }, 0);
   }
 
-  scheduleDefinitionPreview() {
-    if (this.definitionPreviewTimer) window.clearTimeout(this.definitionPreviewTimer);
-    const token = ++this.definitionPreviewToken;
-    this.definitionPreviewTimer = window.setTimeout(() => {
-      this.definitionPreviewTimer = null;
-      if (token !== this.definitionPreviewToken || !this.definitionPreviewEl) return;
-      __ndw_renderDefinitionPreview(
-        this.app,
-        this.definitionPreviewEl,
-        this.definitionInput?.value || "",
-        this.note?.file?.path || "",
-        this
-      );
-    }, 120);
+  getDefinitionValue() {
+    if (this.definitionEditor) return String(this.definitionEditor.value || "");
+    return String(this.definitionInput?.value || "");
+  }
+
+  setDefinitionValue(value) {
+    if (this.definitionEditor?.set) this.definitionEditor.set(value);
+    else if (this.definitionInput) this.definitionInput.value = value;
+  }
+
+  focusDefinition() {
+    if (this.definitionEditor?.focus) this.definitionEditor.focus();
+    else this.definitionInput?.focus();
   }
 
   addDragRange() {
@@ -17781,13 +17804,12 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
       return;
     }
     if (role === "definition") {
-      if (!this.definitionInput) return;
+      if (!this.definitionEditor && !this.definitionInput) return;
       const cleanSelected = __ndw_stripTrailingFootnoteRefs(selected);
-      this.definitionInput.value = this.citationInput?.checked
+      this.setDefinitionValue(this.citationInput?.checked
         ? __ndw_citationDefinition(cleanSelected, this.source, this.blankCitationSource)
-        : __ndw_plainDefinition(cleanSelected);
-      this.scheduleDefinitionPreview();
-      this.definitionInput.focus();
+        : __ndw_plainDefinition(cleanSelected));
+      this.focusDefinition();
       this.clearSelection();
       return;
     }
@@ -17820,9 +17842,8 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
   }
 
   onClose() {
-    if (this.definitionPreviewTimer) window.clearTimeout(this.definitionPreviewTimer);
-    this.definitionPreviewTimer = null;
-    this.definitionPreviewToken += 1;
+    try { this.definitionEditor?.destroy?.(); } catch {}
+    this.definitionEditor = null;
     this.stopAutoScroll();
     document.removeEventListener("pointerup", this._pointerUp);
     document.removeEventListener("pointermove", this._pointerMove);
@@ -17837,7 +17858,7 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
       return;
     }
     const word = this.termInput.value.trim();
-    const definition = this.definitionInput.value.trim();
+    const definition = this.getDefinitionValue().trim();
     if (!word) {
       new __ndw_obsidian.Notice("请先涂抹或填写词条。");
       return;
