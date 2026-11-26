@@ -23192,12 +23192,17 @@ function __ndwSourceLinesForFile(file) {
 function __ndw_cleanMalformedMarkersOnLine(editor, line, sourceLines = new Set(), { allowDangling = true } = {}) {
   if (!editor?.getLine || sourceLines.has(line)) return 0;
   let text = editor.getLine(line) || "";
-  if (allowDangling && !text.includes("{") && /\}[ \t]*$/u.test(text)) {
-    const match = /(\}\})[ \t]*$/u.exec(text) || /(\})[ \t]*$/u.exec(text);
-    if (match) {
-      const start = text.length - match[0].length;
-      editor.replaceRange("", { line, ch: start }, { line, ch: text.length });
-      return 1;
+  if (allowDangling && /\}[ \t]*$/u.test(text)) {
+    const lastOpen = text.lastIndexOf("{{nd:");
+    const close = lastOpen >= 0 ? text.indexOf("}}", lastOpen + 5) : -1;
+    const tail = close >= 0 ? text.slice(close + 2) : "";
+    const tailOnlyBraces = close >= 0 && /^\}+[ \t]*$/u.test(tail);
+    if (tailOnlyBraces || (!text.includes("{{nd:") && !text.includes("{"))) {
+      const start = tailOnlyBraces ? close + 2 : text.search(/\}+[ \t]*$/u);
+      if (start >= 0) {
+        editor.replaceRange("", { line, ch: start }, { line, ch: text.length });
+        return 1;
+      }
     }
   }
   let cursor = 0;
@@ -23757,7 +23762,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
       if (!file) return;
       const line = editor.getCursor().line;
       const currentText = String(editor.getLine(line) || "");
-      const danglingClose = !currentText.includes("{") && /\}[ \t]*$/u.test(currentText);
+      const danglingClose = /\}[ \t]*$/u.test(currentText);
       if (currentText.includes("{{nd:}}")) __ndw_cleanEmptyNdMarkersNearCursor(editor);
       if (!currentText.includes("{{nd:") && !danglingClose) return;
       const sourceLines = __ndwSourceLinesForFile(file);
