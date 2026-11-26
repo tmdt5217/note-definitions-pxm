@@ -17374,7 +17374,13 @@ function __ndw_citationDefinition(body, source, allowEmptySource = false) {
   if (!sourceText && !allowEmptySource) return text;
   if (/\*\*来源：\*\*/u.test(text)) return text;
   const marker = "[^1]";
-  const bodyWithMarker = text.includes(marker) ? text : `${text} ${marker}`;
+  let bulletCount = 0;
+  const marked = text.split(/\r?\n/u).map((line) => {
+    if (!/^[ \t]*[-*+][ \t]+\S/u.test(line)) return line;
+    bulletCount += 1;
+    return `${line.trimEnd()} ${marker}`;
+  }).join("\n");
+  const bodyWithMarker = bulletCount ? marked : `${text} ${marker}`;
   const listItem = /^[-*+]\s/u.test(bodyWithMarker) ? bodyWithMarker : `- ${bodyWithMarker.replace(/\s+/gu, " ").trim()}`;
   return `${listItem}\n\n**来源：**\n[^1]: ${sourceText}`;
 }
