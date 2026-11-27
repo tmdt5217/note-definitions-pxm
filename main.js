@@ -17444,6 +17444,7 @@ function __ndw_appendContentWithSource(definition, content, source) {
   const current = String(definition || "").trim();
   const body = __ndw_stripCitation(content).trim();
   if (!body) return current;
+  const sourceText = String(source || "").trim();
   const used = new Set([...current.matchAll(/\[\^([^\]\s]+)\]/gu)].map((match) => match[1].toLowerCase()));
   let number = 1;
   while (used.has(String(number))) number += 1;
@@ -17454,9 +17455,24 @@ function __ndw_appendContentWithSource(definition, content, source) {
     bullets += 1;
     return `${line.trimEnd()} ${marker}`;
   }).join("\n");
-  const block = bullets ? marked : `${body} ${marker}`;
-  const sourceText = String(source || "").trim();
-  return `${current}${current ? "\n\n" : ""}${block}${sourceText ? `\n\n**来源：**\n[^${number}]: ${sourceText}` : ""}`;
+  const block = sourceText ? (bullets ? marked : `${body} ${marker}`) : body;
+  const labelRe = /(^|\n)[ \t]*\*\*(?:来源|脚注／引文)：\*\*[ \t]*(?=\n|$)/gu;
+  let labelMatch = null;
+  let match;
+  while ((match = labelRe.exec(current))) labelMatch = match;
+  let contentBefore = current;
+  let sourceSection = "";
+  if (labelMatch) {
+    const labelIndex = labelMatch.index + (labelMatch[1] ? labelMatch[1].length : 0);
+    contentBefore = current.slice(0, labelIndex).trimEnd();
+    sourceSection = current.slice(labelIndex).trim();
+  }
+  let result = [contentBefore, block].filter(Boolean).join("\n");
+  if (sourceText) {
+    if (sourceSection) result = `${result}\n\n${sourceSection}\n[^${number}]: ${sourceText}`;
+    else result = `${result}\n\n**来源：**\n[^${number}]: ${sourceText}`;
+  }
+  return result.trim();
 }
 
 function __ndw_citationSources(text) {
