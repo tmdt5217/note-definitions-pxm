@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.42.7
+# note-definitions_PXM 0.42.8
 
-- 加粗词条由 CodeMirror 的 .cm-strong 包裹时也使用主题 --bold-color；同时设置 -webkit-text-fill-color，覆盖移动端 WebView 的黑色填充。
+- 段落块定义会排除词条所在行本身，避免定义开头重复出现“偶发分枝杆菌（Mycobacterium fortuitum）”；词条行的其他说明文字仍保留。

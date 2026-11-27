@@ -22417,10 +22417,24 @@ function __ndw_noteTermDefinitionAt(lines, lineIndex) {
   let end = start;
   while (start > 0 && String(lines[start - 1] || "").trim()) start -= 1;
   while (end + 1 < lines.length && String(lines[end + 1] || "").trim()) end += 1;
-  return lines.slice(start, end + 1)
-    .join("\n")
-    .replace(/\{\{nd:([^{}\r\n]+)\}\}/gu, (_match, word) => __ndw_cleanTermMarkup(word))
-    .trim();
+  const markerRe = /\{\{nd:([^{}\r\n]+)\}\}/gu;
+  const output = [];
+  for (let i = start; i <= end; i += 1) {
+    const line = String(lines[i] || "");
+    if (i !== lineIndex) {
+      output.push(line.replace(markerRe, (_match, word) => __ndw_cleanTermMarkup(word)));
+      continue;
+    }
+    let rest = line.replace(markerRe, "").trim();
+    if (!rest) continue;
+    if (/^[\s*_~:：,，;；。.\-–—]+$/u.test(rest)) continue;
+    rest = rest
+      .replace(/^[\s:：,，;；。.\-–—]+/u, "")
+      .replace(/^[*_~]+|[*_~]+$/gu, "")
+      .trim();
+    if (rest) output.push(rest);
+  }
+  return output.join("\n").trim();
 }
 
 async function __ndw_replaceNoteTermReferences(app, pairs) {
