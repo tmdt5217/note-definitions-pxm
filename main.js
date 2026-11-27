@@ -19878,6 +19878,13 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
 
   makeRow(entry) {
     const row = this.listEl.createDiv({ cls: "ndw-term-row ndw-term-clickable" });
+    const editButton = row.createEl("button", { cls: "ndw-term-edit", attr: { "aria-label": "编辑词条", title: "编辑词条" } });
+    __ndw_setNativeIcon(editButton, "pencil", '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>');
+    editButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void this.editTerm(entry);
+    });
     const checkbox = row.createEl("input", { type: "checkbox", cls: "ndw-term-check" });
     checkbox.checked = this.selected.has(entry.word);
     checkbox.addEventListener("click", (event) => event.stopPropagation());
@@ -19912,6 +19919,43 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     const score = Number(__ndw_cardScores()[__ndw_cardKey(entry.word)]) || 0;
     footer.createSpan({ cls: "ndw-term-stats", text: `不熟 ${score}/10 · 浏览 ${Number(view.count) || 0}` });
     return row;
+  }
+
+  async editTerm(entry) {
+    if (!entry) return;
+    if (entry.source === "note" || (entry.notePath && entry.notePath !== entry.filePath)) {
+      const path = String(entry.notePath || entry.filePath || "").trim();
+      const file = __ndw_resolveVaultFile(this.app, path);
+      if (!file) {
+        new __ndw_obsidian.Notice(`找不到源笔记文件：${path || "（路径为空）"}`);
+        return;
+      }
+      await __ndw_rebindNoteTermSource(this.app, entry, file);
+      try {
+        const leaf = this.app.workspace.getLeaf(false);
+        await leaf.openFile(file, { active: true });
+        const place = () => {
+          const editor = leaf.view?.editor || leaf.view?.sourceMode?.editor || this.app.workspace.activeEditor?.editor;
+          return __ndwSelectTermInEditor(editor, entry);
+        };
+        if (!place()) {
+          window.setTimeout(place, 80);
+          window.setTimeout(place, 240);
+        }
+      } catch (error) {
+        new __ndw_obsidian.Notice(`打开源笔记失败：${error?.message || String(error)}`);
+      }
+      return;
+    }
+    const Editor = globalThis.__ndwAddDefinitionModal;
+    if (typeof Editor !== "function") {
+      new __ndw_obsidian.Notice("词条编辑器未就绪，请重新加载 ND。");
+      return;
+    }
+    const editor = new Editor(this.app, null, () => {
+      if (this.contentEl?.isConnected) this.show();
+    }, null, entry);
+    void editor.open(entry.word);
   }
 
   setupSentinel() {
@@ -22307,6 +22351,59 @@ function __ndw_sourceContainsDefinition(text, entry) {
   const snippet = lines[0];
   if (!snippet) return true;
   return source.includes(snippet);
+}
+
+function __ndwSelectTermInEditor(editor, entry) {
+  if (!editor?.getValue || !entry) return false;
+  const word = __ndw_cleanTermMarkup(entry.word || entry.display || "");
+  const display = __ndw_cleanTermMarkup(entry.display || entry.word || "");
+  const lines = editor.getValue().split("\n");
+  let line = Math.min(Math.max(0, Number(entry.line) || 0), Math.max(0, lines.length - 1));
+  const compact = (value) => String(value || "").replace(/\s+/gu, "");
+  const wordCompact = compact(word);
+  const displayCompact = compact(display);
+  const marker = display ? `{{nd:${display}}}` : "";
+  if (word && !lines[line]?.includes(word)) {
+    const found = lines.findIndex((text) => {
+      if (marker && text.includes(marker)) return true;
+      const normalized = compact(text);
+      return (wordCompact && normalized.includes(wordCompact)) || (displayCompact && normalized.includes(displayCompact));
+    });
+    if (found >= 0) line = found;
+  }
+  const text = lines[line] || "";
+  let fromCh = Math.min(Math.max(0, Number(entry.column) || 0), text.length);
+  let toCh = Math.min(text.length, fromCh + 1);
+  const markerAt = marker ? text.indexOf(marker) : -1;
+  if (markerAt >= 0) {
+    fromCh = markerAt + 5;
+    toCh = Math.min(text.length, fromCh + Math.max(1, display.length || word.length));
+  } else if (word || display) {
+    const target = word || display;
+    const directAt = text.indexOf(target);
+    if (directAt >= 0) {
+      fromCh = directAt;
+      toCh = directAt + target.length;
+    } else {
+      const positions = [];
+      let compactText = "";
+      for (let i = 0; i < text.length; i += 1) {
+        if (/\s/u.test(text[i])) continue;
+        positions.push(i);
+        compactText += text[i];
+      }
+      const compactTarget = compact(target);
+      const compactAt = compactText.indexOf(compactTarget);
+      if (compactAt >= 0) {
+        fromCh = positions[compactAt];
+        toCh = positions[Math.min(positions.length - 1, compactAt + compactTarget.length - 1)] + 1;
+      }
+    }
+  }
+  editor.setSelection({ line, ch: Math.min(fromCh, text.length) }, { line, ch: toCh });
+  editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: Math.max(toCh, 1) } }, true);
+  editor.focus();
+  return true;
 }
 
 async function __ndw_rebindNoteTermSource(app, entry, file) {

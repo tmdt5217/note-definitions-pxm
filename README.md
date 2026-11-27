@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.43.18
+# note-definitions_PXM 0.43.19
 
-- 孤立笔记词条保留时间改为 5 分钟；每分钟检查一次，超过 5 分钟无标记则自动清理。
+- 词条管理列表每张词条卡片右上角新增编辑按钮；笔记来源打开源文件并选中词条，ND 原生词条打开 Edit Definition。
