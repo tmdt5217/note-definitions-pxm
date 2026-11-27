@@ -22366,9 +22366,12 @@ function __ndwShowTermLocateBand(editor) {
   try {
     const view = editor?.cm;
     if (!view?.state || !view.coordsAtPos) return;
-    const cursor = editor.getCursor();
-    const lineNumber = Math.min(view.state.doc.lines, Math.max(1, Number(cursor.line) + 1));
-    const docLine = view.state.doc.line(lineNumber);
+    const from = editor.getCursor("from");
+    const to = editor.getCursor("to");
+    const lineFrom = Math.min(view.state.doc.lines, Math.max(1, Number(from.line) + 1));
+    const lineTo = Math.min(view.state.doc.lines, Math.max(1, Number(to.line) + 1));
+    const docFrom = view.state.doc.line(lineFrom).from + Math.max(0, Number(from.ch) || 0);
+    const docTo = view.state.doc.line(lineTo).from + Math.max(0, Number(to.ch) || 0);
     const previous = __ndwTermLocateBand;
     previous?.__cleanup?.();
     previous?.remove?.();
@@ -22380,17 +22383,21 @@ function __ndwShowTermLocateBand(editor) {
     __ndwTermLocateBand = band;
     const update = () => {
       try {
-        const coords = view.coordsAtPos(docLine.from);
-        if (!coords) {
+        const start = view.coordsAtPos(docFrom);
+        const end = view.coordsAtPos(Math.max(docFrom, docTo));
+        if (!start) {
           band.style.setProperty("display", "none", "important");
           return;
         }
-        const contentRect = view.contentDOM.getBoundingClientRect();
+        const left = Math.min(start.left, end?.left ?? start.left);
+        const right = Math.max(start.right, end?.right ?? start.right);
+        const top = Math.min(start.top, end?.top ?? start.top);
+        const bottom = Math.max(start.bottom, end?.bottom ?? start.bottom);
         band.style.setProperty("display", "block", "important");
-        band.style.setProperty("left", `${Math.round(contentRect.left)}px`, "important");
-        band.style.setProperty("top", `${Math.round(coords.top)}px`, "important");
-        band.style.setProperty("width", `${Math.round(contentRect.width)}px`, "important");
-        band.style.setProperty("height", `${Math.max(2, Math.round(coords.bottom - coords.top))}px`, "important");
+        band.style.setProperty("left", `${Math.round(left)}px`, "important");
+        band.style.setProperty("top", `${Math.round(top)}px`, "important");
+        band.style.setProperty("width", `${Math.max(2, Math.round(right - left))}px`, "important");
+        band.style.setProperty("height", `${Math.max(2, Math.round(bottom - top))}px`, "important");
       } catch {}
     };
     const scrollEl = view.scrollDOM;
