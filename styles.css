@@ -183,6 +183,40 @@ body.note-definitions-pxm-aliases-normal .nd-ency-def-aliases {
 	background-color: #fff !important;
 }
 
+/* Edit Definition: thin neutral border, color change on focus (no thick ring) */
+.nd-definition-form textarea.edit-modal-aliases,
+.nd-definition-form textarea.edit-modal-textarea,
+.nd-definition-form input:not([type="checkbox"]):not([type="radio"]):not([type="button"]),
+.nd-definition-form .nd-definition-markdown-editor {
+	border: 1px solid var(--background-modifier-border) !important;
+	border-radius: var(--radius-s) !important;
+	box-shadow: none !important;
+	outline: none !important;
+	transition: border-color 0.12s ease;
+}
+.nd-definition-form textarea.edit-modal-aliases:focus,
+.nd-definition-form textarea.edit-modal-textarea:focus,
+.nd-definition-form input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):focus,
+.nd-definition-form .nd-definition-markdown-editor:focus-within {
+	border-color: var(--interactive-accent) !important;
+	box-shadow: none !important;
+	outline: none !important;
+}
+.nd-definition-form .edit-modal-section-header {
+	margin-top: 2px;
+	margin-bottom: 3px;
+}
+.nd-definition-form textarea.edit-modal-aliases {
+	margin-bottom: 4px;
+}
+.nd-definition-form .nd-definition-markdown-editor {
+	margin-bottom: 6px;
+}
+.nd-definition-form .nd-definition-markdown-editor .cm-sizer {
+	padding-left: 8px;
+	padding-right: 8px;
+}
+
 .nd-definition-markdown-editor {
 	width: 100%;
 	min-height: 20vh;
@@ -314,8 +348,8 @@ body.note-definitions-pxm-aliases-normal .nd-ency-def-aliases {
 	position: sticky;
 	bottom: 0;
 	z-index: 2;
-	background: #fff;
-	padding: 8px 0;
+	background: transparent !important;
+	padding: 4px 0 0;
 }
 .is-mobile .nd-definition-form .edit-modal-actions {
 	/* Mobile actions belong to the form's scroll flow, not a bottom overlay. */
@@ -2053,8 +2087,7 @@ body:has(.modal-container) .ndw-ency-all-terms {
 
 /* Give mobile Edit Definition content breathing room from both screen edges */
 .modal-content.nd-definition-form {
-  padding-left: max(16px, env(safe-area-inset-left, 0px)) !important;
-  padding-right: max(16px, env(safe-area-inset-right, 0px)) !important;
+  padding: 8px 10px !important;
   box-sizing: border-box !important;
 }
 

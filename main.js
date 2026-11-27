@@ -20482,9 +20482,37 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     this.resetTransform();
   }
 
+  async jumpToNoteSource(entry) {
+    const path = String(entry.notePath || entry.filePath || "").trim();
+    const file = path ? this.app.vault.getAbstractFileByPath(path) : null;
+    if (!file) {
+      new __ndw_obsidian.Notice("找不到源笔记文件。");
+      return;
+    }
+    const line = Math.max(0, Number(entry.line) || 0);
+    const ch = Math.max(0, Number(entry.column) || 0);
+    this.close();
+    try {
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(file, { active: true });
+      const editor = this.app.workspace.activeEditor?.editor;
+      if (editor) {
+        editor.setCursor({ line, ch });
+        editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch } }, true);
+        editor.focus();
+      }
+    } catch (error) {
+      new __ndw_obsidian.Notice(`打开源笔记失败：${error?.message || String(error)}`);
+    }
+  }
+
   openEdit() {
     const entry = this.entries[this.index];
     if (!entry || this.editModalOpen) return;
+    if (entry.source === "note" || (entry.notePath && entry.notePath !== entry.filePath)) {
+      void this.jumpToNoteSource(entry);
+      return;
+    }
     const Editor = globalThis.__ndwAddDefinitionModal;
     if (typeof Editor !== "function") {
       new __ndw_obsidian.Notice("词条编辑器未就绪，请重新加载 ND。");
