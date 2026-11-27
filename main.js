@@ -20605,6 +20605,7 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
         editor.setSelection({ line, ch: Math.min(fromCh, text.length) }, { line, ch: toCh });
         editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: Math.max(toCh, 1) } }, true);
         editor.focus();
+        __ndwFlashTermSelection();
         return true;
       };
       if (!placeCursor()) {
@@ -22358,6 +22359,16 @@ function __ndw_sourceContainsDefinition(text, entry) {
   return source.includes(snippet);
 }
 
+let __ndwTermLocateTimer = null;
+function __ndwFlashTermSelection(duration = 2600) {
+  document.body.classList.add("ndw-term-locate-flash");
+  if (__ndwTermLocateTimer) window.clearTimeout(__ndwTermLocateTimer);
+  __ndwTermLocateTimer = window.setTimeout(() => {
+    __ndwTermLocateTimer = null;
+    document.body.classList.remove("ndw-term-locate-flash");
+  }, duration);
+}
+
 function __ndwSelectTermInEditor(editor, entry) {
   if (!editor?.getValue || !entry) return false;
   const word = __ndw_cleanTermMarkup(entry.word || entry.display || "");
@@ -22408,6 +22419,7 @@ function __ndwSelectTermInEditor(editor, entry) {
   editor.setSelection({ line, ch: Math.min(fromCh, text.length) }, { line, ch: toCh });
   editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: Math.max(toCh, 1) } }, true);
   editor.focus();
+  __ndwFlashTermSelection();
   return true;
 }
 

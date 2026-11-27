@@ -4063,3 +4063,17 @@ body .ndw-manual-link .cm-strong .cm-underline {
 }
 .ndw-definition-preview > :first-child { margin-top: 0; }
 .ndw-definition-preview > :last-child { margin-bottom: 0; }
+
+/* Edited term location: temporarily show the source selection in yellow */
+body.ndw-term-locate-flash ::selection {
+  background: #ffd84d !important;
+  color: #111 !important;
+}
+body.ndw-term-locate-flash ::-moz-selection {
+  background: #ffd84d !important;
+  color: #111 !important;
+}
+body.ndw-term-locate-flash .cm-selectionBackground,
+body.ndw-term-locate-flash .cm-selectionLayer .cm-selectionBackground {
+  background: #ffd84d !important;
+}
