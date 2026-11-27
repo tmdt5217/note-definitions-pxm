@@ -22673,6 +22673,8 @@ function __ndw_splitWrappingMarkers(value) {
 }
 
 const __ndwNoteTermSyncTimers = new Map();
+const __ndwNoteTermPendingPurge = new Set();
+const __ndwNoteTermForcePurge = new Set();
 
 function __ndw_noteTermDefinitionAt(lines, lineIndex) {
   let start = Math.max(0, Math.min(lines.length - 1, lineIndex));
@@ -22767,6 +22769,19 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
     while ((match = re.exec(lines[line]))) occurrences.push({ line, display: __ndw_cleanTermMarkup(match[1]), heading: currentHeading });
   }
   if (!occurrences.length) {
+    if (entries.every((item) => item?.missingMarker === true)) return 0;
+    if (!__ndwNoteTermForcePurge.has(file.path)) {
+      if (!__ndwNoteTermPendingPurge.has(file.path)) {
+        __ndwNoteTermPendingPurge.add(file.path);
+        window.setTimeout(() => {
+          __ndwNoteTermPendingPurge.delete(file.path);
+          __ndwNoteTermForcePurge.add(file.path);
+          void __ndw_syncNoteTermsForFile(app, file, { announce, rewriteReferences })
+            .finally(() => __ndwNoteTermForcePurge.delete(file.path));
+        }, 6000);
+      }
+      return entries.length;
+    }
     const relocated = [];
     for (const entry of entries) {
       if (entry?.missingMarker === true) continue;
