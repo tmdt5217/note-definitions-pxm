@@ -3960,6 +3960,17 @@ b .ndw-manual-link .cm-underline,
   font-weight: var(--bold-weight, 700) !important;
 }
 
+/* Bold formatting inside a manual link (e.g. {{nd:**word**}}) */
+.ndw-manual-link strong,
+.ndw-manual-link b,
+.ndw-manual-link .cm-strong,
+.ndw-manual-link strong .cm-underline,
+.ndw-manual-link b .cm-underline,
+.ndw-manual-link .cm-strong .cm-underline {
+  color: var(--bold-color, var(--text-normal)) !important;
+  font-weight: var(--bold-weight, 700) !important;
+}
+
 /* Allow normal character-level selection inside ND links */
 .ndw-manual-link {
   user-select: text !important;

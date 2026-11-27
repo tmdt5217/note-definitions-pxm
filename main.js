@@ -22381,8 +22381,20 @@ async function __ndw_openNoteTermAt(app, entry) {
   return true;
 }
 
+function __ndw_cleanTermMarkup(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\*\*\*([^*]+)\*\*\*/gu, "$1")
+    .replace(/\*\*([^*]+)\*\*/gu, "$1")
+    .replace(/__([^_]+)__/gu, "$1")
+    .replace(/\*([^*]+)\*/gu, "$1")
+    .replace(/_([^_]+)_/gu, "$1")
+    .replace(/~~([^~]+)~~/gu, "$1")
+    .trim();
+}
+
 function __ndw_parseTermDisplay(value) {
-  const text = String(value || "").trim();
+  const text = __ndw_cleanTermMarkup(value);
   const match = /^(.+?)\s*[（(]\s*([^（）()]*?)\s*[）)]\s*$/u.exec(text);
   if (!match) return { word: text, display: text, aliases: [] };
   const word = match[1].trim();
@@ -22394,8 +22406,8 @@ function __ndw_parseTermDisplay(value) {
 function __ndw_splitWrappingMarkers(value) {
   const text = String(value || "").trim();
   const match = /^(\*\*|__|\*|_|~~)([\s\S]*?)\1$/u.exec(text);
-  if (!match) return { prefix: "", word: text, suffix: "" };
-  return { prefix: match[1], word: match[2].trim(), suffix: match[1] };
+  if (!match) return { prefix: "", word: __ndw_cleanTermMarkup(text), suffix: "" };
+  return { prefix: match[1], word: __ndw_cleanTermMarkup(match[2]), suffix: match[1] };
 }
 
 const __ndwNoteTermSyncTimers = new Map();
@@ -22407,7 +22419,7 @@ function __ndw_noteTermDefinitionAt(lines, lineIndex) {
   while (end + 1 < lines.length && String(lines[end + 1] || "").trim()) end += 1;
   return lines.slice(start, end + 1)
     .join("\n")
-    .replace(/\{\{nd:([^{}\r\n]+)\}\}/gu, "$1")
+    .replace(/\{\{nd:([^{}\r\n]+)\}\}/gu, (_match, word) => __ndw_cleanTermMarkup(word))
     .trim();
 }
 
@@ -22441,7 +22453,7 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
     headings[line] = currentHeading;
     const re = /\{\{nd:([^{}\r\n]+)\}\}/gu;
     let match;
-    while ((match = re.exec(lines[line]))) occurrences.push({ line, display: match[1].trim(), heading: currentHeading });
+    while ((match = re.exec(lines[line]))) occurrences.push({ line, display: __ndw_cleanTermMarkup(match[1]), heading: currentHeading });
   }
   if (!occurrences.length) {
     const removedEntries = entries.splice(0, entries.length);
@@ -24199,7 +24211,7 @@ async function __ndw_writeCoreEntries(app,entries){
 }
 async function __ndw_lookupIndexedDefinition(word){
   const app=window.NoteDefinition?.app;
-  const target=String(word||"").trim().toLowerCase();
+  const target=__ndw_cleanTermMarkup(word).toLowerCase();
   if(!app||!target) return null;
   try{
     const idx=window.__ndwSharedTermIndex || (window.__ndwSharedTermIndex=new window.__NdwTermIndex(app));
@@ -24212,7 +24224,7 @@ async function __ndw_lookupIndexedDefinition(word){
       const found = await idx.query({q:query,limit:20});
       for (const entry of found) if (!rows.some((row) => row.key === entry.key)) rows.push(entry);
     }
-    const matches=rows.filter(entry=>String(entry.word||"").trim().toLowerCase()===target || String(entry.displayWord||"").trim().toLowerCase()===target || (entry.aliases||[]).some(alias=>String(alias||"").trim().toLowerCase()===target));
+    const matches=rows.filter(entry=>__ndw_cleanTermMarkup(entry.word).toLowerCase()===target || __ndw_cleanTermMarkup(entry.displayWord).toLowerCase()===target || (entry.aliases||[]).some(alias=>__ndw_cleanTermMarkup(alias).toLowerCase()===target));
     const hit=matches.find(entry=>entry.source==="note")||matches[0];
     if(!hit) return null;
     const sourcePath=hit.notePath||hit.filePath||"";

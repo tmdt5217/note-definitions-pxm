@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.42.5
+# note-definitions_PXM 0.42.6
 
-- 修复加粗 ND 链接的子节点仍显示黑色的问题：加粗链接及其 .cm-underline 统一使用主题的 --bold-color。
+- 词条名/同义词中的加粗、斜体、删除线标记会被清理，不再把 ** 或 * 带进词典；加粗链接内部的 strong/cm-strong 也使用主题 --bold-color。
