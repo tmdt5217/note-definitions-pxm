@@ -20484,22 +20484,38 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
 
   async jumpToNoteSource(entry) {
     const path = String(entry.notePath || entry.filePath || "").trim();
-    const file = path ? this.app.vault.getAbstractFileByPath(path) : null;
+    const file = __ndw_resolveVaultFile(this.app, path);
     if (!file) {
-      new __ndw_obsidian.Notice("找不到源笔记文件。");
+      new __ndw_obsidian.Notice(`找不到源笔记文件：${path || "（路径为空）"}`);
       return;
     }
-    const line = Math.max(0, Number(entry.line) || 0);
+    const word = __ndw_cleanTermMarkup(entry.word || entry.display || "");
+    const storedLine = Math.max(0, Number(entry.line) || 0);
     const ch = Math.max(0, Number(entry.column) || 0);
     this.close();
     try {
       const leaf = this.app.workspace.getLeaf(false);
       await leaf.openFile(file, { active: true });
-      const editor = this.app.workspace.activeEditor?.editor;
-      if (editor) {
-        editor.setCursor({ line, ch });
-        editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch } }, true);
+      const placeCursor = () => {
+        const view = leaf.view;
+        const editor = view?.editor || view?.sourceMode?.editor || this.app.workspace.activeEditor?.editor;
+        if (!editor) return false;
+        const lines = editor.getValue().split("\n");
+        let line = Math.min(storedLine, Math.max(0, lines.length - 1));
+        const marker = `{{nd:${word}}}`;
+        if (word && !(lines[line] || "").includes(word)) {
+          const found = lines.findIndex((text) => text.includes(marker) || text.includes(word));
+          if (found >= 0) line = found;
+        }
+        const targetCh = Math.min(ch, (lines[line] || "").length);
+        editor.setCursor({ line, ch: targetCh });
+        editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: targetCh } }, true);
         editor.focus();
+        return true;
+      };
+      if (!placeCursor()) {
+        window.setTimeout(placeCursor, 60);
+        window.setTimeout(placeCursor, 180);
       }
     } catch (error) {
       new __ndw_obsidian.Notice(`打开源笔记失败：${error?.message || String(error)}`);
@@ -22169,6 +22185,21 @@ function __ndw_installEncyclopediaButton(app) {
     for (const timer of timers) window.clearTimeout(timer);
     if (frame) window.cancelAnimationFrame(frame);
   };
+}
+
+function __ndw_resolveVaultFile(app, rawPath) {
+  const text = String(rawPath || "").trim();
+  if (!text) return null;
+  const direct = app.vault.getAbstractFileByPath(text);
+  if (typeof direct?.extension === "string") return direct;
+  let candidate = text.replace(/^file:\/\//iu, "").replace(/^file:/iu, "");
+  try { candidate = decodeURIComponent(candidate); } catch {}
+  const base = candidate.split(/[\\/]/u).pop() || "";
+  if (!base) return null;
+  const byName = app.vault.getAbstractFileByPath(base);
+  if (typeof byName?.extension === "string") return byName;
+  const files = app.vault.getFiles();
+  return files.find((file) => file.name === base) || files.find((file) => file.path.endsWith(`/${base}`)) || null;
 }
 
 function __ndw_wordAtCursor(editor) {
