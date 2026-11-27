@@ -21006,11 +21006,11 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
       ["recent:desc", "最近添加 ▼"],
       ["recent:asc", "最近添加 ▲"],
       ["lastViewed:desc", "最近浏览 ▼"],
-      ["lastViewed:asc", "最近浏览 ▲"],
       ["name:asc", "名称 A→Z"],
       ["name:desc", "名称 Z→A"]
     ];
     if (!["recent", "lastViewed", "name"].includes(this.sortMode)) this.sortMode = "recent";
+    if (this.sortMode === "lastViewed" && this.sortOrder === "asc") this.sortOrder = "desc";
     const currentSort = `${this.sortMode}:${this.sortOrder}`;
     for (const [value, label] of sortChoices) {
       const option = sort.createEl("option", { text: label, attr: { value } });
