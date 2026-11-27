@@ -22747,6 +22747,54 @@ async function __ndw_findMovedNoteTerm(app, oldPath, entry) {
   return best;
 }
 
+async function __ndwAdoptOrphanedNoteTerms(app, file, providedText = null) {
+  const settings = window.NoteDefinition?.settings;
+  if (!settings || !file?.path || !Array.isArray(settings.noteTerms)) return 0;
+  const orphans = settings.noteTerms.filter((item) => item?.missingMarker === true);
+  if (!orphans.length) return 0;
+  let text = typeof providedText === "string" ? providedText : "";
+  if (typeof providedText !== "string") {
+    try { text = await app.vault.cachedRead(file); } catch { return 0; }
+  }
+  if (!text.includes("{{nd:")) return 0;
+  const lines = text.split(/\r?\n/u);
+  let adopted = 0;
+  const used = new Set();
+  let heading = "";
+  for (let line = 0; line < lines.length; line += 1) {
+    const headingMatch = /^#{1,6}\s+(.+?)\s*$/u.exec(lines[line] || "");
+    if (headingMatch) heading = headingMatch[1].replace(/\{\{nd:[^{}\r\n]+\}\}/gu, "").trim();
+    const re = /\{\{nd:([^{}\r\n]+)\}\}/gu;
+    let match;
+    while ((match = re.exec(lines[line] || ""))) {
+      const word = __ndw_cleanTermMarkup(match[1]);
+      const orphan = orphans.find((item) => !used.has(item) && (
+        __ndw_cleanTermMarkup(item.word || item.display || "") === word
+        || __ndw_cleanTermMarkup(item.display || item.word || "") === word
+      ));
+      if (!orphan) continue;
+      used.add(orphan);
+      orphan.notePath = file.path;
+      orphan.line = line;
+      orphan.column = Math.max(0, match.index + 5);
+      orphan.heading = heading;
+      orphan.definition = __ndw_noteTermDefinitionAt(lines, line);
+      delete orphan.missingMarker;
+      delete orphan.orphanedAt;
+      adopted += 1;
+    }
+  }
+  if (!adopted) return 0;
+  try {
+    const plugin = app.plugins.plugins["note-definitions-pxm"];
+    await plugin?.saveData?.(settings);
+    if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+    app.workspace.trigger("note-definitions-changed");
+  } catch {}
+  new __ndw_obsidian.Notice(`已把 ${adopted} 个笔记词条接入当前文件。`, 5000);
+  return adopted;
+}
+
 async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: providedText = null, rewriteReferences = true, skipRenames = false } = {}) {
   const settings = window.NoteDefinition?.settings;
   if (!settings || !file) return 0;
@@ -22769,68 +22817,27 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
     while ((match = re.exec(lines[line]))) occurrences.push({ line, display: __ndw_cleanTermMarkup(match[1]), heading: currentHeading });
   }
   if (!occurrences.length) {
-    if (entries.every((item) => item?.missingMarker === true)) return 0;
-    if (!__ndwNoteTermForcePurge.has(file.path)) {
-      if (!__ndwNoteTermPendingPurge.has(file.path)) {
-        __ndwNoteTermPendingPurge.add(file.path);
-        window.setTimeout(() => {
-          __ndwNoteTermPendingPurge.delete(file.path);
-          __ndwNoteTermForcePurge.add(file.path);
-          void __ndw_syncNoteTermsForFile(app, file, { announce, rewriteReferences })
-            .finally(() => __ndwNoteTermForcePurge.delete(file.path));
-        }, 6000);
-      }
-      return entries.length;
-    }
-    const relocated = [];
+    let changed = false;
     for (const entry of entries) {
       if (entry?.missingMarker === true) continue;
-      const moved = await __ndw_findMovedNoteTerm(app, file.path, entry);
-      if (!moved) continue;
-      entry.notePath = moved.file.path;
-      entry.line = moved.line;
-      entry.heading = "";
-      entry.definition = moved.definition;
-      relocated.push(entry);
+      entry.missingMarker = true;
+      entry.orphanedAt = Date.now();
+      changed = true;
     }
-    const removable = entries.filter((item) => item?.missingMarker !== true && !relocated.includes(item));
-    if (relocated.length) {
+    if (changed) {
       try {
         const plugin = app.plugins.plugins["note-definitions-pxm"];
         await plugin?.saveData?.(settings);
         if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
         app.workspace.trigger("note-definitions-changed");
-        for (const entry of relocated) {
-          const target = app.vault.getAbstractFileByPath(entry.notePath);
-          if (target) await __ndw_syncNoteTermsForFile(app, target, { announce: false, rewriteReferences: false, skipRenames: true });
-        }
-        new __ndw_obsidian.Notice(`已把 ${relocated.length} 个笔记词条跟随到新文件。`, 6000);
       } catch {}
-      if (!removable.length) return relocated.length;
+      const active = app.workspace.getActiveFile();
+      if (active && active.path !== file.path && active.extension === "md") {
+        await __ndwAdoptOrphanedNoteTerms(app, active);
+      }
+      if (announce) new __ndw_obsidian.Notice("词条标记暂时不在此文件，已保留；粘贴到新文件后会自动接回。", 6000);
     }
-    if (!removable.length) return 0;
-    const removedEntries = removable;
-    settings.noteTerms = settings.noteTerms.filter((item) => item?.notePath !== file.path || item?.missingMarker === true || relocated.includes(item));
-    try {
-      const plugin = app.plugins.plugins["note-definitions-pxm"];
-      await plugin?.saveData?.(settings);
-    } catch {}
-    const idx = window.__ndwSharedTermIndex;
-    if (idx?.db && typeof idx.syncNoteTerms === "function") {
-      await idx.syncNoteTerms(file.path, []);
-    } else if (idx) {
-      idx.__ready = null;
-    }
-    const words = [];
-    for (const entry of removedEntries) {
-      if (entry?.word) words.push(entry.word);
-      if (entry?.display && entry.display !== entry.word) words.push(entry.display);
-    }
-    const updated = await __ndw_unwrapNdReferences(app, words);
-    window.__ndwSkipTermIndexInvalidate = true;
-    try { app.workspace.trigger("note-definitions-changed"); } finally { window.__ndwSkipTermIndexInvalidate = false; }
-    if (announce) new __ndw_obsidian.Notice(`源词条已删除，并移除 ${updated} 个笔记中的引用。`, 5000);
-    return removedEntries.length;
+    return entries.length;
   }
   const used = new Set();
   const pairs = [];
@@ -22903,12 +22910,18 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
 
 function __ndw_scheduleNoteTermSync(app, file) {
   if (!file || !Array.isArray(window.NoteDefinition?.settings?.noteTerms)) return;
-  if (!window.NoteDefinition.settings.noteTerms.some((item) => item?.notePath === file.path)) return;
+  const terms = window.NoteDefinition.settings.noteTerms;
+  const hasEntries = terms.some((item) => item?.notePath === file.path);
+  const hasOrphans = terms.some((item) => item?.missingMarker === true);
+  if (!hasEntries && !hasOrphans) return;
   const previous = __ndwNoteTermSyncTimers.get(file.path);
   if (previous) window.clearTimeout(previous);
   const timer = window.setTimeout(() => {
     __ndwNoteTermSyncTimers.delete(file.path);
-    void __ndw_syncNoteTermsForFile(app, file, { announce: true });
+    void (async () => {
+      if (hasOrphans) await __ndwAdoptOrphanedNoteTerms(app, file);
+      if (hasEntries) await __ndw_syncNoteTermsForFile(app, file, { announce: true });
+    })();
   }, 600);
   __ndwNoteTermSyncTimers.set(file.path, timer);
 }
@@ -24261,8 +24274,16 @@ async function __ndw_openDictionaryProtocol(app, params) {
         if (editor && view.file?.path === file.path) void __ndw_cleanInvalidMarkersInEditor(this.app, editor, file, { checkTerms: false });
       }, 900);
       if (!Array.isArray(window.NoteDefinition?.settings?.noteTerms)) return;
-      if (!window.NoteDefinition.settings.noteTerms.some((item) => item?.notePath === file.path)) return;
-      window.setTimeout(() => void __ndw_syncNoteTermsForFile(this.app, file, { announce: false, rewriteReferences: true }), 500);
+      const terms = window.NoteDefinition.settings.noteTerms;
+      const hasEntries = terms.some((item) => item?.notePath === file.path);
+      const hasOrphans = terms.some((item) => item?.missingMarker === true);
+      if (!hasEntries && !hasOrphans) return;
+      window.setTimeout(() => {
+        void (async () => {
+          if (hasOrphans) await __ndwAdoptOrphanedNoteTerms(this.app, file);
+          if (hasEntries) await __ndw_syncNoteTermsForFile(this.app, file, { announce: false, rewriteReferences: true });
+        })();
+      }, 500);
     }));
     this.app.workspace.onLayoutReady(() => {
       window.setTimeout(() => void __ndw_refreshAllNoteTerms(this.app), 5000);
