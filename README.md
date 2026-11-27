@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.42.6
+# note-definitions_PXM 0.42.7
 
-- 词条名/同义词中的加粗、斜体、删除线标记会被清理，不再把 ** 或 * 带进词典；加粗链接内部的 strong/cm-strong 也使用主题 --bold-color。
+- 加粗词条由 CodeMirror 的 .cm-strong 包裹时也使用主题 --bold-color；同时设置 -webkit-text-fill-color，覆盖移动端 WebView 的黑色填充。

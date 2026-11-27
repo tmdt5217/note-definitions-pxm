@@ -3948,26 +3948,26 @@ a[data-ndw-manual-link] ~ .external-link-icon,
 }
 
 /* Bold ND links follow the theme/Style Settings bold color */
-strong .ndw-manual-link,
-strong .ndw-manual-link .cm-underline,
-b .ndw-manual-link,
-b .ndw-manual-link .cm-underline,
-.ndw-manual-link.ndw-manual-bold,
-.ndw-manual-bold .cm-underline,
-.ndw-manual-link.cm-strong,
-.ndw-manual-link.cm-strong .cm-underline {
-  color: var(--bold-color, var(--text-normal)) !important;
-  font-weight: var(--bold-weight, 700) !important;
-}
-
-/* Bold formatting inside a manual link (e.g. {{nd:**word**}}) */
-.ndw-manual-link strong,
-.ndw-manual-link b,
-.ndw-manual-link .cm-strong,
-.ndw-manual-link strong .cm-underline,
-.ndw-manual-link b .cm-underline,
-.ndw-manual-link .cm-strong .cm-underline {
-  color: var(--bold-color, var(--text-normal)) !important;
+body strong .ndw-manual-link,
+body strong .ndw-manual-link .cm-underline,
+body b .ndw-manual-link,
+body b .ndw-manual-link .cm-underline,
+body .ndw-manual-link.ndw-manual-bold,
+body .ndw-manual-bold .cm-underline,
+body .ndw-manual-link.cm-strong,
+body .ndw-manual-link.cm-strong .cm-underline,
+body .ndw-manual-link strong,
+body .ndw-manual-link b,
+body .cm-strong .ndw-manual-link,
+body .cm-strong .ndw-manual-link .cm-underline,
+body .cm-em .ndw-manual-link,
+body .cm-em .ndw-manual-link .cm-underline,
+body .ndw-manual-link .cm-strong,
+body .ndw-manual-link strong .cm-underline,
+body .ndw-manual-link b .cm-underline,
+body .ndw-manual-link .cm-strong .cm-underline {
+  color: var(--bold-color, var(--color-red)) !important;
+  -webkit-text-fill-color: var(--bold-color, var(--color-red)) !important;
   font-weight: var(--bold-weight, 700) !important;
 }
 
