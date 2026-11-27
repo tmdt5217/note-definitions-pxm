@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.43.10
+# note-definitions_PXM 0.43.11
 
-- 笔记来源词条在切换内外库后按文件名重新绑定 notePath，并重新打开源笔记、选中实际词条文本；兼容带空格写法（如 Masson 小体）。
+- 修复源文件里没有 {{nd:}} 标记时重新绑定会误删笔记词条的问题；此类词条标记 missingMarker，保留快照并按正文文字定位。

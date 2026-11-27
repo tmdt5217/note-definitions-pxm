@@ -22255,12 +22255,17 @@ async function __ndw_rebindNoteTermSource(app, entry, file) {
     return !word || __ndw_cleanTermMarkup(item.word || item.display || "") === word;
   });
   if (!matched.length) return false;
+  let text = "";
+  try { text = await app.vault.cachedRead(file); } catch {}
+  const hasMarker = Boolean(word && text.includes("{{nd:") && new RegExp(`\\{\\{nd:[^{}\\r\\n]*${word.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}[^{}\\r\\n]*\\}\\}`, "u").test(text));
   let changed = false;
   for (const item of matched) {
     if (item.notePath !== file.path) { item.notePath = file.path; changed = true; }
+    if (Boolean(item.missingMarker) !== !hasMarker) { item.missingMarker = !hasMarker; changed = true; }
   }
   entry.notePath = file.path;
   entry.filePath = file.path;
+  entry.missingMarker = !hasMarker;
   if (!changed) return true;
   try {
     const plugin = app.plugins.plugins["note-definitions-pxm"];
@@ -22661,8 +22666,10 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
     while ((match = re.exec(lines[line]))) occurrences.push({ line, display: __ndw_cleanTermMarkup(match[1]), heading: currentHeading });
   }
   if (!occurrences.length) {
-    const removedEntries = entries.splice(0, entries.length);
-    settings.noteTerms = settings.noteTerms.filter((item) => item?.notePath !== file.path);
+    const removable = entries.filter((item) => item?.missingMarker !== true);
+    if (!removable.length) return 0;
+    const removedEntries = removable;
+    settings.noteTerms = settings.noteTerms.filter((item) => item?.notePath !== file.path || item?.missingMarker === true);
     try {
       const plugin = app.plugins.plugins["note-definitions-pxm"];
       await plugin?.saveData?.(settings);
@@ -22702,6 +22709,7 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
     }
     if (!occurrence) continue;
     used.add(occurrence.line);
+    if (entry.missingMarker) delete entry.missingMarker;
     const parsed = __ndw_parseTermDisplay(occurrence.display);
     if (!parsed.word) continue;
     const heading = occurrence.heading || "";
