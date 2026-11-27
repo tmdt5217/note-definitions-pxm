@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.43.13
+# note-definitions_PXM 0.43.14
 
-- 绝对路径也会尝试按 file: 库外文件打开；Masson小体等来源词条优先使用 External Vault 原文件。
+- 笔记词条跟随文件移动：重命名时改绑 notePath；旧文件里的词条被剪切到新文件时，按 {{nd:}} 标记和定义内容找到新文件并迁移。

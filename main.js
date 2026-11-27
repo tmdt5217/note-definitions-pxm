@@ -22710,6 +22710,41 @@ async function __ndw_replaceNoteTermReferences(app, pairs) {
   return __ndw_replaceNdReferences(app, replacements);
 }
 
+async function __ndw_findMovedNoteTerm(app, oldPath, entry) {
+  const oldWord = __ndw_cleanTermMarkup(entry?.word || entry?.display || "");
+  const oldDisplay = __ndw_cleanTermMarkup(entry?.display || entry?.word || "");
+  if (!oldWord && !oldDisplay) return null;
+  const files = app.vault.getMarkdownFiles()
+    .filter((file) => file.path !== oldPath && !__ndwIsDefinitionPath(file.path))
+    .sort((a, b) => (Number(b.stat?.mtime) || 0) - (Number(a.stat?.mtime) || 0));
+  let best = null;
+  for (let index = 0; index < files.length; index += 1) {
+    const file = files[index];
+    if (index % 60 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+    let text = "";
+    try { text = await app.vault.cachedRead(file); } catch { continue; }
+    if (!text.includes("{{nd:")) continue;
+    const lines = text.split(/\r?\n/u);
+    for (let line = 0; line < lines.length; line += 1) {
+      const re = /\{\{nd:([^{}\r\n]+)\}\}/gu;
+      let match;
+      while ((match = re.exec(lines[line] || ""))) {
+        const candidate = __ndw_cleanTermMarkup(match[1]);
+        if (candidate !== oldWord && candidate !== oldDisplay) continue;
+        const definition = __ndw_noteTermDefinitionAt(lines, line);
+        const score = (candidate === oldDisplay ? 3 : 1)
+          + (definition && entry?.definition && definition.includes(String(entry.definition).split(/\r?\n/u)[0]) ? 4 : 0)
+          + (index < 200 ? 1 : 0);
+        if (!best || score > best.score) {
+          best = { file, line, definition, score };
+        }
+      }
+    }
+    if (best && best.score >= 7) break;
+  }
+  return best;
+}
+
 async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: providedText = null, rewriteReferences = true, skipRenames = false } = {}) {
   const settings = window.NoteDefinition?.settings;
   if (!settings || !file) return 0;
@@ -22732,10 +22767,35 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
     while ((match = re.exec(lines[line]))) occurrences.push({ line, display: __ndw_cleanTermMarkup(match[1]), heading: currentHeading });
   }
   if (!occurrences.length) {
-    const removable = entries.filter((item) => item?.missingMarker !== true);
+    const relocated = [];
+    for (const entry of entries) {
+      if (entry?.missingMarker === true) continue;
+      const moved = await __ndw_findMovedNoteTerm(app, file.path, entry);
+      if (!moved) continue;
+      entry.notePath = moved.file.path;
+      entry.line = moved.line;
+      entry.heading = "";
+      entry.definition = moved.definition;
+      relocated.push(entry);
+    }
+    const removable = entries.filter((item) => item?.missingMarker !== true && !relocated.includes(item));
+    if (relocated.length) {
+      try {
+        const plugin = app.plugins.plugins["note-definitions-pxm"];
+        await plugin?.saveData?.(settings);
+        if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+        app.workspace.trigger("note-definitions-changed");
+        for (const entry of relocated) {
+          const target = app.vault.getAbstractFileByPath(entry.notePath);
+          if (target) await __ndw_syncNoteTermsForFile(app, target, { announce: false, rewriteReferences: false, skipRenames: true });
+        }
+        new __ndw_obsidian.Notice(`已把 ${relocated.length} 个笔记词条跟随到新文件。`, 6000);
+      } catch {}
+      if (!removable.length) return relocated.length;
+    }
     if (!removable.length) return 0;
     const removedEntries = removable;
-    settings.noteTerms = settings.noteTerms.filter((item) => item?.notePath !== file.path || item?.missingMarker === true);
+    settings.noteTerms = settings.noteTerms.filter((item) => item?.notePath !== file.path || item?.missingMarker === true || relocated.includes(item));
     try {
       const plugin = app.plugins.plugins["note-definitions-pxm"];
       await plugin?.saveData?.(settings);
@@ -24086,6 +24146,20 @@ async function __ndw_openDictionaryProtocol(app, params) {
         __ndwShardSnapshots.delete(oldPath);
         __ndwShardSnapshots.set(file.path, snapshot);
       }
+      const settings = window.NoteDefinition?.settings;
+      if (!file?.path || !oldPath || !Array.isArray(settings?.noteTerms)) return;
+      const moved = settings.noteTerms.filter((item) => item?.notePath === oldPath);
+      if (!moved.length) return;
+      for (const item of moved) item.notePath = file.path;
+      void (async () => {
+        try {
+          const plugin = this.app.plugins.plugins["note-definitions-pxm"];
+          await plugin?.saveData?.(settings);
+          if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+          this.app.workspace.trigger("note-definitions-changed");
+          await __ndw_syncNoteTermsForFile(this.app, file, { announce: false, rewriteReferences: false, skipRenames: true });
+        } catch {}
+      })();
     }));
     const refIndexEditorTimers = new WeakMap();
     const refIndexFileTimers = new Map();
