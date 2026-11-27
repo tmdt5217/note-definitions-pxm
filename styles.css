@@ -4087,3 +4087,18 @@ body.ndw-term-locate-flash .cm-selectionLayer .cm-selectionBackground {
   border-radius: 2px !important;
   box-shadow: 0 0 0 1px rgba(255, 216, 77, 0.55) !important;
 }
+
+/* Term management uses the same card grid sizing as concept cards on every client */
+.ndw-all-terms-list,
+body.is-mobile .ndw-all-terms-list {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+}
+@media (max-width: 600px) {
+  .ndw-all-terms-list,
+  body.is-mobile .ndw-all-terms-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+}
