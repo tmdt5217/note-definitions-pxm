@@ -2561,6 +2561,23 @@ body:has(.modal-container) .ndw-ency-all-terms {
 .ndw-review-settings:hover { color: var(--text-muted); background: transparent !important; }
 .ndw-review-settings svg { width: 18px; height: 18px; stroke-width: 1.5; }
 
+.ndw-review-edit {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  order: 8;
+}
+.ndw-review-edit:hover { color: var(--text-muted); background: transparent !important; }
+.ndw-review-edit svg { width: 18px; height: 18px; stroke-width: 1.5; }
+
 /* Term management: columns on desktop/tablet, two columns on phones */
 .ndw-all-terms-list {
   display: grid;
@@ -3425,6 +3442,7 @@ body.is-mobile .ndw-review-settings {
 .nd-ency-clear-btn > svg,
 .nd-ency-smear-btn > svg,
 .ndw-review-settings > svg,
+.ndw-review-edit > svg,
 .ndw-hl-card-settings > svg,
 .ndw-wr-card-smear > svg,
 .ndw-smear-btn > svg {

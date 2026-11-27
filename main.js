@@ -3970,6 +3970,12 @@ var require_pxm_main = __commonJS({
           };
         } else {
           this.modal = new import_obsidian92.Modal(app);
+          const originalOnClose = this.modal.onClose.bind(this.modal);
+          this.modal.onClose = () => {
+            try { originalOnClose(); } catch {}
+            this.destroy();
+            if (onClose) onClose(this.editDef, this.savedWord);
+          };
         }
       }
       async open(text) {
@@ -5145,6 +5151,7 @@ ${conflictLines}
 ${issues.join("\n")}`);
       }
     }
+    globalThis.__ndwAddDefinitionModal = AddDefinitionModal;
     var ADD_DEFINITION_VIEW_TYPE = "nd-add-definition";
     var AddDefinitionView = class extends import_obsidian92.ItemView {
       constructor(leaf) {
@@ -20326,6 +20333,9 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     this.starEl = this.topEl.createEl("button", { cls: "ndw-review-star", attr: { "aria-label": "星标" } });
     __ndw_obsidian.setIcon(this.starEl, "star");
     this.starEl.addEventListener("click", () => this.toggleStar());
+    this.editEl = this.topEl.createEl("button", { cls: "ndw-review-edit", attr: { "aria-label": "编辑词条", title: "编辑词条" } });
+    __ndw_setNativeIcon(this.editEl, "pencil", '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>');
+    this.editEl.addEventListener("click", () => this.openEdit());
     void window.__ndwMountCoreButton?.(this.topEl, this.entries[this.index], { cls: "ndw-review-core" }).then((control) => {
       this.coreControl = control;
     });
@@ -20470,6 +20480,35 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     const markdown = entry.definition || "（暂无定义）";
     __ndw_renderMarkdown(this.app, markdown, def, entry.filePath || "", this.ownerLeaf?.view || this.app.workspace.activeLeaf?.view || this);
     this.resetTransform();
+  }
+
+  openEdit() {
+    const entry = this.entries[this.index];
+    if (!entry || this.editModalOpen) return;
+    const Editor = globalThis.__ndwAddDefinitionModal;
+    if (typeof Editor !== "function") {
+      new __ndw_obsidian.Notice("词条编辑器未就绪，请重新加载 ND。");
+      return;
+    }
+    this.editModalOpen = true;
+    const editor = new Editor(this.app, null, (updated, savedWord) => {
+      this.editModalOpen = false;
+      const word = String(savedWord || updated?.word || entry.word || "").trim();
+      void (async () => {
+        try {
+          const fresh = word ? await window.__ndwLookupIndexedDefinition?.(word) : null;
+          if (fresh) {
+            this.entries[this.index] = {
+              ...entry,
+              ...fresh,
+              file: fresh.filePath ? this.app.vault.getAbstractFileByPath(fresh.filePath) : entry.file
+            };
+          }
+        } catch {}
+        if (this.cardEl?.isConnected) this.render();
+      })();
+    }, null, entry);
+    void editor.open(entry.word);
   }
 
   toggleStar() {
