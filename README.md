@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.43.25
+# Note-Definitions_PXM 0.43.26
 
-- 黄色定位高亮从整行改为只覆盖选中词条本身。
+- 插件显示名改为 Note-Definitions_PXM。
