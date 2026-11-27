@@ -17261,7 +17261,7 @@ class __NdwConflictModal extends __ndw_obsidian.Modal {
         ...(current.aliases || []),
         ...(this.payload.aliases || [])
       ].join(",")).filter((alias) => __ndw_norm(alias) !== __ndw_norm(current.word));
-      const definition = __ndw_appendContentWithSource(current.definition, addition, source);
+      const definition = __ndw_appendContentWithSource(__ndw_repairOrphanFootnotes(current.definition), addition, source);
       await window.NoteDefinition.shardedDefinitions.update(
         { path: current.path, word: current.word },
         { word: current.word, aliases: aliasList, definition }
@@ -17431,6 +17431,13 @@ function __ndw_stripCitation(definition) {
   text = text.replace(/\n{2,}\*\*来源：\*\*[\s\S]*$/u, "");
   text = text.replace(/^\s*\[\^[^\]\s]+\]:.*$/gmu, "");
   return text.trim();
+}
+
+function __ndw_repairOrphanFootnotes(definition) {
+  const text = String(definition || "");
+  const defined = new Set();
+  for (const match of text.matchAll(/^[ \t]*\[\^([^\]\s]+)\]:/gmu)) defined.add(match[1].toLowerCase());
+  return text.replace(/\[\^([^\]\s]+)\](?!:)/gu, (marker, id) => defined.has(String(id).toLowerCase()) ? marker : "");
 }
 
 function __ndw_appendContentWithSource(definition, content, source) {
