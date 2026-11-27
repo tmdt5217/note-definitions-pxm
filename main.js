@@ -22747,7 +22747,7 @@ async function __ndw_findMovedNoteTerm(app, oldPath, entry) {
   return best;
 }
 
-const __NDW_ORPHAN_TTL_MS = 60 * 60 * 1000;
+const __NDW_ORPHAN_TTL_MS = 5 * 60 * 1000;
 
 async function __ndwCleanupOrphanedNoteTerms(app, { announce = false } = {}) {
   const settings = window.NoteDefinition?.settings;
@@ -22785,7 +22785,7 @@ async function __ndwCleanupOrphanedNoteTerms(app, { announce = false } = {}) {
   } catch {}
   window.__ndwSkipTermIndexInvalidate = true;
   try { app.workspace.trigger("note-definitions-changed"); } finally { window.__ndwSkipTermIndexInvalidate = false; }
-  if (announce) new __ndw_obsidian.Notice(`已清理 ${expired.length} 个超过 1 小时的孤立词条${removed ? `，移除 ${removed} 处引用` : ""}。`, 6000);
+  if (announce) new __ndw_obsidian.Notice(`已清理 ${expired.length} 个超过 5 分钟的孤立词条${removed ? `，移除 ${removed} 处引用` : ""}。`, 6000);
   return expired.length;
 }
 
@@ -22877,7 +22877,7 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
       if (active && active.path !== file.path && active.extension === "md") {
         await __ndwAdoptOrphanedNoteTerms(app, active);
       }
-      if (announce) new __ndw_obsidian.Notice("词条标记暂时不在此文件，已保留，1 小时内粘贴到其他文件会自动接回。", 6000);
+      if (announce) new __ndw_obsidian.Notice("词条标记暂时不在此文件，已保留，5 分钟内粘贴到其他文件会自动接回。", 6000);
       window.setTimeout(() => void __ndwCleanupOrphanedNoteTerms(app, { announce: true }), __NDW_ORPHAN_TTL_MS + 5000);
     }
     return entries.length;
@@ -24331,7 +24331,7 @@ async function __ndw_openDictionaryProtocol(app, params) {
     this.app.workspace.onLayoutReady(() => {
       window.setTimeout(() => void __ndw_refreshAllNoteTerms(this.app), 5000);
       window.setTimeout(() => void __ndwCleanupOrphanedNoteTerms(this.app), 30000);
-      this.registerInterval(window.setInterval(() => void __ndwCleanupOrphanedNoteTerms(this.app), 10 * 60 * 1000));
+      this.registerInterval(window.setInterval(() => void __ndwCleanupOrphanedNoteTerms(this.app), 60 * 1000));
       const idle = window.requestIdleCallback || ((fn) => window.setTimeout(fn, 20000));
       idle(() => { void __ndwInitShardSnapshots(this.app); }, { timeout: 60000 });
     });
