@@ -20606,6 +20606,7 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
         editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: Math.max(toCh, 1) } }, true);
         editor.focus();
         __ndwFlashTermSelection();
+        __ndwShowTermLocateBand(editor);
         return true;
       };
       if (!placeCursor()) {
@@ -22360,6 +22361,34 @@ function __ndw_sourceContainsDefinition(text, entry) {
 }
 
 let __ndwTermLocateTimer = null;
+let __ndwTermLocateBand = null;
+function __ndwShowTermLocateBand(editor) {
+  try {
+    const view = editor?.cm;
+    if (!view?.state || !view.coordsAtPos) return;
+    const cursor = editor.getCursor();
+    const lineNumber = Math.min(view.state.doc.lines, Math.max(1, Number(cursor.line) + 1));
+    const docLine = view.state.doc.line(lineNumber);
+    const coords = view.coordsAtPos(docLine.from);
+    if (!coords) return;
+    const contentRect = view.contentDOM.getBoundingClientRect();
+    __ndwTermLocateBand?.remove();
+    const band = document.createElement("div");
+    band.className = "ndw-term-locate-band";
+    band.style.setProperty("position", "fixed", "important");
+    band.style.setProperty("left", `${Math.round(contentRect.left)}px`, "important");
+    band.style.setProperty("top", `${Math.round(coords.top)}px`, "important");
+    band.style.setProperty("width", `${Math.round(contentRect.width)}px`, "important");
+    band.style.setProperty("height", `${Math.max(2, Math.round(coords.bottom - coords.top))}px`, "important");
+    document.body.appendChild(band);
+    __ndwTermLocateBand = band;
+    window.setTimeout(() => {
+      band.remove();
+      if (__ndwTermLocateBand === band) __ndwTermLocateBand = null;
+    }, 5000);
+  } catch {}
+}
+
 function __ndwFlashTermSelection(duration = 2600) {
   document.body.classList.add("ndw-term-locate-flash");
   if (__ndwTermLocateTimer) window.clearTimeout(__ndwTermLocateTimer);
@@ -22420,6 +22449,7 @@ function __ndwSelectTermInEditor(editor, entry) {
   editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: Math.max(toCh, 1) } }, true);
   editor.focus();
   __ndwFlashTermSelection();
+  __ndwShowTermLocateBand(editor);
   return true;
 }
 

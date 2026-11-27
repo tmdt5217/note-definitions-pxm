@@ -4077,3 +4077,13 @@ body.ndw-term-locate-flash .cm-selectionBackground,
 body.ndw-term-locate-flash .cm-selectionLayer .cm-selectionBackground {
   background: #ffd84d !important;
 }
+
+/* Persistent yellow band marking the located term line for 5 seconds */
+.ndw-term-locate-band {
+  background: #ffd84d !important;
+  opacity: 0.38 !important;
+  pointer-events: none !important;
+  z-index: 9999 !important;
+  border-radius: 2px !important;
+  box-shadow: 0 0 0 1px rgba(255, 216, 77, 0.55) !important;
+}
