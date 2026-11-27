@@ -22747,6 +22747,48 @@ async function __ndw_findMovedNoteTerm(app, oldPath, entry) {
   return best;
 }
 
+const __NDW_ORPHAN_TTL_MS = 60 * 60 * 1000;
+
+async function __ndwCleanupOrphanedNoteTerms(app, { announce = false } = {}) {
+  const settings = window.NoteDefinition?.settings;
+  if (!settings || !Array.isArray(settings.noteTerms)) return 0;
+  const now = Date.now();
+  const expired = [];
+  let started = false;
+  for (const entry of settings.noteTerms) {
+    if (!entry || entry.missingMarker !== true) continue;
+    const at = Number(entry.orphanedAt) || 0;
+    if (!at) { entry.orphanedAt = now; started = true; continue; }
+    if (now - at >= __NDW_ORPHAN_TTL_MS) expired.push(entry);
+  }
+  if (started && !expired.length) {
+    try {
+      const plugin = app.plugins.plugins["note-definitions-pxm"];
+      await plugin?.saveData?.(settings);
+    } catch {}
+  }
+  if (!expired.length) return 0;
+  const words = [];
+  for (const entry of expired) {
+    if (entry.word) words.push(entry.word);
+    if (entry.display && entry.display !== entry.word) words.push(entry.display);
+  }
+  settings.noteTerms = settings.noteTerms.filter((entry) => !expired.includes(entry));
+  try {
+    const plugin = app.plugins.plugins["note-definitions-pxm"];
+    await plugin?.saveData?.(settings);
+    if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+  } catch {}
+  let removed = 0;
+  try {
+    removed = await __ndw_unwrapNdReferences(app, words);
+  } catch {}
+  window.__ndwSkipTermIndexInvalidate = true;
+  try { app.workspace.trigger("note-definitions-changed"); } finally { window.__ndwSkipTermIndexInvalidate = false; }
+  if (announce) new __ndw_obsidian.Notice(`已清理 ${expired.length} 个超过 1 小时的孤立词条${removed ? `，移除 ${removed} 处引用` : ""}。`, 6000);
+  return expired.length;
+}
+
 async function __ndwAdoptOrphanedNoteTerms(app, file, providedText = null) {
   const settings = window.NoteDefinition?.settings;
   if (!settings || !file?.path || !Array.isArray(settings.noteTerms)) return 0;
@@ -22835,7 +22877,8 @@ async function __ndw_syncNoteTermsForFile(app, file, { announce = true, text: pr
       if (active && active.path !== file.path && active.extension === "md") {
         await __ndwAdoptOrphanedNoteTerms(app, active);
       }
-      if (announce) new __ndw_obsidian.Notice("词条标记暂时不在此文件，已保留；粘贴到新文件后会自动接回。", 6000);
+      if (announce) new __ndw_obsidian.Notice("词条标记暂时不在此文件，已保留，1 小时内粘贴到其他文件会自动接回。", 6000);
+      window.setTimeout(() => void __ndwCleanupOrphanedNoteTerms(app, { announce: true }), __NDW_ORPHAN_TTL_MS + 5000);
     }
     return entries.length;
   }
@@ -24287,6 +24330,8 @@ async function __ndw_openDictionaryProtocol(app, params) {
     }));
     this.app.workspace.onLayoutReady(() => {
       window.setTimeout(() => void __ndw_refreshAllNoteTerms(this.app), 5000);
+      window.setTimeout(() => void __ndwCleanupOrphanedNoteTerms(this.app), 30000);
+      this.registerInterval(window.setInterval(() => void __ndwCleanupOrphanedNoteTerms(this.app), 10 * 60 * 1000));
       const idle = window.requestIdleCallback || ((fn) => window.setTimeout(fn, 20000));
       idle(() => { void __ndwInitShardSnapshots(this.app); }, { timeout: 60000 });
     });
