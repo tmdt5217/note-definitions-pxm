@@ -22271,6 +22271,12 @@ function __ndw_resolveVaultFile(app, rawPath) {
   if (!text) return null;
   const direct = app.vault.getAbstractFileByPath(text);
   if (typeof direct?.extension === "string") return direct;
+  if (/^(?:\/|[A-Za-z]:[\\/])/u.test(text)) {
+    for (const key of [`file:${text}`, `file://${text}`]) {
+      const found = app.vault.getFileByPath?.(key) || app.vault.getAbstractFileByPath?.(key);
+      if (typeof found?.extension === "string") return found;
+    }
+  }
   const external = __ndw_externalSourceFile(app, text);
   if (external) return external;
   let candidate = text.replace(/^file:\/\//iu, "").replace(/^file:/iu, "");

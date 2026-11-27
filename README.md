@@ -1,3 +1,3 @@
-# note-definitions_PXM 0.43.12
+# note-definitions_PXM 0.43.13
 
-- 概念卡片编辑笔记来源时，优先打开 external-vault 的真实库外文件，而不是当前库同名副本；只有找不到外部文件时才回退同名文件，并校验定义内容。
+- 绝对路径也会尝试按 file: 库外文件打开；Masson小体等来源词条优先使用 External Vault 原文件。
