@@ -21841,7 +21841,7 @@ function __ndw_dockButtons(host) {
     });
   }
   const activeView = window.NoteDefinition?.app?.workspace?.activeLeaf?.view;
-  const activeEncyclopediaDefinition = activeView?.getViewType?.() === "nd-encyclopedia" && (activeView?._mode === "definition" || Boolean(activeView?._currentDef));
+  const activeEncyclopediaDefinition = activeView?.getViewType?.() === "nd-encyclopedia" && activeView?._mode === "definition";
   if (activeEncyclopediaDefinition) {
     document.querySelectorAll(".ndw-ency-entry, .ndw-ency-all-terms, .ndw-ency-cards").forEach((button) => {
       button.style.setProperty("display", "none", "important");
