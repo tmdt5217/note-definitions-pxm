@@ -21840,15 +21840,7 @@ function __ndw_dockButtons(host) {
       button.style.setProperty("display", "none", "important");
     });
   }
-  const activeView = window.NoteDefinition?.app?.workspace?.activeLeaf?.view;
-  const activeEncyclopediaDefinition = activeView?.getViewType?.() === "nd-encyclopedia" && activeView?._mode === "definition";
-  if (activeEncyclopediaDefinition) {
-    document.querySelectorAll(".ndw-ency-entry, .ndw-ency-all-terms, .ndw-ency-cards").forEach((button) => {
-      button.style.setProperty("display", "none", "important");
-    });
-    return;
-  }
-  if (host.querySelector(".nd-ency-toolbar")) {
+  if (!host.querySelector(".nd-ency-search-input")) {
     for (const selector of [".ndw-ency-entry", ".ndw-ency-all-terms", ".ndw-ency-cards"]) {
       host.querySelector(selector)?.style.setProperty("display", "none", "important");
     }
@@ -21894,9 +21886,8 @@ function __ndw_dockButtons(host) {
 }
 
 function __ndw_refreshButtonVisibility() {
-  const modalOpen = Boolean(document.querySelector(".modal-container, .modal"));
   document.querySelectorAll(".nd-ency-container").forEach((host) => {
-    const show = !modalOpen && Boolean(host.querySelector(".nd-ency-search-input"));
+    const show = Boolean(host.querySelector(".nd-ency-search-input"));
     if (show) {
       __ndw_dockButtons(host);
       return;
@@ -22062,8 +22053,7 @@ function __ndw_installEncyclopediaButton(app) {
         }
       };
       const inSearchUI = Boolean(host.querySelector(".nd-ency-search-input"));
-      const showFloating = !modalOpen && !showingDefinition && (leafView ? leafView._mode === "search" : inSearchUI);
-      if (showFloating) {
+      if (inSearchUI) {
         __ndw_dockButtons(host);
       } else {
         for (const button of [host.querySelector(".ndw-ency-entry"), host.querySelector(".ndw-ency-all-terms"), host.querySelector(".ndw-ency-cards")]) {
