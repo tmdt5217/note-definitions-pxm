@@ -21005,36 +21005,24 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     const sortChoices = [
       ["recent:desc", "最近添加 ▼"],
       ["recent:asc", "最近添加 ▲"],
-      ["views:desc", "浏览最多 ▼"],
-      ["views:asc", "浏览最多 ▲"],
       ["lastViewed:desc", "最近浏览 ▼"],
       ["lastViewed:asc", "最近浏览 ▲"],
       ["name:asc", "名称 A→Z"],
-      ["name:desc", "名称 Z→A"],
-      ["random:desc", "随机乱序"]
+      ["name:desc", "名称 Z→A"]
     ];
-    const currentSort = `${this.sortMode}:${this.sortMode === "random" ? "desc" : this.sortOrder}`;
+    if (!["recent", "lastViewed", "name"].includes(this.sortMode)) this.sortMode = "recent";
+    const currentSort = `${this.sortMode}:${this.sortOrder}`;
     for (const [value, label] of sortChoices) {
-      const heavy = (this._cardTotal > 50000 || window.NoteDefinition?.settings?.highPerformanceMode === true) && ["views", "lastViewed", "random"].includes(value.split(":")[0]);
-      const option = sort.createEl("option", { text: heavy ? `${label}（大词库不可用）` : label, attr: { value } });
+      const option = sort.createEl("option", { text: label, attr: { value } });
       option.selected = currentSort === value;
-      option.disabled = heavy;
     }
     sort.addEventListener("change", () => {
       const [mode, order] = sort.value.split(":");
-      if ((this._cardTotal > 50000 || window.NoteDefinition?.settings?.highPerformanceMode === true) && ["views", "lastViewed", "random"].includes(mode)) {
-        new __ndw_obsidian.Notice("词条超过 5 万，已关闭浏览排序和随机乱序；请使用最近添加或名称排序。", 6000);
-        sort.value = "recent:desc";
-        this.sortMode = "recent";
-        this.sortOrder = "desc";
-        this.renderCards(true);
-        return;
-      }
-      this.sortMode = mode;
+      this.sortMode = ["recent", "lastViewed", "name"].includes(mode) ? mode : "recent";
       this.sortOrder = order || "desc";
       localStorage.setItem("ndw-card-sort", this.sortMode);
       localStorage.setItem("ndw-card-order", this.sortOrder);
-      this.renderCards();
+      this.renderCards(true);
     });
     toolbar.createSpan({ cls: "ndw-toolbar-label", text: "筛选" });
     const filter = toolbar.createEl("select", { attr: { "aria-label": "卡片筛选" } });
@@ -21193,7 +21181,7 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
       const query = this.query.trim().toLowerCase();
       const cutoff = Date.now() - Math.max(1, this.days) * 86400000;
       const filter = this._cardFilter(stars, views, scores, query, cutoff);
-      if (!query && (this._cardTotal > 50000 || window.NoteDefinition?.settings?.highPerformanceMode === true) && ["views", "lastViewed", "random"].includes(this.sortMode)) {
+      if (!["recent", "lastViewed", "name"].includes(this.sortMode)) {
         this.sortMode = "recent";
         this.sortOrder = "desc";
         if (this.sortEl) this.sortEl.value = "recent:desc";
@@ -21231,29 +21219,29 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
         });
         this._cardCursor = page.nextCursor;
         this._hasMoreCards = Boolean(page.nextCursor);
-      } else if (this.sortMode === "views" || this.sortMode === "lastViewed") {
-        const limitKeys = 5000;
+      } else if (this.sortMode === "lastViewed") {
         const keys = Object.keys(views)
-          .sort((a, b) => this.sortMode === "views" ? (Number(views[b]?.count) || 0) - (Number(views[a]?.count) || 0) : (Number(views[b]?.last) || 0) - (Number(views[a]?.last) || 0))
-          .slice(0, limitKeys);
+          .filter((key) => Number(views[key]?.last) > 0)
+          .sort((a, b) => (Number(views[b]?.last) || 0) - (Number(views[a]?.last) || 0))
+          .slice(0, 30);
         const rows = await this.termIndex.getMany(keys);
         const matches = rows.filter(filter);
         const dir = this.sortOrder === "asc" ? 1 : -1;
         matches.sort((a, b) => {
           const ka = __ndw_cardKey(a.word), kb = __ndw_cardKey(b.word);
-          if (this.sortMode === "views") return dir * ((views[ka]?.count || 0) - (views[kb]?.count || 0));
           return dir * ((views[ka]?.last || 0) - (views[kb]?.last || 0));
         });
-        const offset = this.currentList.length;
-        page = { items: matches.slice(offset, offset + this._pageSize), nextCursor: null };
-        this._hasMoreCards = offset + page.items.length < matches.length;
+        page = { items: matches, nextCursor: null };
+        this._hasMoreCards = false;
       } else {
-        const randomPage = await this.termIndex.scanPage({ limit: 2000, order: "desc", filter });
-        const matches = randomPage.items;
-        for (let i = matches.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); [matches[i], matches[j]] = [matches[j], matches[i]]; }
-        const offset = this.currentList.length;
-        page = { items: matches.slice(offset, offset + this._pageSize), nextCursor: null };
-        this._hasMoreCards = offset + page.items.length < matches.length;
+        page = await this.termIndex.scanPage({
+          limit: this._pageSize,
+          cursor: reset ? null : this._cardCursor,
+          order: this.sortOrder === "asc" ? "asc" : "desc",
+          filter
+        });
+        this._cardCursor = page.nextCursor;
+        this._hasMoreCards = Boolean(page.nextCursor);
       }
       if (generation !== this._cardViewGeneration || !this.gridEl?.isConnected) return;
       for (const entry of page.items) {
