@@ -17182,7 +17182,7 @@ class __NdwConflictModal extends __ndw_obsidian.Modal {
     });
 
     const same = this.contentEl.createDiv({ cls: "ndw-conflict-actions" });
-    this.appendButton = same.createEl("button", { text: "同一概念：追加出处", cls: "mod-cta" });
+    this.appendButton = same.createEl("button", { text: "加入已有词条：追加内容", cls: "mod-cta" });
     this.appendButton.addEventListener("click", () => void this.appendSource());
     const different = same.createEl("button", { text: "不同概念：新建词条" });
     different.addEventListener("click", () => this.showNewTerm());
@@ -17248,10 +17248,11 @@ class __NdwConflictModal extends __ndw_obsidian.Modal {
       const current = await __ndw_readExisting(this.app, this.existing);
       if (!current.path) throw new Error("找不到原词条文件路径。");
       if (!current.read) throw new Error("无法读取原词条文件，已停止追加，避免覆盖原定义。");
-      const quote = this.payload.quote.trim();
+      const addition = String(this.payload.definition || this.payload.quote || "").trim();
       const source = this.payload.source;
-      if (current.definition.includes(quote) && current.definition.includes(source)) {
-        new __ndw_obsidian.Notice("这条出处已经在该词条里，未重复追加。");
+      if (!addition) throw new Error("没有可追加的内容。");
+      if (current.definition.includes(addition) && current.definition.includes(source)) {
+        new __ndw_obsidian.Notice("这条内容已经在该词条里，未重复追加。");
         this.close();
         this.onResolved("saved");
         return;
@@ -17260,7 +17261,7 @@ class __NdwConflictModal extends __ndw_obsidian.Modal {
         ...(current.aliases || []),
         ...(this.payload.aliases || [])
       ].join(",")).filter((alias) => __ndw_norm(alias) !== __ndw_norm(current.word));
-      const definition = __ndw_appendCitation(current.definition, quote, source);
+      const definition = __ndw_appendContentWithSource(current.definition, addition, source);
       await window.NoteDefinition.shardedDefinitions.update(
         { path: current.path, word: current.word },
         { word: current.word, aliases: aliasList, definition }
@@ -17271,7 +17272,7 @@ class __NdwConflictModal extends __ndw_obsidian.Modal {
     } catch (error) {
       console.error("[note-definitions] append source failed", error);
       new __ndw_obsidian.Notice(`追加失败：${error?.message || String(error)}`, 8000);
-      this.setBusy(false, "同一概念：追加出处");
+      this.setBusy(false, "加入已有词条：追加内容");
     }
   }
 
@@ -17297,7 +17298,7 @@ class __NdwConflictModal extends __ndw_obsidian.Modal {
       new __ndw_obsidian.Notice("原词条新标题不能和新词条同名。");
       return;
     }
-    this.setBusy(true, "同一概念：追加出处");
+    this.setBusy(true, "加入已有词条：追加内容");
     this.renameButton.disabled = true;
     this.renameButton.setText("改名并创建中…");
     try {
@@ -17333,7 +17334,7 @@ ${this.payload.definition}`;
       console.error("[note-definitions] rename base + create failed", error);
       new __ndw_obsidian.Notice(`改名/新建失败：${error?.message || String(error)}`, 8000);
     } finally {
-      this.setBusy(false, "同一概念：追加出处");
+      this.setBusy(false, "加入已有词条：追加内容");
       this.renameButton.disabled = false;
       this.renameButton.setText("改名并创建新词条");
     }
@@ -17355,7 +17356,7 @@ ${this.payload.definition}`;
       new __ndw_obsidian.Notice("新词条名必须和原词条不同，请加学科、语境或书名。");
       return;
     }
-    this.setBusy(true, "同一概念：追加出处");
+    this.setBusy(true, "加入已有词条：追加内容");
     this.createButton.setText("创建中…");
     try {
       if (!__ndw_ready()) throw new Error("ND 写入器未就绪，请重新加载 ND。");
@@ -17377,7 +17378,7 @@ ${this.payload.definition}`;
       console.error("[note-definitions] create disambiguated term failed", error);
       new __ndw_obsidian.Notice(`新建失败：${error?.message || String(error)}`, 8000);
     } finally {
-      this.setBusy(false, "同一概念：追加出处");
+      this.setBusy(false, "加入已有词条：追加内容");
       this.createButton.setText("创建新词条");
     }
   }
@@ -17430,6 +17431,25 @@ function __ndw_stripCitation(definition) {
   text = text.replace(/\n{2,}\*\*来源：\*\*[\s\S]*$/u, "");
   text = text.replace(/^\s*\[\^[^\]\s]+\]:.*$/gmu, "");
   return text.trim();
+}
+
+function __ndw_appendContentWithSource(definition, content, source) {
+  const current = String(definition || "").trim();
+  const body = __ndw_stripCitation(content).trim();
+  if (!body) return current;
+  const used = new Set([...current.matchAll(/\[\^([^\]\s]+)\]/gu)].map((match) => match[1].toLowerCase()));
+  let number = 1;
+  while (used.has(String(number))) number += 1;
+  const marker = `[^${number}]`;
+  let bullets = 0;
+  const marked = body.split(/\r?\n/u).map((line) => {
+    if (!/^[ \t]*[-*+][ \t]+\S/u.test(line)) return line;
+    bullets += 1;
+    return `${line.trimEnd()} ${marker}`;
+  }).join("\n");
+  const block = bullets ? marked : `${body} ${marker}`;
+  const sourceText = String(source || "").trim();
+  return `${current}${current ? "\n\n" : ""}${block}${sourceText ? `\n\n**来源：**\n[^${number}]: ${sourceText}` : ""}`;
 }
 
 function __ndw_citationSources(text) {
@@ -17869,7 +17889,7 @@ class __NdwSmearModal extends __ndw_obsidian.Modal {
     this.saveButton.disabled = true;
     this.saveButton.setText("写入中…");
     try {
-      const existing = await __ndw_findExisting(word);
+      const existing = (await __ndw_findExisting(word)) || (await window.__ndwLookupIndexedDefinition?.(word));
       if (existing) {
         this.saveButton.disabled = false;
         this.saveButton.setText("加入 ND");
