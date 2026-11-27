@@ -22860,6 +22860,18 @@ function __ndw_noteTermDefinitionAt(lines, lineIndex) {
       output.push(line.replace(markerRe, (_match, word) => __ndw_cleanTermMarkup(word)));
       continue;
     }
+    markerRe.lastIndex = 0;
+    const firstMarker = markerRe.exec(line);
+    const before = firstMarker
+      ? line.slice(0, firstMarker.index)
+        .replace(/^[\s•*+>#\-–—]+/u, "")
+        .replace(/^[*_~]+|[*_~]+$/gu, "")
+        .trim()
+      : "";
+    if (firstMarker && before) {
+      output.push(line.replace(markerRe, (_match, word) => __ndw_cleanTermMarkup(word)));
+      continue;
+    }
     let rest = line.replace(markerRe, "").trim();
     if (!rest) continue;
     if (/^[\s*_~:：,，;；。.\-–—]+$/u.test(rest)) continue;
