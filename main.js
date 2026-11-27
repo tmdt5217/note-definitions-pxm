@@ -22369,23 +22369,50 @@ function __ndwShowTermLocateBand(editor) {
     const cursor = editor.getCursor();
     const lineNumber = Math.min(view.state.doc.lines, Math.max(1, Number(cursor.line) + 1));
     const docLine = view.state.doc.line(lineNumber);
-    const coords = view.coordsAtPos(docLine.from);
-    if (!coords) return;
-    const contentRect = view.contentDOM.getBoundingClientRect();
-    __ndwTermLocateBand?.remove();
+    const previous = __ndwTermLocateBand;
+    previous?.__cleanup?.();
+    previous?.remove?.();
     const band = document.createElement("div");
     band.className = "ndw-term-locate-band";
     band.style.setProperty("position", "fixed", "important");
-    band.style.setProperty("left", `${Math.round(contentRect.left)}px`, "important");
-    band.style.setProperty("top", `${Math.round(coords.top)}px`, "important");
-    band.style.setProperty("width", `${Math.round(contentRect.width)}px`, "important");
-    band.style.setProperty("height", `${Math.max(2, Math.round(coords.bottom - coords.top))}px`, "important");
+    band.style.setProperty("pointer-events", "none", "important");
     document.body.appendChild(band);
     __ndwTermLocateBand = band;
-    window.setTimeout(() => {
+    const update = () => {
+      try {
+        const coords = view.coordsAtPos(docLine.from);
+        if (!coords) {
+          band.style.setProperty("display", "none", "important");
+          return;
+        }
+        const contentRect = view.contentDOM.getBoundingClientRect();
+        band.style.setProperty("display", "block", "important");
+        band.style.setProperty("left", `${Math.round(contentRect.left)}px`, "important");
+        band.style.setProperty("top", `${Math.round(coords.top)}px`, "important");
+        band.style.setProperty("width", `${Math.round(contentRect.width)}px`, "important");
+        band.style.setProperty("height", `${Math.max(2, Math.round(coords.bottom - coords.top))}px`, "important");
+      } catch {}
+    };
+    const scrollEl = view.scrollDOM;
+    const onScroll = () => update();
+    const onResize = () => update();
+    scrollEl?.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("scroll", onResize);
+    const cleanup = () => {
+      scrollEl?.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("scroll", onResize);
       band.remove();
       if (__ndwTermLocateBand === band) __ndwTermLocateBand = null;
-    }, 5000);
+    };
+    band.__cleanup = cleanup;
+    update();
+    window.setTimeout(update, 80);
+    window.setTimeout(update, 300);
+    window.setTimeout(cleanup, 5000);
   } catch {}
 }
 
