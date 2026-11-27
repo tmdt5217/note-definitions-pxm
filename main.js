@@ -19273,6 +19273,12 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
       __ndw_toggleCardStar(this.entry.word);
       this.updateStar();
     });
+    const edit = this.editEl = this.modalEl.createEl("button", { cls: "ndw-term-star ndw-term-edit-top", attr: { "aria-label": "编辑词条", title: "编辑词条" } });
+    __ndw_setNativeIcon(edit, "pencil", '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>');
+    edit.addEventListener("click", (event) => {
+      event.stopPropagation();
+      void this.editCurrent();
+    });
     this._alignStarToTitle = () => {
       if (!star.isConnected || !this.titleEl?.isConnected) return;
       const modalRect = this.modalEl.getBoundingClientRect();
@@ -19334,6 +19340,49 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
     this._alignStarToTitle?.();
     window.requestAnimationFrame(() => this._alignStarToTitle?.());
     window.setTimeout(() => this.pane?.position?.(), 0);
+  }
+
+  async editCurrent() {
+    const entry = this.entry;
+    if (!entry) return;
+    if (entry.source === "note" || (entry.notePath && entry.notePath !== entry.filePath)) {
+      const path = String(entry.notePath || entry.filePath || "").trim();
+      const file = __ndw_resolveVaultFile(this.app, path);
+      if (!file) {
+        new __ndw_obsidian.Notice(`找不到源笔记文件：${path || "（路径为空）"}`);
+        return;
+      }
+      await __ndw_rebindNoteTermSource(this.app, entry, file);
+      this.close();
+      try {
+        const leaf = this.app.workspace.getLeaf(false);
+        await leaf.openFile(file, { active: true });
+        const place = () => {
+          const editor = leaf.view?.editor || leaf.view?.sourceMode?.editor || this.app.workspace.activeEditor?.editor;
+          return __ndwSelectTermInEditor(editor, entry);
+        };
+        if (!place()) {
+          window.setTimeout(place, 80);
+          window.setTimeout(place, 240);
+        }
+      } catch (error) {
+        new __ndw_obsidian.Notice(`打开源笔记失败：${error?.message || String(error)}`);
+      }
+      return;
+    }
+    const Editor = globalThis.__ndwAddDefinitionModal;
+    if (typeof Editor !== "function") {
+      new __ndw_obsidian.Notice("词条编辑器未就绪，请重新加载 ND。");
+      return;
+    }
+    const editor = new Editor(this.app, null, (updated, savedWord) => {
+      const word = String(savedWord || updated?.word || entry.word || "").trim();
+      void (async () => {
+        const fresh = word ? await window.__ndwLookupIndexedDefinition?.(word) : null;
+        if (fresh && this.contentEl?.isConnected) this.renderEntry(fresh);
+      })();
+    }, null, entry);
+    void editor.open(entry.word);
   }
 
   onPointerDown(event) {
@@ -19878,13 +19927,6 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
 
   makeRow(entry) {
     const row = this.listEl.createDiv({ cls: "ndw-term-row ndw-term-clickable" });
-    const editButton = row.createEl("button", { cls: "ndw-term-edit", attr: { "aria-label": "编辑词条", title: "编辑词条" } });
-    __ndw_setNativeIcon(editButton, "pencil", '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>');
-    editButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      void this.editTerm(entry);
-    });
     const checkbox = row.createEl("input", { type: "checkbox", cls: "ndw-term-check" });
     checkbox.checked = this.selected.has(entry.word);
     checkbox.addEventListener("click", (event) => event.stopPropagation());
@@ -19919,43 +19961,6 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     const score = Number(__ndw_cardScores()[__ndw_cardKey(entry.word)]) || 0;
     footer.createSpan({ cls: "ndw-term-stats", text: `不熟 ${score}/10 · 浏览 ${Number(view.count) || 0}` });
     return row;
-  }
-
-  async editTerm(entry) {
-    if (!entry) return;
-    if (entry.source === "note" || (entry.notePath && entry.notePath !== entry.filePath)) {
-      const path = String(entry.notePath || entry.filePath || "").trim();
-      const file = __ndw_resolveVaultFile(this.app, path);
-      if (!file) {
-        new __ndw_obsidian.Notice(`找不到源笔记文件：${path || "（路径为空）"}`);
-        return;
-      }
-      await __ndw_rebindNoteTermSource(this.app, entry, file);
-      try {
-        const leaf = this.app.workspace.getLeaf(false);
-        await leaf.openFile(file, { active: true });
-        const place = () => {
-          const editor = leaf.view?.editor || leaf.view?.sourceMode?.editor || this.app.workspace.activeEditor?.editor;
-          return __ndwSelectTermInEditor(editor, entry);
-        };
-        if (!place()) {
-          window.setTimeout(place, 80);
-          window.setTimeout(place, 240);
-        }
-      } catch (error) {
-        new __ndw_obsidian.Notice(`打开源笔记失败：${error?.message || String(error)}`);
-      }
-      return;
-    }
-    const Editor = globalThis.__ndwAddDefinitionModal;
-    if (typeof Editor !== "function") {
-      new __ndw_obsidian.Notice("词条编辑器未就绪，请重新加载 ND。");
-      return;
-    }
-    const editor = new Editor(this.app, null, () => {
-      if (this.contentEl?.isConnected) this.show();
-    }, null, entry);
-    void editor.open(entry.word);
   }
 
   setupSentinel() {
