@@ -19356,6 +19356,7 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
         return;
       }
       await __ndw_rebindNoteTermSource(this.app, entry, file);
+      __ndwSyncRememberCursor(this.app, file, Number(entry.line) || 0, Number(entry.column) || 0);
       this.close();
       try {
         const leaf = this.app.workspace.getLeaf(false);
@@ -20554,6 +20555,7 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     const storedLine = Math.max(0, Number(entry.line) || 0);
     const ch = Math.max(0, Number(entry.column) || 0);
     await __ndw_rebindNoteTermSource(this.app, entry, file);
+    __ndwSyncRememberCursor(this.app, file, storedLine, ch);
     this.close();
     try {
       const leaf = this.app.workspace.getLeaf(false);
@@ -20606,6 +20608,7 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
           }
         }
         editor.setSelection({ line, ch: Math.min(fromCh, text.length) }, { line, ch: toCh });
+        __ndwCancelRememberCursorRestore(this.app);
         editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: Math.max(toCh, 1) } }, true);
         editor.focus();
         __ndwFlashTermSelection();
@@ -22435,6 +22438,25 @@ function __ndwFlashTermSelection(duration = 2600) {
   }, duration);
 }
 
+function __ndwSyncRememberCursor(app, file, line, ch, toCh = ch) {
+  try {
+    const plugin = app?.plugins?.plugins?.["remember-cursor-position-pxm"];
+    if (!plugin || !file?.path) return;
+    if (!plugin.db || typeof plugin.db !== "object") plugin.db = {};
+    const from = { line: Math.max(0, Number(line) || 0), ch: Math.max(0, Number(ch) || 0) };
+    const to = { line: from.line, ch: Math.max(from.ch, Number(toCh) || from.ch) };
+    plugin.db[file.path] = { scroll: 0, cursor: { from, to }, lastModified: Date.now() };
+  } catch {}
+}
+
+function __ndwCancelRememberCursorRestore(app) {
+  try {
+    const plugin = app?.plugins?.plugins?.["remember-cursor-position-pxm"];
+    const leaf = app?.workspace?.activeLeaf;
+    plugin?.controller?.noteInteraction?.(leaf);
+  } catch {}
+}
+
 function __ndwSelectTermInEditor(editor, entry) {
   if (!editor?.getValue || !entry) return false;
   const word = __ndw_cleanTermMarkup(entry.word || entry.display || "");
@@ -22483,6 +22505,11 @@ function __ndwSelectTermInEditor(editor, entry) {
     }
   }
   editor.setSelection({ line, ch: Math.min(fromCh, text.length) }, { line, ch: toCh });
+  try {
+    const app = window.NoteDefinition?.app;
+    __ndwSyncRememberCursor(app, app?.workspace?.getActiveFile(), line, fromCh, toCh);
+    __ndwCancelRememberCursorRestore(app);
+  } catch {}
   editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: Math.max(toCh, 1) } }, true);
   editor.focus();
   __ndwFlashTermSelection();
@@ -22812,8 +22839,9 @@ async function __ndw_openNoteTermAt(app, entry) {
     return false;
   }
   const leaf = app.workspace.getLeaf("tab") || app.workspace.getLeaf(true);
-  await leaf.openFile(file);
   const line = Math.max(0, Number(entry?.line) || 0);
+  __ndwSyncRememberCursor(app, file, line, Number(entry?.column) || 0);
+  await leaf.openFile(file);
   window.setTimeout(() => {
     const editor = leaf.view?.editor;
     if (!editor) return;

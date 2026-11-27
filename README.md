@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.28
+# Note-Definitions_PXM 0.43.29
 
-- 词条管理卡片列表改用与概念卡片相同的 auto-fill/minmax(220px) 网格：iPad 横屏自动多栏，手机仍两栏。
+- 与 Remember cursor position_PXM 协调：打开源笔记前写入目标光标，定位后取消其待执行的旧光标恢复，避免跳走。
