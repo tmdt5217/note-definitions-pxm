@@ -20491,6 +20491,14 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
     }
     const word = __ndw_cleanTermMarkup(entry.word || entry.display || "");
     const display = __ndw_cleanTermMarkup(entry.display || entry.word || "");
+    let sourceText = "";
+    try { sourceText = await this.app.vault.cachedRead(file); } catch {}
+    const hasMarker = Boolean(sourceText && (sourceText.includes(`{{nd:${display}}}`) || sourceText.includes(`{{nd:${word}}}`)));
+    const externalSource = /^file:/iu.test(String(file.path || ""));
+    if (!externalSource && !hasMarker && !__ndw_sourceContainsDefinition(sourceText, entry)) {
+      new __ndw_obsidian.Notice(`当前文件与卡片定义不一致：${file.path}\n可能来自外部库，或同名文件不是同一篇。`, 8000);
+      return;
+    }
     const storedLine = Math.max(0, Number(entry.line) || 0);
     const ch = Math.max(0, Number(entry.column) || 0);
     await __ndw_rebindNoteTermSource(this.app, entry, file);
@@ -22225,11 +22233,46 @@ function __ndw_installEncyclopediaButton(app) {
   };
 }
 
+function __ndw_externalSourceFile(app, rawPath) {
+  const text = String(rawPath || "").trim();
+  if (!/^file:/iu.test(text)) return null;
+  let candidate = text.replace(/^file:\/\//iu, "").replace(/^file:/iu, "");
+  try { candidate = decodeURIComponent(candidate); } catch {}
+  const base = candidate.split(/[\\/]/u).pop() || "";
+  if (!base) return null;
+  const plugin = app.plugins?.plugins?.["external-vault"];
+  const basePath = String(app.vault?.adapter?.basePath || "").trim();
+  const relDir = String(plugin?.settings?.customMdDir || "../External Vault").trim();
+  if (!basePath) return null;
+  let absolute = "";
+  try {
+    const nodePath = require("node:path");
+    absolute = nodePath.resolve(basePath, relDir, base);
+  } catch {
+    const joined = `${basePath.replace(/[\\/]+$/u, "")}/${relDir.replace(/^[\\/]+|[\\/]+$/gu, "")}/${base}`;
+    const parts = joined.split("/");
+    const out = [];
+    for (const part of parts) {
+      if (!part || part === ".") continue;
+      if (part === "..") out.pop();
+      else out.push(part);
+    }
+    absolute = `/${out.join("/")}`;
+  }
+  for (const key of [`file:${absolute}`, `file://${absolute}`, absolute]) {
+    const found = app.vault.getFileByPath?.(key) || app.vault.getAbstractFileByPath?.(key);
+    if (typeof found?.extension === "string") return found;
+  }
+  return null;
+}
+
 function __ndw_resolveVaultFile(app, rawPath) {
   const text = String(rawPath || "").trim();
   if (!text) return null;
   const direct = app.vault.getAbstractFileByPath(text);
   if (typeof direct?.extension === "string") return direct;
+  const external = __ndw_externalSourceFile(app, text);
+  if (external) return external;
   let candidate = text.replace(/^file:\/\//iu, "").replace(/^file:/iu, "");
   try { candidate = decodeURIComponent(candidate); } catch {}
   const base = candidate.split(/[\\/]/u).pop() || "";
@@ -22241,6 +22284,23 @@ function __ndw_resolveVaultFile(app, rawPath) {
   const matches = app.vault.getFiles().filter((file) => file.name === base);
   if (matches.length) return matches.sort((a, b) => a.path.length - b.path.length)[0];
   return app.vault.getFiles().find((file) => file.path.endsWith(`/${base}`)) || null;
+}
+
+function __ndw_sourceContainsDefinition(text, entry) {
+  const raw = String(entry?.definition || "").trim();
+  if (!raw) return true;
+  const normalize = (value) => String(value || "")
+    .replace(/\{\{nd:([^{}\r\n]+)\}\}/gu, "$1")
+    .replace(/\[\^[^\]\s]+\]/gu, "")
+    .replace(/\*\*|__|\*|_|~~|`/gu, "")
+    .replace(/^[ \t]*[-*+>#]+[ \t]*/gmu, "")
+    .replace(/\s+/gu, "")
+    .toLowerCase();
+  const source = normalize(text);
+  const lines = raw.split(/\r?\n/u).map(normalize).filter((line) => line.length >= 8 && !/^来源[:：]?/u.test(line));
+  const snippet = lines[0];
+  if (!snippet) return true;
+  return source.includes(snippet);
 }
 
 async function __ndw_rebindNoteTermSource(app, entry, file) {
