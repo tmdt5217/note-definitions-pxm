@@ -19280,12 +19280,15 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
       void this.editCurrent();
     });
     this._alignStarToTitle = () => {
-      if (!star.isConnected || !this.titleEl?.isConnected) return;
+      if (!this.titleEl?.isConnected) return;
       const modalRect = this.modalEl.getBoundingClientRect();
       const titleRect = this.titleEl.getBoundingClientRect();
       const starHeight = star.getBoundingClientRect().height || 32;
       const top = titleRect.top - modalRect.top + (titleRect.height - starHeight) / 2;
-      star.style.setProperty("top", `${Math.round(top)}px`, "important");
+      for (const button of [star, this.editEl]) {
+        if (!button?.isConnected) continue;
+        button.style.setProperty("top", `${Math.round(top)}px`, "important");
+      }
     };
     window.requestAnimationFrame(this._alignStarToTitle);
     window.setTimeout(this._alignStarToTitle, 80);

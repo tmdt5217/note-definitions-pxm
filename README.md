@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.26
+# Note-Definitions_PXM 0.43.27
 
-- 插件显示名改为 Note-Definitions_PXM。
+- 词条卡片编辑按钮与星标、标题垂直对齐。
