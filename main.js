@@ -20490,8 +20490,10 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
       return;
     }
     const word = __ndw_cleanTermMarkup(entry.word || entry.display || "");
+    const display = __ndw_cleanTermMarkup(entry.display || entry.word || "");
     const storedLine = Math.max(0, Number(entry.line) || 0);
     const ch = Math.max(0, Number(entry.column) || 0);
+    await __ndw_rebindNoteTermSource(this.app, entry, file);
     this.close();
     try {
       const leaf = this.app.workspace.getLeaf(false);
@@ -20499,23 +20501,59 @@ class __NdwCardReviewModal extends __ndw_obsidian.Modal {
       const placeCursor = () => {
         const view = leaf.view;
         const editor = view?.editor || view?.sourceMode?.editor || this.app.workspace.activeEditor?.editor;
-        if (!editor) return false;
+        if (!editor?.getValue) return false;
         const lines = editor.getValue().split("\n");
         let line = Math.min(storedLine, Math.max(0, lines.length - 1));
-        const marker = `{{nd:${word}}}`;
-        if (word && !(lines[line] || "").includes(word)) {
-          const found = lines.findIndex((text) => text.includes(marker) || text.includes(word));
+        const compact = (value) => String(value || "").replace(/\s+/gu, "");
+        const wordCompact = compact(word);
+        const displayCompact = compact(display);
+        const marker = display ? `{{nd:${display}}}` : "";
+        if (word && !lines[line]?.includes(word)) {
+          const found = lines.findIndex((text) => {
+            if (marker && text.includes(marker)) return true;
+            const normalized = compact(text);
+            return (wordCompact && normalized.includes(wordCompact)) || (displayCompact && normalized.includes(displayCompact));
+          });
           if (found >= 0) line = found;
         }
-        const targetCh = Math.min(ch, (lines[line] || "").length);
-        editor.setCursor({ line, ch: targetCh });
-        editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: targetCh } }, true);
+        const text = lines[line] || "";
+        let fromCh = Math.min(ch, text.length);
+        let toCh = Math.min(text.length, fromCh + 1);
+        const markerAt = marker ? text.indexOf(marker) : -1;
+        if (markerAt >= 0) {
+          fromCh = markerAt + 5;
+          toCh = Math.min(text.length, fromCh + Math.max(1, display.length || word.length));
+        } else if (word || display) {
+          const target = word || display;
+          const directAt = text.indexOf(target);
+          if (directAt >= 0) {
+            fromCh = directAt;
+            toCh = directAt + target.length;
+          } else {
+            const positions = [];
+            let compactText = "";
+            for (let i = 0; i < text.length; i += 1) {
+              if (/\s/u.test(text[i])) continue;
+              positions.push(i);
+              compactText += text[i];
+            }
+            const compactTarget = compact(target);
+            const compactAt = compactText.indexOf(compactTarget);
+            if (compactAt >= 0) {
+              fromCh = positions[compactAt];
+              toCh = positions[Math.min(positions.length - 1, compactAt + compactTarget.length - 1)] + 1;
+            }
+          }
+        }
+        editor.setSelection({ line, ch: Math.min(fromCh, text.length) }, { line, ch: toCh });
+        editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: Math.max(toCh, 1) } }, true);
         editor.focus();
         return true;
       };
       if (!placeCursor()) {
         window.setTimeout(placeCursor, 60);
         window.setTimeout(placeCursor, 180);
+        window.setTimeout(placeCursor, 400);
       }
     } catch (error) {
       new __ndw_obsidian.Notice(`打开源笔记失败：${error?.message || String(error)}`);
@@ -22196,10 +22234,44 @@ function __ndw_resolveVaultFile(app, rawPath) {
   try { candidate = decodeURIComponent(candidate); } catch {}
   const base = candidate.split(/[\\/]/u).pop() || "";
   if (!base) return null;
+  const link = app.metadataCache.getFirstLinkpathDest?.(base, "");
+  if (typeof link?.extension === "string") return link;
   const byName = app.vault.getAbstractFileByPath(base);
   if (typeof byName?.extension === "string") return byName;
-  const files = app.vault.getFiles();
-  return files.find((file) => file.name === base) || files.find((file) => file.path.endsWith(`/${base}`)) || null;
+  const matches = app.vault.getFiles().filter((file) => file.name === base);
+  if (matches.length) return matches.sort((a, b) => a.path.length - b.path.length)[0];
+  return app.vault.getFiles().find((file) => file.path.endsWith(`/${base}`)) || null;
+}
+
+async function __ndw_rebindNoteTermSource(app, entry, file) {
+  if (!entry || !file?.path) return false;
+  const settings = window.NoteDefinition?.settings;
+  const terms = Array.isArray(settings?.noteTerms) ? settings.noteTerms : [];
+  if (!terms.length) return false;
+  const oldPath = String(entry.notePath || entry.filePath || "").trim();
+  const word = __ndw_cleanTermMarkup(entry.word || entry.display || "");
+  const matched = terms.filter((item) => {
+    if (!item || String(item.notePath || "") !== oldPath) return false;
+    return !word || __ndw_cleanTermMarkup(item.word || item.display || "") === word;
+  });
+  if (!matched.length) return false;
+  let changed = false;
+  for (const item of matched) {
+    if (item.notePath !== file.path) { item.notePath = file.path; changed = true; }
+  }
+  entry.notePath = file.path;
+  entry.filePath = file.path;
+  if (!changed) return true;
+  try {
+    const plugin = app.plugins.plugins["note-definitions-pxm"];
+    await plugin?.saveData?.(settings);
+    if (window.__ndwSharedTermIndex) window.__ndwSharedTermIndex.__ready = null;
+    app.workspace.trigger("note-definitions-changed");
+  } catch (error) {
+    console.warn("[note-definitions] rebind note term failed", error);
+    return false;
+  }
+  return true;
 }
 
 function __ndw_wordAtCursor(editor) {
