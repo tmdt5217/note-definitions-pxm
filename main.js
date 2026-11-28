@@ -21227,7 +21227,7 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     const head = this.contentEl.createDiv({ cls: "ndw-cards-head" });
     const titleWrap = head.createDiv({ cls: "ndw-cards-title" });
     titleWrap.createEl("h2", { text: "概念卡片" });
-    titleWrap.createEl("p", { cls: "ndw-hint", text: "点击卡片查看概念；星标会保存在本机。" });
+    titleWrap.createEl("p", { cls: "ndw-hint", text: "点击卡片查看概念；星标会随库同步。" });
     const headActions = head.createDiv({ cls: "ndw-cards-head-actions" });
     const manage = headActions.createEl("button", { text: "词条管理", cls: "ndw-cards-exit", attr: { "aria-label": "切换到词条管理" } });
     manage.addEventListener("click", () => {
