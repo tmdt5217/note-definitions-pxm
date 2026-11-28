@@ -19760,15 +19760,15 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     coreMain.classList.toggle("is-active", this.coreOnly);
     this.countEl = toolbar.createSpan({ cls: "ndw-count" });
     this.selectionCountEl = toolbar.createSpan({ cls: "ndw-selection-count" });
-    const selectAll = toolbar.createEl("button", { text: "全选已加载", cls: "ndw-filter-reset" });
+    const selectAll = toolbar.createEl("button", { text: "全选", cls: "ndw-filter-reset" });
+    this.selectAllButton = selectAll;
     selectAll.addEventListener("click", () => {
-      for (const entry of this._loadedEntries.values()) this.selected.add(entry.word);
+      const entries = [...this._loadedEntries.values()];
+      const allSelected = entries.length > 0 && entries.every((entry) => this.selected.has(entry.word));
+      if (allSelected) this.selected.clear();
+      else for (const entry of entries) this.selected.add(entry.word);
+      this.syncSelectionChecks();
       this.updateSelectionUI();
-    });
-    const clearSelection = toolbar.createEl("button", { text: "清空选择", cls: "ndw-filter-reset" });
-    clearSelection.addEventListener("click", () => {
-      this.selected.clear();
-      this.applyFilter();
     });
     this.deleteButton = toolbar.createEl("button", { text: "删除", cls: "mod-warning" });
     this.deleteButton.addEventListener("click", () => this.deleteSelected());
@@ -19873,9 +19873,23 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     }
   }
 
+  syncSelectionChecks() {
+    if (!this.listEl) return;
+    for (const row of this.listEl.querySelectorAll(".ndw-term-row")) {
+      const checkbox = row.querySelector(".ndw-term-check");
+      if (checkbox) checkbox.checked = this.selected.has(row.dataset.word);
+    }
+  }
+
   updateSelectionUI() {
     const count = this.selected.size;
+    const entries = [...this._loadedEntries.values()];
+    const allSelected = entries.length > 0 && entries.every((entry) => this.selected.has(entry.word));
     if (this.selectionCountEl) this.selectionCountEl.setText(count ? `已选 ${count} 条` : "");
+    if (this.selectAllButton) {
+      this.selectAllButton.setText(allSelected ? "不选" : "全选");
+      this.selectAllButton.disabled = entries.length === 0;
+    }
     if (this.deleteButton) {
       this.deleteButton.setText(count ? `删除 (${count})` : "删除");
       this.deleteButton.disabled = count === 0;
@@ -19944,6 +19958,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
 
   makeRow(entry) {
     const row = this.listEl.createDiv({ cls: "ndw-term-row ndw-term-clickable" });
+    row.dataset.word = entry.word;
     const checkbox = row.createEl("input", { type: "checkbox", cls: "ndw-term-check" });
     checkbox.checked = this.selected.has(entry.word);
     checkbox.addEventListener("click", (event) => event.stopPropagation());
