@@ -4107,12 +4107,12 @@ body.is-mobile .ndw-all-terms-list {
 .ndw-term-check {
   appearance: none !important;
   -webkit-appearance: none !important;
-  width: 22px !important;
-  height: 22px !important;
-  min-width: 22px !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
   padding: 0 !important;
-  border: 1.5px solid var(--background-modifier-border) !important;
-  border-radius: 6px !important;
+  border: 1.2px solid var(--background-modifier-border) !important;
+  border-radius: 5px !important;
   background-color: var(--background-primary) !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
@@ -4122,16 +4122,16 @@ body.is-mobile .ndw-all-terms-list {
   border-color: #79a86d !important;
   background-color: #79a86d !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12l5 5L20 7' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
-  background-size: 15px 15px !important;
+  background-size: 12px 12px !important;
 }
 @media (max-width: 600px) {
   .ndw-term-check {
-    width: 24px !important;
-    height: 24px !important;
-    min-width: 24px !important;
+    width: 19px !important;
+    height: 19px !important;
+    min-width: 19px !important;
   }
   .ndw-term-check:checked {
-    background-size: 17px 17px !important;
+    background-size: 13px 13px !important;
   }
 }
 

@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.48
+# Note-Definitions_PXM 0.43.49
 
-- 隐藏词条勾选框的原生伪元素对勾，避免与自定义 SVG 对勾叠加。
+- 词条勾选框缩小为原来的 4/5，对勾同步缩放。
