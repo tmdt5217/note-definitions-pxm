@@ -19868,6 +19868,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
         this.sentinelEl.setText(`向下滚动加载更多（已显示 ${this._loadedEntries.size}）`);
         this.setupSentinel();
       }
+      this.updateSelectionUI();
     } finally {
       this._termsLoading = false;
     }
