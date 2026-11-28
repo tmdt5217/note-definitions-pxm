@@ -15793,6 +15793,7 @@ var NoteDefinitionsPXM = class extends LegacyPlugin {
       mountRecentCreations: (list, days, open) => bookSearch.mountCreations(list, creations, days, open),
       recentCreationPage: (days, offset = 0) => creations.page(days, offset),
       recordCreation: (word) => {
+        __ndw_recordTermTime(word, Date.now(), "created");
         creations.add(word);
         return persistCreations();
       },
@@ -19317,7 +19318,7 @@ class __NdwTermDetailModal extends __ndw_obsidian.Modal {
     const meta = this.contentEl.createDiv({ cls: "ndw-term-detail-meta" });
     if (entry.aliases?.length) meta.createDiv({ text: `别名：${entry.aliases.join("、")}` });
     const date = entry.createdAt ? new Date(entry.createdAt).toLocaleString("zh-CN") : "时间未知";
-    meta.createDiv({ text: `创建：${entry.estimated ? "≈ " : ""}${date}` });
+    meta.createDiv({ text: `创建：${date}` });
     this.contentEl.createDiv({ cls: "ndw-term-detail-rule" });
     const body = this.contentEl.createDiv({ cls: "ndw-term-detail-def" });
     const markdown = entry.definition || "（暂无定义）";
@@ -19499,7 +19500,6 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     this.rendered = 0;
     this.listEl = null;
     this.query = "";
-    this.includeEstimated = false;
     this.coreOnly = false;
     this._lastCoreMove = [];
     this.selected = new Set();
@@ -19599,7 +19599,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     const head = this.contentEl.createDiv({ cls: "ndw-all-terms-head" });
     const headText = head.createDiv({ cls: "ndw-cards-title" });
     headText.createEl("h2", { text: "词条管理" });
-    headText.createEl("p", { cls: "ndw-hint", text: "按创建时间倒序；≈ 表示时间来自文件创建/修改时间估算。近 N 天可勾选“含估算时间”。" });
+    headText.createEl("p", { cls: "ndw-hint", text: "按进入 ND 的时间倒序。" });
     const backToCards = head.createEl("button", { text: "返回概念卡片", cls: "ndw-cards-exit", attr: { "aria-label": "返回概念卡片" } });
     backToCards.addEventListener("click", () => void this.leaf.setViewState({ type: "ndw-concept-cards", active: true }));
     const toolbar = this.contentEl.createDiv({ cls: "ndw-all-terms-toolbar" });
@@ -19625,23 +19625,13 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       this.days = Number(filter.value) || 0;
       this.applyFilter();
     });
-    const estimateLabel = toolbar.createEl("label", { cls: "ndw-filter-check" });
-    const estimate = estimateLabel.createEl("input", { type: "checkbox" });
-    estimate.checked = this.includeEstimated;
-    estimate.addEventListener("change", () => {
-      this.includeEstimated = estimate.checked;
-      this.applyFilter();
-    });
-    estimateLabel.createSpan({ text: "含估算时间" });
     const reset = toolbar.createEl("button", { text: "重置", cls: "ndw-filter-reset" });
     reset.addEventListener("click", () => {
       this.query = "";
       this.days = 0;
-      this.includeEstimated = false;
       this.coreOnly = false;
       search.value = "";
       filter.value = "0";
-      estimate.checked = false;
       this.applyFilter();
     });
     const coreMenu = toolbar.createDiv({ cls: "ndw-core-menu" });
@@ -19771,7 +19761,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       }
       if (!cutoff) return true;
       if (!entry.createdAt || entry.createdAt < cutoff) return false;
-      return this.includeEstimated || !entry.estimated;
+      return true;
     };
     this._termsCursor = null;
     this._termsHasMore = true;
@@ -19950,7 +19940,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     if (entry.aliases.length) main.createDiv({ cls: "ndw-term-aliases", text: `别名：${entry.aliases.join("、")}` });
     const time = entry.createdAt ? new Date(entry.createdAt).toLocaleDateString("zh-CN") : "时间未知";
     const footer = row.createDiv({ cls: "ndw-term-footer" });
-    footer.createSpan({ cls: "ndw-term-date", text: `${entry.estimated ? "≈ " : ""}${time}` });
+    footer.createSpan({ cls: "ndw-term-date", text: time });
     const view = __ndw_cardViews()[__ndw_cardKey(entry.word)] || {};
     const score = Number(__ndw_cardScores()[__ndw_cardKey(entry.word)]) || 0;
     footer.createSpan({ cls: "ndw-term-stats", text: `不熟 ${score}/10 · 浏览 ${Number(view.count) || 0}` });
@@ -19974,6 +19964,7 @@ const __NDW_CARD_STAR_KEY = "ndw-concept-card-stars-v1";
 const __NDW_CARD_VIEW_KEY = "ndw-concept-card-views-v1";
 const __NDW_CARD_RATING_KEY = "ndw-concept-card-ratings-v1";
 const __NDW_CARD_TOMBSTONE_KEY = "ndw-concept-card-star-tombstones-v1";
+const __NDW_TERM_TIMES_KEY = "ndw-term-times-v1";
 const __NDW_CARD_STATE_TMP_PATH = "Attachments_all/.nd-card-state.tmp";
 const __NDW_CARD_STATE_PATH = "Attachments_all/nd-card-state.md";
 const __NDW_CARD_STATE_JSON_PATH = "Attachments_all/nd-card-state.json";
@@ -20043,7 +20034,8 @@ function __ndw_localCardState() {
     views: __ndw_loadCardJson(__NDW_CARD_VIEW_KEY),
     events: __ndw_localReviewEvents(),
     ratings: __ndw_loadCardJson(__NDW_CARD_RATING_KEY),
-    starTombstones: __ndw_loadCardJson(__NDW_CARD_TOMBSTONE_KEY)
+    starTombstones: __ndw_loadCardJson(__NDW_CARD_TOMBSTONE_KEY),
+    termTimes: __ndw_loadCardJson(__NDW_TERM_TIMES_KEY)
   };
 }
 
@@ -20079,7 +20071,13 @@ function __ndw_normalizeCardState(input) {
     const current = ratings[key];
     if (!current || event.at >= (Number(current.at) || 0)) ratings[key] = { type: event.type, at: event.at };
   }
-  return { stars, views, events, ratings, starTombstones };
+  const termTimes = {};
+  for (const [key, value] of Object.entries(input?.termTimes || {})) {
+    const at = Number(value?.at ?? value) || 0;
+    if (!key || !at) continue;
+    termTimes[key] = { at, source: String(value?.source || "file") };
+  }
+  return { stars, views, events, ratings, starTombstones, termTimes };
 }
 
 function __ndw_mergeCardStates(a, b) {
@@ -20142,7 +20140,20 @@ function __ndw_mergeCardStates(a, b) {
       ratings[key] = { type: event.type, at: event.at };
     }
   }
-  return { stars, views, events, ratings, starTombstones };
+  const termTimes = {};
+  const rank = { created: 3, registered: 3, firstSeen: 2, file: 1 };
+  for (const source of [a?.termTimes || {}, b?.termTimes || {}]) {
+    for (const [key, value] of Object.entries(source)) {
+      const at = Number(value?.at ?? value) || 0;
+      if (!key || !at) continue;
+      const sourceName = String(value?.source || "file");
+      const current = termTimes[key];
+      if (!current || (rank[sourceName] || 0) > (rank[current.source] || 0) || ((rank[sourceName] || 0) === (rank[current.source] || 0) && at > current.at)) {
+        termTimes[key] = { at, source: sourceName };
+      }
+    }
+  }
+  return { stars, views, events, ratings, starTombstones, termTimes };
 }
 
 function __ndw_cardStateApp() {
@@ -20174,6 +20185,7 @@ async function __ndw_loadCardState(app = __ndw_cardStateApp(), force = false) {
       localStorage.setItem(__NDW_REVIEW_KEY, JSON.stringify(merged.events));
       localStorage.setItem(__NDW_CARD_RATING_KEY, JSON.stringify(merged.ratings));
       localStorage.setItem(__NDW_CARD_TOMBSTONE_KEY, JSON.stringify(merged.starTombstones));
+      localStorage.setItem(__NDW_TERM_TIMES_KEY, JSON.stringify(merged.termTimes || {}));
       if (JSON.stringify(remote) !== JSON.stringify(merged)) __ndw_saveCardStateSoon();
       return __ndwCardStateCache;
     }
@@ -20248,6 +20260,7 @@ function __ndw_persistCardState() {
     localStorage.setItem(__NDW_REVIEW_KEY, JSON.stringify(state.events));
     localStorage.setItem(__NDW_CARD_RATING_KEY, JSON.stringify(state.ratings || {}));
     localStorage.setItem(__NDW_CARD_TOMBSTONE_KEY, JSON.stringify(state.starTombstones || {}));
+    localStorage.setItem(__NDW_TERM_TIMES_KEY, JSON.stringify(state.termTimes || {}));
   } catch {}
   __ndw_saveCardStateSoon();
 }
@@ -20263,6 +20276,34 @@ function __ndw_loadCardJson(key) {
 
 function __ndw_cardKey(word) {
   return __ndw_norm(word);
+}
+
+function __ndw_termTimes() {
+  const state = __ndw_cardStateMutable();
+  if (!state.termTimes || typeof state.termTimes !== "object") state.termTimes = {};
+  return state.termTimes;
+}
+
+function __ndw_termTime(word) {
+  const key = __ndw_cardKey(word);
+  const record = __ndw_termTimes()[key];
+  return record && Number(record.at) > 0 ? { at: Number(record.at), source: String(record.source || "file") } : null;
+}
+
+function __ndw_recordTermTime(word, at = Date.now(), source = "created") {
+  const key = __ndw_cardKey(word);
+  const time = Number(at) || Date.now();
+  if (!key) return null;
+  const times = __ndw_termTimes();
+  const rank = { created: 3, registered: 3, firstSeen: 2, file: 1 };
+  const current = times[key];
+  const currentRank = rank[current?.source] || 0;
+  const nextRank = rank[source] || 0;
+  if (!current || nextRank > currentRank || (nextRank === currentRank && time > Number(current.at || 0))) {
+    times[key] = { at: time, source };
+    __ndw_persistCardState();
+  }
+  return times[key];
 }
 
 function __ndw_cardStars() {
@@ -24037,6 +24078,7 @@ async function __ndw_registerNoteTerm(app, editor, view) {
   };
   settings.noteTerms = settings.noteTerms.filter((item) => !(item && item.notePath === file.path && String(item.word || "") === selected));
   settings.noteTerms.push(entry);
+  __ndw_recordTermTime(selected, entry.addedAt, "created");
   try {
     const plugin = app.plugins.plugins["note-definitions-pxm"];
     await plugin?.saveData?.(settings);
@@ -25111,6 +25153,8 @@ window.__NdwTermIndex = class NdTermIndex {
     const oldFiles=new Map();
     {const tx=db.transaction(FILES,"readonly"); const done=txDone(tx); const all=await req(tx.objectStore(FILES).getAll()); await done; for(const x of all) oldFiles.set(x.path,x);}
     this.__progress={phase:"scan",files:files.length,at:Date.now()};
+    const termTimes = __ndw_termTimes();
+    let timesChanged = false;
     let done=0, terms=0; const t0=performance.now();
     for(const file of files){
       const st=file.stat||{}; const old=oldFiles.get(file.path);
@@ -25125,7 +25169,13 @@ window.__NdwTermIndex = class NdTermIndex {
       for(const k of oldKeys) ts.delete(k);
       for(const term of parsed){
         const n=norm(term.word); if(!n) continue;
-        const createdAt=Number(st.ctime)||Number(st.mtime)||Date.now();
+        let timeRecord = termTimes[n];
+        if (!timeRecord || !Number(timeRecord.at)) {
+          timeRecord = { at: Date.now(), source: "firstSeen" };
+          termTimes[n] = timeRecord;
+          timesChanged = true;
+        }
+        const createdAt=Number(timeRecord.at);
         const tier=corePath && (file.path===corePath||file.path.startsWith(corePath+"/")) ? "core" : "external";
         ts.put({key:n,word:term.word,norm:n,aliases:term.aliases,aliasesNorm:term.aliases.map(norm).filter(Boolean),definition:term.definition,filePath:file.path,createdAt,updatedAt:Number(st.mtime)||Date.now(),sortKey:`${String(createdAt).padStart(16,"0")}\u0000${n}`,tier});
         terms++;
@@ -25137,6 +25187,7 @@ window.__NdwTermIndex = class NdTermIndex {
       this.__progress={phase:"file",done,total:files.length,terms,at:Date.now()};
       await new Promise(r=>setTimeout(r,0));
     }
+    if (timesChanged) __ndw_persistCardState();
     this.__progress={phase:"stale",done,total:files.length,terms,at:Date.now()};
     // remove stale files and their terms
     const present=new Set(files.map(f=>f.path));
