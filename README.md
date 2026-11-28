@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.35
+# Note-Definitions_PXM 0.43.36
 
-- 概念卡片提示改为“星标会随库同步”。
+- 移除概念卡片标题下方的说明文字。
