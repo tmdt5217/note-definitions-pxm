@@ -19984,9 +19984,15 @@ const __NDW_CARD_STAR_KEY = "ndw-concept-card-stars-v1";
 const __NDW_CARD_VIEW_KEY = "ndw-concept-card-views-v1";
 const __NDW_CARD_RATING_KEY = "ndw-concept-card-ratings-v1";
 const __NDW_CARD_TOMBSTONE_KEY = "ndw-concept-card-star-tombstones-v1";
-const __NDW_CARD_STATE_TMP_PATH = `${__NDW_STATE_ROOT}/.nd-card-state.tmp`;
-const __NDW_CARD_STATE_PATH = `${__NDW_STATE_ROOT}/nd-card-state.md`;
-const __NDW_CARD_STATE_JSON_PATH = `${__NDW_STATE_ROOT}/nd-card-state.json`;
+const __NDW_CARD_STATE_TMP_PATH = "Attachments_all/.nd-card-state.tmp";
+const __NDW_CARD_STATE_PATH = "Attachments_all/nd-card-state.md";
+const __NDW_CARD_STATE_JSON_PATH = "Attachments_all/nd-card-state.json";
+const __NDW_LEGACY_CARD_STATE_PATHS = [
+  `${__NDW_STATE_ROOT}/nd-card-state.md`,
+  `${__NDW_STATE_ROOT}/nd-card-state.json`,
+  "WeRead/nd-card-state.md",
+  "WeRead/nd-card-state.json"
+];
 
 async function __ndw_migrateLegacyStateFiles(app) {
   const adapter = app.vault.adapter;
@@ -19994,6 +20000,8 @@ async function __ndw_migrateLegacyStateFiles(app) {
     ["WeRead/nd-weread-progress.json", __NDW_PROGRESS_PATH],
     ["WeRead/nd-weread-highlight-favorites.md", __NDW_HL_FAVORITES_PATH],
     ["WeRead/nd-weread-card-progress.md", __NDW_HL_BROWSER_PROGRESS_PATH],
+    [".obsidian/plugins/note-definitions-pxm/nd-card-state.md", __NDW_CARD_STATE_PATH],
+    [".obsidian/plugins/note-definitions-pxm/nd-card-state.json", __NDW_CARD_STATE_JSON_PATH],
     ["WeRead/nd-card-state.md", __NDW_CARD_STATE_PATH],
     ["WeRead/nd-card-state.json", __NDW_CARD_STATE_JSON_PATH],
     ["WeRead/nd-weread-random-exclusions.md", __NDW_RANDOM_EXCLUSIONS_PATH],
@@ -20160,10 +20168,10 @@ async function __ndw_loadCardState(app = __ndw_cardStateApp(), force = false) {
   }
   try {
     let raw = null;
-    if (await app.vault.adapter.exists(__NDW_CARD_STATE_PATH)) {
-      raw = await app.vault.adapter.read(__NDW_CARD_STATE_PATH);
-    } else if (await app.vault.adapter.exists(__NDW_CARD_STATE_JSON_PATH)) {
-      raw = await app.vault.adapter.read(__NDW_CARD_STATE_JSON_PATH);
+    for (const path of [__NDW_CARD_STATE_PATH, __NDW_CARD_STATE_JSON_PATH, ...__NDW_LEGACY_CARD_STATE_PATHS]) {
+      if (!(await app.vault.adapter.exists(path))) continue;
+      raw = await app.vault.adapter.read(path);
+      if (raw) break;
     }
     if (raw) {
       const fenced = /```(?:json)?\s*([\s\S]*?)```/iu.exec(raw);
@@ -20210,7 +20218,8 @@ async function __ndw_writeCardStateNow() {
       __ndwCardStateWriteAgain = false;
       const state = __ndwCardStateCache;
       if (!state) break;
-      if (!(await app.vault.adapter.exists("WeRead"))) await app.vault.adapter.mkdir("WeRead").catch(() => {});
+      const stateDir = __NDW_CARD_STATE_PATH.split("/").slice(0, -1).join("/");
+      if (stateDir && !(await app.vault.adapter.exists(stateDir))) await app.vault.adapter.mkdir(stateDir).catch(() => {});
       const markdown = `# ND 概念卡片状态\n\n> 由 note-definitions-pxm 自动维护，请勿编辑。\n\n\`\`\`json\n${JSON.stringify(state, null, 2)}\n\`\`\`\n`;
       await app.vault.adapter.write(__NDW_CARD_STATE_TMP_PATH, markdown);
       try {

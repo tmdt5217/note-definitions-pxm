@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.30
+# Note-Definitions_PXM 0.43.31
 
-- 打开源笔记时临时覆盖 Remember cursor 的目标光标；文件关闭后恢复其原本保存的光标记录。
+- 概念卡片状态（含星标）从 .obsidian 插件目录迁移到 Attachments_all/nd-card-state.md，作为普通库文件参与设备同步。
