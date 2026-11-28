@@ -19500,6 +19500,8 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     this.rendered = 0;
     this.listEl = null;
     this.query = "";
+    this.sortMode = localStorage.getItem("ndw-all-terms-sort") || "created";
+    this.sortOrder = localStorage.getItem("ndw-all-terms-order") || "desc";
     this.coreOnly = false;
     this._lastCoreMove = [];
     this.selected = new Set();
@@ -19599,7 +19601,6 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     const head = this.contentEl.createDiv({ cls: "ndw-all-terms-head" });
     const headText = head.createDiv({ cls: "ndw-cards-title" });
     headText.createEl("h2", { text: "词条管理" });
-    headText.createEl("p", { cls: "ndw-hint", text: "按进入 ND 的时间倒序。" });
     const backToCards = head.createEl("button", { text: "返回概念卡片", cls: "ndw-cards-exit", attr: { "aria-label": "返回概念卡片" } });
     backToCards.addEventListener("click", () => void this.leaf.setViewState({ type: "ndw-concept-cards", active: true }));
     const toolbar = this.contentEl.createDiv({ cls: "ndw-all-terms-toolbar" });
@@ -19615,6 +19616,24 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
         this.query = search.value;
         this.applyFilter();
       }, 150);
+    });
+    const sort = toolbar.createEl("select", { attr: { "aria-label": "词条排序" } });
+    for (const [value, label] of [
+      ["created:desc", "进入ND时间 ▼"],
+      ["created:asc", "进入ND时间 ▲"],
+      ["name:asc", "名称 A→Z"],
+      ["name:desc", "名称 Z→A"]
+    ]) {
+      const option = sort.createEl("option", { text: label, attr: { value } });
+      option.selected = value === `${this.sortMode}:${this.sortOrder}`;
+    }
+    sort.addEventListener("change", () => {
+      const [mode, order] = sort.value.split(":");
+      this.sortMode = mode === "name" ? "name" : "created";
+      this.sortOrder = order === "asc" ? "asc" : "desc";
+      localStorage.setItem("ndw-all-terms-sort", this.sortMode);
+      localStorage.setItem("ndw-all-terms-order", this.sortOrder);
+      this.applyFilter();
     });
     const filter = toolbar.createEl("select", { attr: { "aria-label": "创建时间范围" } });
     for (const [value, label] of [["0", "全部时间"], ["1", "近 1 天"], ["3", "近 3 天"], ["7", "近 7 天"], ["30", "近 30 天"]]) {
@@ -19791,6 +19810,11 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
           }
           const rows = await this.termIndex.query({ q: this.query.trim(), limit: 5000 });
           const matches = rows.filter(this._termsFilter);
+          matches.sort((a, b) => {
+            const dir = this.sortOrder === "asc" ? 1 : -1;
+            if (this.sortMode === "name") return dir * String(a.word || "").localeCompare(String(b.word || ""), "zh");
+            return dir * ((Number(a.createdAt) || 0) - (Number(b.createdAt) || 0));
+          });
           const offset = this._loadedEntries.size;
           page = { items: matches.slice(offset, offset + this.pageSize), nextCursor: null };
           this._termsHasMore = offset + page.items.length < matches.length;
@@ -19800,7 +19824,8 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
             q: this.query.trim(),
             limit: this.pageSize,
             cursor: this._termsCursor,
-            order: "desc",
+            order: this.sortOrder,
+            sort: this.sortMode,
             filter: this._termsFilter
           });
           this._termsCursor = page.nextCursor;
@@ -19810,7 +19835,8 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
         page = await this.termIndex.scanPage({
           limit: this.pageSize,
           cursor: this._termsCursor,
-          order: "desc",
+          order: this.sortOrder,
+          sort: this.sortMode,
           filter: this._termsFilter
         });
         this._termsCursor = page.nextCursor;
@@ -25362,9 +25388,10 @@ window.__NdwTermIndex = class NdTermIndex {
     const next=items.length===limit?items[items.length-1].sortKey:null;
     return {items,nextCursor:next};
   }
-  async scanPage({limit=48,cursor=null,order="desc",filter=null}={}){
+  async scanPage({limit=48,cursor=null,order="desc",sort="createdAt",filter=null}={}){
     await this.open();
-    const tx=this.db.transaction(TERMS,"readonly"), done=txDone(tx), store=tx.objectStore(TERMS), idx=store.index("sortKey");
+    const field=sort==="name"?"norm":"sortKey";
+    const tx=this.db.transaction(TERMS,"readonly"), done=txDone(tx), store=tx.objectStore(TERMS), idx=store.index(field);
     const dir=order==="asc"?"next":"prev";
     let range=null;
     if(cursor) range=order==="asc"?IDBKeyRange.lowerBound(cursor,true):IDBKeyRange.upperBound(cursor,true);
@@ -25375,13 +25402,14 @@ window.__NdwTermIndex = class NdTermIndex {
       r.onsuccess=()=>{const cur=r.result;if(!cur||items.length>=limit){res();return;}if(!filter||filter(cur.value))items.push(cur.value);cur.continue();};
     });
     await done;
-    return {items,nextCursor:items.length===limit?items[items.length-1].sortKey:null};
+    return {items,nextCursor:items.length===limit?items[items.length-1][field]:null};
   }
-  async searchPage({q="",limit=48,cursor=null,order="desc",filter=null}={}){
+  async searchPage({q="",limit=48,cursor=null,order="desc",sort="createdAt",filter=null}={}){
     const needle=String(q||"").trim().toLowerCase();
-    if(!needle) return this.scanPage({limit,cursor,order,filter});
+    if(!needle) return this.scanPage({limit,cursor,order,sort,filter});
     await this.open();
-    const tx=this.db.transaction(TERMS,"readonly"), done=txDone(tx), store=tx.objectStore(TERMS), idx=store.index("sortKey");
+    const field=sort==="name"?"norm":"sortKey";
+    const tx=this.db.transaction(TERMS,"readonly"), done=txDone(tx), store=tx.objectStore(TERMS), idx=store.index(field);
     const dir=order==="asc"?"next":"prev";
     const range=cursor? (order==="asc"?IDBKeyRange.lowerBound(cursor,true):IDBKeyRange.upperBound(cursor,true)) : null;
     const items=[];
@@ -25398,7 +25426,7 @@ window.__NdwTermIndex = class NdTermIndex {
       };
     });
     await done;
-    return {items,nextCursor:items.length===limit?items[items.length-1].sortKey:null};
+    return {items,nextCursor:items.length===limit?items[items.length-1][field]:null};
   }
   async getMany(keys){
     await this.open();
