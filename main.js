@@ -6122,7 +6122,13 @@ ${issues.join("\n")}`);
             this._renderRecentDefs(this.contentEl.querySelector(".nd-ency-results-wrap"));
         }));
         this._buildSearchUI();
-        void this._mergeSyncedRecentDefs();
+        void this._mergeSyncedRecentDefs(true);
+        const recentsChanged = (file) => {
+          if (file?.path === __NDW_RECENTS_PATH || file?.path === __NDW_RECENTS_JSON_PATH) void this._mergeSyncedRecentDefs(true);
+        };
+        this.registerEvent(this.app.vault.on("modify", recentsChanged));
+        this.registerEvent(this.app.vault.on("create", recentsChanged));
+        this.registerInterval(window.setInterval(() => void this._mergeSyncedRecentDefs(true), 5000));
       }
       async onClose() {
         var _a, _b, _c, _d;
@@ -6190,8 +6196,8 @@ ${issues.join("\n")}`);
         this._saveRecentDefs();
         void __ndw_recordSyncedVisit(this.app, def.key, def.word);
       }
-      async _mergeSyncedRecentDefs() {
-        const remote = await __ndw_readSyncedVisits(this.app);
+      async _mergeSyncedRecentDefs(force = false) {
+        const remote = await __ndw_readSyncedVisits(this.app, force);
         const merged = new Map();
         for (const item of this._loadRecentDefs()) {
           if (!item?.key) continue;
@@ -6202,14 +6208,17 @@ ${issues.join("\n")}`);
           const current = merged.get(item.key);
           if (!current || Number(item.at) > Number(current.at)) merged.set(item.key, item);
         }
-        this._recentDefs = [...merged.values()]
+        const next = [...merged.values()]
           .sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0))
           .slice(0, 50);
-        this._saveRecentDefs();
+        const changed = JSON.stringify(next) !== JSON.stringify(this._recentDefs);
+        this._recentDefs = next;
+        if (changed) this._saveRecentDefs();
         const remoteKeys = new Set(remote.map((item) => item.key));
         for (const item of this._recentDefs) {
           if (!remoteKeys.has(item.key)) void __ndw_recordSyncedVisit(this.app, item.key, item.word);
         }
+        if (!changed) return;
         const wrap = this.contentEl.querySelector(".nd-ency-results-wrap");
         const input = this.contentEl.querySelector(".nd-ency-search-input");
         if (this._mode === "search" && wrap && !input?.value?.trim()) this._renderRecentDefs(wrap);
@@ -15720,6 +15729,7 @@ var RecentCreations = class {
     this.sorted = null;
   }
   merge(items) {
+    let changed = 0;
     const byKey = new Map(this.records.map((item) => [key(item.word), item]));
     for (const item of Array.isArray(items) ? items : []) {
       const word = String(item?.word || "").trim();
@@ -15731,10 +15741,12 @@ var RecentCreations = class {
         byKey.set(key(word), record);
         this.records = this.records.filter((entry) => key(entry.word) !== key(word));
         this.records.push(record);
+        changed += 1;
       }
     }
     this.sorted = null;
     this.prune();
+    return changed;
   }
   rename(previous, word) {
     const item = this.records.find(
@@ -20421,8 +20433,9 @@ const __NDW_RECENTS_JSON_PATH = "Attachments_all/nd-recents.json";
 let __ndwRecentsCache = null;
 let __ndwRecentsWriteTimer = null;
 
-async function __ndw_readRecents(app) {
-  if (__ndwRecentsCache) return __ndwRecentsCache;
+async function __ndw_readRecents(app, force = false) {
+  if (__ndwRecentsCache && !force) return __ndwRecentsCache;
+  if (force) __ndwRecentsCache = null;
   const empty = { visits: [], creations: [] };
   try {
     const adapter = app?.vault?.adapter;
@@ -20475,8 +20488,8 @@ async function __ndw_recordSyncedVisit(app, key, word) {
   __ndw_writeRecentsSoon(app);
 }
 
-async function __ndw_readSyncedVisits(app) {
-  const data = await __ndw_readRecents(app);
+async function __ndw_readSyncedVisits(app, force = false) {
+  const data = await __ndw_readRecents(app, force);
   return [...data.visits].sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0));
 }
 
@@ -20492,8 +20505,8 @@ async function __ndw_recordSyncedCreation(app, word, at = Date.now()) {
   __ndw_writeRecentsSoon(app);
 }
 
-async function __ndw_readSyncedCreations(app) {
-  const data = await __ndw_readRecents(app);
+async function __ndw_readSyncedCreations(app, force = false) {
+  const data = await __ndw_readRecents(app, force);
   return data.creations;
 }
 
@@ -24832,16 +24845,23 @@ async function __ndw_openDictionaryProtocol(app, params) {
       }, 500);
     }));
     this.app.workspace.onLayoutReady(() => {
-      void __ndw_readSyncedCreations(this.app).then((items) => {
-        if (items.length) {
-          creations.merge(items);
-          void persistCreations();
-        }
+      const mergeSyncedCreations = async (force = false) => {
+        const items = await __ndw_readSyncedCreations(this.app, force);
+        const changed = creations.merge(items);
+        if (changed > 0) await persistCreations();
         const remoteKeys = new Set(items.map((item) => __ndw_norm(item?.word)));
         for (const item of creations.snapshot()) {
           if (!remoteKeys.has(__ndw_norm(item.word))) void __ndw_recordSyncedCreation(this.app, item.word, item.createdAt);
         }
-      });
+      };
+      const onRecentsFileChanged = (file) => {
+        if (file?.path === __NDW_RECENTS_PATH || file?.path === __NDW_RECENTS_JSON_PATH) void mergeSyncedCreations(true);
+      };
+      this.registerEvent(this.app.vault.on("modify", onRecentsFileChanged));
+      this.registerEvent(this.app.vault.on("create", onRecentsFileChanged));
+      void mergeSyncedCreations(false);
+      for (const delay of [1500, 5000, 12000]) window.setTimeout(() => void mergeSyncedCreations(true), delay);
+      this.registerInterval(window.setInterval(() => void mergeSyncedCreations(true), 5000));
       this.registerEvent(this.app.workspace.on("file-open", (file) => {
         const entry = file?.path ? __ndwRememberCursorOverrides.get(file.path) : null;
         if (entry) entry.seenOpen = true;
