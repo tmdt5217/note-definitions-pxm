@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.47
+# Note-Definitions_PXM 0.43.48
 
-- 修复词条管理加载完成后“全选”仍保持禁用的问题。
+- 隐藏词条勾选框的原生伪元素对勾，避免与自定义 SVG 对勾叠加。

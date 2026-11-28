@@ -4134,3 +4134,13 @@ body.is-mobile .ndw-all-terms-list {
     background-size: 17px 17px !important;
   }
 }
+
+/* Remove native/theme check overlays; the SVG background is the only check */
+.ndw-term-check::before,
+.ndw-term-check::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
