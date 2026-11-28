@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.40
+# Note-Definitions_PXM 0.43.41
 
-- “删除选中”按钮改名为“删除”。
+- 移除概念卡片工具栏“排序”“筛选”文字标签。

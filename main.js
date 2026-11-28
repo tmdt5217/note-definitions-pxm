@@ -21248,7 +21248,6 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
         this.renderCards();
       }, 120);
     });
-    toolbar.createSpan({ cls: "ndw-toolbar-label", text: "排序" });
     const sort = toolbar.createEl("select", { attr: { "aria-label": "卡片排序" } });
     this.sortEl = sort;
     const sortChoices = [
@@ -21273,7 +21272,6 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
       localStorage.setItem("ndw-card-order", this.sortOrder);
       this.renderCards(true);
     });
-    toolbar.createSpan({ cls: "ndw-toolbar-label", text: "筛选" });
     const filter = toolbar.createEl("select", { attr: { "aria-label": "卡片筛选" } });
     for (const [value, label] of [
       ["all", "全部"],
