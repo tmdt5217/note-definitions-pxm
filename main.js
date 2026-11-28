@@ -19644,15 +19644,6 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       this.days = Number(filter.value) || 0;
       this.applyFilter();
     });
-    const reset = toolbar.createEl("button", { text: "清除筛选", cls: "ndw-filter-reset", attr: { title: "清除搜索、时间范围和核心库筛选；不改变排序" } });
-    reset.addEventListener("click", () => {
-      this.query = "";
-      this.days = 0;
-      this.coreOnly = false;
-      search.value = "";
-      filter.value = "0";
-      this.applyFilter();
-    });
     const coreMenu = toolbar.createDiv({ cls: "ndw-core-menu" });
     if (window.NoteDefinition?.settings?.manualLinkOnly === true) {
       coreMenu.hidden = true;
