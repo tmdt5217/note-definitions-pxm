@@ -21264,42 +21264,71 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
         this.renderCards();
       }, 120);
     });
-    const sort = toolbar.createEl("select", { attr: { "aria-label": "卡片排序" } });
-    this.sortEl = sort;
-    const sortChoices = [
-      ["recent:desc", "最近添加 ▼"],
-      ["recent:asc", "最近添加 ▲"],
-      ["lastViewed:desc", "最近浏览 ▼"],
-      ["name:asc", "名称 A→Z"],
-      ["name:desc", "名称 Z→A"]
-    ];
+    const sortButton = toolbar.createEl("button", {
+      cls: "ndw-filter-reset ndw-cards-sort-button",
+      attr: { "aria-label": "排序和筛选" }
+    });
+    const sortLabel = () => {
+      if (this.sortMode === "lastViewed") return "最近浏览 ▼";
+      if (this.sortMode === "name") return this.sortOrder === "asc" ? "名称 A→Z" : "名称 Z→A";
+      return this.sortOrder === "asc" ? "最近添加 ▲" : "最近添加 ▼";
+    };
+    const filterLabel = () => ({
+      all: "全部",
+      starred: "星标",
+      addedDays: "最近添加",
+      seenDays: "最近看过",
+      unviewed: "没看过",
+      unfamiliar: "不熟悉"
+    }[this.filterMode] || "全部");
+    const updateSortButton = () => sortButton.setText(`${sortLabel()} · ${filterLabel()}`);
+    this.sortEl = sortButton;
+    this._updateSortButton = updateSortButton;
     if (!["recent", "lastViewed", "name"].includes(this.sortMode)) this.sortMode = "recent";
     if (this.sortMode === "lastViewed" && this.sortOrder === "asc") this.sortOrder = "desc";
-    const currentSort = `${this.sortMode}:${this.sortOrder}`;
-    for (const [value, label] of sortChoices) {
-      const option = sort.createEl("option", { text: label, attr: { value } });
-      option.selected = currentSort === value;
-    }
-    sort.addEventListener("change", () => {
-      const [mode, order] = sort.value.split(":");
-      this.sortMode = ["recent", "lastViewed", "name"].includes(mode) ? mode : "recent";
-      this.sortOrder = order || "desc";
-      localStorage.setItem("ndw-card-sort", this.sortMode);
-      localStorage.setItem("ndw-card-order", this.sortOrder);
-      this.renderCards(true);
+    updateSortButton();
+    sortButton.addEventListener("click", (event) => {
+      const menu = new __ndw_obsidian.Menu();
+      const addSort = (mode, order, label) => {
+        menu.addItem((item) => item
+          .setTitle(label)
+          .setChecked(this.sortMode === mode && this.sortOrder === order)
+          .onClick(() => {
+            this.sortMode = mode;
+            this.sortOrder = order;
+            localStorage.setItem("ndw-card-sort", this.sortMode);
+            localStorage.setItem("ndw-card-order", this.sortOrder);
+            updateSortButton();
+            this.renderCards(true);
+          }));
+      };
+      addSort("recent", "desc", "最近添加 ▼");
+      addSort("recent", "asc", "最近添加 ▲");
+      addSort("lastViewed", "desc", "最近浏览 ▼");
+      addSort("name", "asc", "名称 A→Z");
+      addSort("name", "desc", "名称 Z→A");
+      menu.addSeparator();
+      for (const [value, label] of [
+        ["all", "全部"],
+        ["starred", "星标"],
+        ["addedDays", "最近添加"],
+        ["seenDays", "最近看过"],
+        ["unviewed", "没看过"],
+        ["unfamiliar", "不熟悉"]
+      ]) {
+        menu.addItem((item) => item
+          .setTitle(label)
+          .setChecked(this.filterMode === value)
+          .onClick(() => {
+            this.filterMode = value;
+            localStorage.setItem("ndw-card-filter", this.filterMode);
+            updateSortButton();
+            updateDaysVisibility();
+            this.renderCards(true);
+          }));
+      }
+      menu.showAtMouseEvent(event);
     });
-    const filter = toolbar.createEl("select", { attr: { "aria-label": "卡片筛选" } });
-    for (const [value, label] of [
-      ["all", "全部"],
-      ["starred", "星标"],
-      ["addedDays", "最近添加"],
-      ["seenDays", "最近看过"],
-      ["unviewed", "没看过"],
-      ["unfamiliar", "不熟悉"]
-    ]) {
-      const option = filter.createEl("option", { text: label, attr: { value } });
-      option.selected = this.filterMode === value;
-    }
     const daysWrap = toolbar.createEl("label", { cls: "ndw-filter-check ndw-days-filter" });
     daysWrap.createSpan({ text: "天数" });
     const daysInput = daysWrap.createEl("input", {
@@ -21316,12 +21345,6 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
       this.days = Math.max(1, Math.min(365, Number(daysInput.value) || 7));
       daysInput.value = String(this.days);
       localStorage.setItem("ndw-card-days", String(this.days));
-      this.renderCards();
-    });
-    filter.addEventListener("change", () => {
-      this.filterMode = filter.value;
-      localStorage.setItem("ndw-card-filter", this.filterMode);
-      updateDaysVisibility();
       this.renderCards();
     });
     updateDaysVisibility();
@@ -21447,7 +21470,7 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
       if (!["recent", "lastViewed", "name"].includes(this.sortMode)) {
         this.sortMode = "recent";
         this.sortOrder = "desc";
-        if (this.sortEl) this.sortEl.value = "recent:desc";
+        this._updateSortButton?.();
       }
       let page;
       if (query) {
