@@ -20416,7 +20416,8 @@ function __ndw_recordTermTime(word, at = Date.now(), source = "created") {
   return times[key];
 }
 
-const __NDW_RECENTS_PATH = "Attachments_all/nd-recents.json";
+const __NDW_RECENTS_PATH = "Attachments_all/nd-recents.md";
+const __NDW_RECENTS_JSON_PATH = "Attachments_all/nd-recents.json";
 let __ndwRecentsCache = null;
 let __ndwRecentsWriteTimer = null;
 
@@ -20426,12 +20427,22 @@ async function __ndw_readRecents(app) {
   try {
     const adapter = app?.vault?.adapter;
     if (!adapter) return (__ndwRecentsCache = empty);
-    if (!(await adapter.exists(__NDW_RECENTS_PATH))) return (__ndwRecentsCache = empty);
-    const parsed = JSON.parse(await adapter.read(__NDW_RECENTS_PATH));
+    let raw = null;
+    let sourcePath = null;
+    for (const path of [__NDW_RECENTS_PATH, __NDW_RECENTS_JSON_PATH]) {
+      if (await adapter.exists(path)) {
+        raw = await adapter.read(path);
+        if (raw) { sourcePath = path; break; }
+      }
+    }
+    if (!raw) return (__ndwRecentsCache = empty);
+    const fenced = /```(?:json)?\s*([\s\S]*?)```/iu.exec(raw);
+    const parsed = JSON.parse(fenced ? fenced[1] : raw);
     __ndwRecentsCache = {
       visits: Array.isArray(parsed?.visits) ? parsed.visits : [],
       creations: Array.isArray(parsed?.creations) ? parsed.creations : []
     };
+    if (sourcePath === __NDW_RECENTS_JSON_PATH) __ndw_writeRecentsSoon(app);
   } catch {
     __ndwRecentsCache = empty;
   }
@@ -20445,7 +20456,8 @@ function __ndw_writeRecentsSoon(app) {
     try {
       const adapter = app?.vault?.adapter;
       if (!adapter || !__ndwRecentsCache) return;
-      await adapter.write(__NDW_RECENTS_PATH, JSON.stringify(__ndwRecentsCache, null, 2));
+      const markdown = `# ND 最近访问与创建记录\n\n> 由 Note-Definitions_PXM 自动维护，请勿编辑。\n\n\`\`\`json\n${JSON.stringify(__ndwRecentsCache, null, 2)}\n\`\`\`\n`;
+      await adapter.write(__NDW_RECENTS_PATH, markdown);
     } catch (error) {
       console.warn("[note-definitions] recents sync save failed", error);
     }

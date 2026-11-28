@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.53
+# Note-Definitions_PXM 0.43.54
 
-- 修复同步文件还不存在时“最近访问”直接提前返回、导致本机记录没有首次上传的问题。
+- 最近访问/最近创建同步文件从 nd-recents.json 改为 Markdown 的 nd-recents.md，避免同步服务跳过 JSON；自动迁移旧 JSON。
