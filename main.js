@@ -19856,6 +19856,8 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
         this.listEl.insertBefore(this.makeRow(entry), this.sentinelEl);
         this.rendered += 1;
       }
+      this.alignRowCheckboxes();
+      window.requestAnimationFrame(() => this.alignRowCheckboxes());
       const total = await this.termIndex.count();
       this.countEl?.setText(`${total} 条${this._loadedEntries.size ? ` · 已加载 ${this._loadedEntries.size}` : ""}`);
       if (!this._loadedEntries.size) {
@@ -19871,6 +19873,21 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       this.updateSelectionUI();
     } finally {
       this._termsLoading = false;
+    }
+  }
+
+  alignRowCheckboxes() {
+    if (!this.listEl) return;
+    for (const row of this.listEl.querySelectorAll(".ndw-term-row")) {
+      const checkbox = row.querySelector(".ndw-term-check");
+      const name = row.querySelector(".ndw-term-name");
+      if (!checkbox || !name) continue;
+      const rowRect = row.getBoundingClientRect();
+      const nameRect = name.getBoundingClientRect();
+      const boxHeight = checkbox.getBoundingClientRect().height || 18;
+      const lineHeight = Number.parseFloat(window.getComputedStyle(name).lineHeight) || nameRect.height;
+      const top = nameRect.top + lineHeight / 2 - (rowRect.top + row.clientTop) - boxHeight / 2;
+      checkbox.style.setProperty("top", `${Math.round(top * 10) / 10}px`, "important");
     }
   }
 
