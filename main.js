@@ -6442,6 +6442,7 @@ ${issues.join("\n")}`);
           const input = this.contentEl.querySelector(".nd-ency-search-input");
           if (input) {
             input.value = this._searchQuery;
+            this._syncSearchSurfaceActions?.();
             this._renderSearchResults(this._searchQuery);
           }
         }
@@ -6519,6 +6520,7 @@ ${issues.join("\n")}`);
         const input = this.contentEl.querySelector(".nd-ency-search-input");
         if (input && this._searchQuery) {
           input.value = this._searchQuery;
+          this._syncSearchSurfaceActions?.();
           this._renderSearchResults(this._searchQuery);
         }
         requestAnimationFrame(() => {
@@ -6724,6 +6726,7 @@ ${issues.join("\n")}`);
           smearBtn.hidden = hasText;
           closeBtn.hidden = !hasText;
         };
+        this._syncSearchSurfaceActions = syncSurfaceActions;
         const syncSmearVisibility = async () => {
           if (input.value.trim()) {
             smearBtn.hidden = true;
