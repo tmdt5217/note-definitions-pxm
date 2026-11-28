@@ -19617,32 +19617,48 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
         this.applyFilter();
       }, 150);
     });
-    const sort = toolbar.createEl("select", { attr: { "aria-label": "词条排序" } });
-    for (const [value, label] of [
-      ["created:desc", "创建时间 ▼"],
-      ["created:asc", "创建时间 ▲"],
-      ["name:asc", "名称 A→Z"],
-      ["name:desc", "名称 Z→A"]
-    ]) {
-      const option = sort.createEl("option", { text: label, attr: { value } });
-      option.selected = value === `${this.sortMode}:${this.sortOrder}`;
-    }
-    sort.addEventListener("change", () => {
-      const [mode, order] = sort.value.split(":");
-      this.sortMode = mode === "name" ? "name" : "created";
-      this.sortOrder = order === "asc" ? "asc" : "desc";
-      localStorage.setItem("ndw-all-terms-sort", this.sortMode);
-      localStorage.setItem("ndw-all-terms-order", this.sortOrder);
-      this.applyFilter();
+    const sortButton = toolbar.createEl("button", {
+      cls: "ndw-filter-reset ndw-terms-sort-button",
+      attr: { "aria-label": "排序和时间范围" }
     });
-    const filter = toolbar.createEl("select", { attr: { "aria-label": "创建时间范围" } });
-    for (const [value, label] of [["0", "不限时间"], ["1", "近 1 天"], ["3", "近 3 天"], ["7", "近 7 天"], ["30", "近 30 天"]]) {
-      const option = filter.createEl("option", { text: label, attr: { value } });
-      option.selected = String(this.days) === value;
-    }
-    filter.addEventListener("change", () => {
-      this.days = Number(filter.value) || 0;
-      this.applyFilter();
+    const sortLabel = () => {
+      if (this.sortMode === "name") return this.sortOrder === "asc" ? "名称 A→Z" : "名称 Z→A";
+      return this.sortOrder === "asc" ? "创建时间 ▲" : "创建时间 ▼";
+    };
+    const daysLabel = () => ({ 0: "不限时间", 1: "近 1 天", 3: "近 3 天", 7: "近 7 天", 30: "近 30 天" }[this.days] || "不限时间");
+    const updateSortButton = () => sortButton.setText(`${sortLabel()} · ${daysLabel()}`);
+    updateSortButton();
+    sortButton.addEventListener("click", (event) => {
+      const menu = new __ndw_obsidian.Menu();
+      const addSort = (mode, order, label) => {
+        menu.addItem((item) => item
+          .setTitle(label)
+          .setChecked(this.sortMode === mode && this.sortOrder === order)
+          .onClick(() => {
+            this.sortMode = mode;
+            this.sortOrder = order;
+            localStorage.setItem("ndw-all-terms-sort", this.sortMode);
+            localStorage.setItem("ndw-all-terms-order", this.sortOrder);
+            updateSortButton();
+            this.applyFilter();
+          }));
+      };
+      addSort("created", "desc", "创建时间 ▼");
+      addSort("created", "asc", "创建时间 ▲");
+      addSort("name", "asc", "名称 A→Z");
+      addSort("name", "desc", "名称 Z→A");
+      menu.addSeparator();
+      for (const [days, label] of [[0, "不限时间"], [1, "近 1 天"], [3, "近 3 天"], [7, "近 7 天"], [30, "近 30 天"]]) {
+        menu.addItem((item) => item
+          .setTitle(label)
+          .setChecked(this.days === days)
+          .onClick(() => {
+            this.days = days;
+            updateSortButton();
+            this.applyFilter();
+          }));
+      }
+      menu.showAtMouseEvent(event);
     });
     const coreMenu = toolbar.createDiv({ cls: "ndw-core-menu" });
     if (window.NoteDefinition?.settings?.manualLinkOnly === true) {
