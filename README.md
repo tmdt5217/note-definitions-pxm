@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.52
+# Note-Definitions_PXM 0.43.53
 
-- “最近访问”和“最近创建”写入同步文件 Attachments_all/nd-recents.json，并在启动/打开百科时与其他设备合并。
+- 修复同步文件还不存在时“最近访问”直接提前返回、导致本机记录没有首次上传的问题。

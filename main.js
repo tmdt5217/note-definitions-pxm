@@ -6192,7 +6192,6 @@ ${issues.join("\n")}`);
       }
       async _mergeSyncedRecentDefs() {
         const remote = await __ndw_readSyncedVisits(this.app);
-        if (!remote.length) return;
         const merged = new Map();
         for (const item of this._loadRecentDefs()) {
           if (!item?.key) continue;
