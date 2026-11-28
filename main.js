@@ -6191,8 +6191,8 @@ ${issues.join("\n")}`);
         this._recentDefs = this._loadRecentDefs();
         this._recentDefs = this._recentDefs.filter((d) => d.__readingKnowledge || d.key !== def.key);
         this._recentDefs.unshift({ key: def.key, word: def.word, at: Date.now() });
-        if (this._recentDefs.length > 50)
-          this._recentDefs.length = 50;
+        if (this._recentDefs.length > 100)
+          this._recentDefs.length = 100;
         this._saveRecentDefs();
         void __ndw_recordSyncedVisit(this.app, def.key, def.word);
       }
@@ -6210,7 +6210,7 @@ ${issues.join("\n")}`);
         }
         const next = [...merged.values()]
           .sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0))
-          .slice(0, 50);
+          .slice(0, 100);
         const changed = JSON.stringify(next) !== JSON.stringify(this._recentDefs);
         this._recentDefs = next;
         if (changed) this._saveRecentDefs();
@@ -7917,7 +7917,7 @@ function recordBookVisit(storage, reference) {
     var _a;
     return item && typeof item === "object" && !(((_a = bookVisitReference(item)) == null ? void 0 : _a.id) === ref.id);
   });
-  storage.setItem(RECENT_VISITS_KEY, JSON.stringify([ref, ...records].slice(0, 50)));
+  storage.setItem(RECENT_VISITS_KEY, JSON.stringify([ref, ...records].slice(0, 100)));
 }
 
 // src/scalability/creation-reader.ts
@@ -15720,7 +15720,7 @@ var RecentCreations = class {
     const retained = this.records.filter((item) => item.createdAt >= cutoff);
     if (retained.length !== this.records.length)
       this.sorted = null;
-    this.records = retained;
+    this.records = retained.sort((a, b) => b.createdAt - a.createdAt).slice(0, 100);
   }
   add(word) {
     this.prune();
@@ -20484,7 +20484,7 @@ async function __ndw_recordSyncedVisit(app, key, word) {
   data.visits = [{ key, word: String(word || ""), at: now }, ...data.visits.filter((item) => item?.key !== key)]
     .filter((item) => item?.key && Number(item.at) > 0)
     .sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0))
-    .slice(0, 200);
+    .slice(0, 100);
   __ndw_writeRecentsSoon(app);
 }
 
@@ -20501,7 +20501,7 @@ async function __ndw_recordSyncedCreation(app, word, at = Date.now()) {
   data.creations = [{ word, at }, ...data.creations.filter((item) => __ndw_norm(item?.word) !== key)]
     .filter((item) => item?.word && Number(item.at) > 0)
     .sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0))
-    .slice(0, 1000);
+    .slice(0, 100);
   __ndw_writeRecentsSoon(app);
 }
 
