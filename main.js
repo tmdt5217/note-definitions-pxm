@@ -19600,18 +19600,8 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     const headText = head.createDiv({ cls: "ndw-cards-title" });
     headText.createEl("h2", { text: "词条管理" });
     headText.createEl("p", { cls: "ndw-hint", text: "按创建时间倒序；≈ 表示时间来自文件创建/修改时间估算。近 N 天可勾选“含估算时间”。" });
-    if (__ndw_obsidian.Platform.isMobile && !__ndw_isTabletLike()) {
-      const exit = head.createEl("button", { text: "退出", cls: "ndw-cards-exit", attr: { "aria-label": "退出词条管理，返回百科全书搜索" } });
-      exit.addEventListener("click", () => {
-        const encyclopedia = this.app.workspace.getLeavesOfType("nd-encyclopedia")[0];
-        if (encyclopedia) {
-          void this.app.workspace.revealLeaf(encyclopedia).then(() => encyclopedia.view?._goToSearch?.());
-        } else {
-          void this.app.commands.executeCommandById("note-definitions-pxm:open-encyclopedia");
-        }
-        window.setTimeout(() => this.leaf.detach(), 120);
-      });
-    }
+    const backToCards = head.createEl("button", { text: "返回概念卡片", cls: "ndw-cards-exit", attr: { "aria-label": "返回概念卡片" } });
+    backToCards.addEventListener("click", () => void this.leaf.setViewState({ type: "ndw-concept-cards", active: true }));
     const toolbar = this.contentEl.createDiv({ cls: "ndw-all-terms-toolbar" });
     const search = toolbar.createEl("input", {
       type: "search",
@@ -21082,7 +21072,9 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     this._cardTotal = await this.termIndex.count();
     this.entries = [];
     this.show();
-    if (this.autoReview) {
+    const skipAutoReview = window.__ndwSkipCardsAutoReview === true;
+    window.__ndwSkipCardsAutoReview = false;
+    if (this.autoReview && !skipAutoReview) {
       window.setTimeout(() => {
         if (this.contentEl?.isConnected && !document.querySelector(".ndw-review-modal")) this.openDefaultReview(true);
       }, 150);
@@ -21170,6 +21162,11 @@ class __NdwConceptCardsView extends __ndw_obsidian.ItemView {
     titleWrap.createEl("h2", { text: "概念卡片" });
     titleWrap.createEl("p", { cls: "ndw-hint", text: "点击卡片查看概念；星标会保存在本机。" });
     const headActions = head.createDiv({ cls: "ndw-cards-head-actions" });
+    const manage = headActions.createEl("button", { text: "词条管理", cls: "ndw-cards-exit", attr: { "aria-label": "切换到词条管理" } });
+    manage.addEventListener("click", () => {
+      window.__ndwSkipCardsAutoReview = true;
+      void this.leaf.setViewState({ type: "ndw-all-terms", active: true });
+    });
     const start = headActions.createEl("button", { text: "复习", cls: "ndw-cards-exit", attr: { "aria-label": "开始复习卡片" } });
     start.addEventListener("click", () => this.openDefaultReview(false));
     if (__ndw_obsidian.Platform.isMobile && !__ndw_isTabletLike()) {
@@ -22034,9 +22031,9 @@ function __ndw_dockButtons(host) {
   const entry = host.querySelector(".ndw-ency-entry");
   const allTerms = host.querySelector(".ndw-ency-all-terms");
   const cards = host.querySelector(".ndw-ency-cards");
-  if (!entry || !allTerms) return;
+  if (!entry) return;
   entry.style.setProperty("display", "inline-flex", "important");
-  allTerms.style.setProperty("display", "inline-flex", "important");
+  allTerms?.style.setProperty("display", "inline-flex", "important");
   cards?.style.setProperty("display", "inline-flex", "important");
   const paneRect = pane.getBoundingClientRect();
   const origin = __ndw_fixedOrigin(entry);
@@ -22045,9 +22042,9 @@ function __ndw_dockButtons(host) {
   const gap = 14;
   const entryWidth = entry.offsetWidth || 110;
   const entryHeight = entry.offsetHeight || 36;
-  const allWidth = allTerms.offsetWidth || 110;
+  const allWidth = allTerms?.offsetWidth || 0;
   const cardsWidth = cards?.offsetWidth || 110;
-  const totalWidth = (cards ? cardsWidth + gap : 0) + allWidth + gap + entryWidth;
+  const totalWidth = (cards ? cardsWidth + gap : 0) + (allTerms ? allWidth + gap : 0) + entryWidth;
   let left = paneRect.left + Math.max(margin, (paneRect.width - totalWidth) / 2);
   const bottomEdge = __ndw_obsidian.Platform.isMobile ? window.innerHeight : paneRect.bottom;
   const top = bottomEdge - entryHeight - bottomMargin;
@@ -22063,8 +22060,10 @@ function __ndw_dockButtons(host) {
     place(cards, left);
     left += cardsWidth + gap;
   }
-  place(allTerms, left);
-  left += allWidth + gap;
+  if (allTerms) {
+    place(allTerms, left);
+    left += allWidth + gap;
+  }
   place(entry, left);
 }
 
@@ -22165,15 +22164,6 @@ function __ndw_installEncyclopediaButton(app) {
         __ndw_obsidian.setIcon(button, "book-open");
         button.createSpan({ text: "微信读书" });
         button.addEventListener("click", () => void __ndw_openView(app));
-      }
-      if (!host.querySelector(".ndw-ency-all-terms")) {
-        const all = host.createEl("button", {
-          cls: "ndw-ency-all-terms",
-          attr: { title: "词条管理（按创建时间）", "aria-label": "词条管理" }
-        });
-        __ndw_obsidian.setIcon(all, "library");
-        all.createSpan({ text: "词条管理" });
-        all.addEventListener("click", () => void __ndw_openAllTermsView(app));
       }
       if (!host.querySelector(".ndw-ency-cards")) {
         const cards = host.createEl("button", {
