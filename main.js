@@ -6122,6 +6122,7 @@ ${issues.join("\n")}`);
             this._renderRecentDefs(this.contentEl.querySelector(".nd-ency-results-wrap"));
         }));
         this._buildSearchUI();
+        void this._mergeSyncedRecentDefs();
       }
       async onClose() {
         var _a, _b, _c, _d;
@@ -6183,10 +6184,36 @@ ${issues.join("\n")}`);
       _addRecentDef(def) {
         this._recentDefs = this._loadRecentDefs();
         this._recentDefs = this._recentDefs.filter((d) => d.__readingKnowledge || d.key !== def.key);
-        this._recentDefs.unshift({ key: def.key, word: def.word });
+        this._recentDefs.unshift({ key: def.key, word: def.word, at: Date.now() });
         if (this._recentDefs.length > 50)
           this._recentDefs.length = 50;
         this._saveRecentDefs();
+        void __ndw_recordSyncedVisit(this.app, def.key, def.word);
+      }
+      async _mergeSyncedRecentDefs() {
+        const remote = await __ndw_readSyncedVisits(this.app);
+        if (!remote.length) return;
+        const merged = new Map();
+        for (const item of this._loadRecentDefs()) {
+          if (!item?.key) continue;
+          merged.set(item.key, { ...item, at: Number(item.at) || 0 });
+        }
+        for (const item of remote) {
+          if (!item?.key) continue;
+          const current = merged.get(item.key);
+          if (!current || Number(item.at) > Number(current.at)) merged.set(item.key, item);
+        }
+        this._recentDefs = [...merged.values()]
+          .sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0))
+          .slice(0, 50);
+        this._saveRecentDefs();
+        const remoteKeys = new Set(remote.map((item) => item.key));
+        for (const item of this._recentDefs) {
+          if (!remoteKeys.has(item.key)) void __ndw_recordSyncedVisit(this.app, item.key, item.word);
+        }
+        const wrap = this.contentEl.querySelector(".nd-ency-results-wrap");
+        const input = this.contentEl.querySelector(".nd-ency-search-input");
+        if (this._mode === "search" && wrap && !input?.value?.trim()) this._renderRecentDefs(wrap);
       }
       _getRecentDefs(count) {
         var _a, _b;
@@ -15693,6 +15720,23 @@ var RecentCreations = class {
     this.records.push({ word: word.trim(), createdAt: this.now() });
     this.sorted = null;
   }
+  merge(items) {
+    const byKey = new Map(this.records.map((item) => [key(item.word), item]));
+    for (const item of Array.isArray(items) ? items : []) {
+      const word = String(item?.word || "").trim();
+      const createdAt = Number(item?.createdAt ?? item?.at);
+      if (!word || !Number.isFinite(createdAt) || createdAt <= 0) continue;
+      const existing = byKey.get(key(word));
+      if (!existing || createdAt > existing.createdAt) {
+        const record = { word, createdAt };
+        byKey.set(key(word), record);
+        this.records = this.records.filter((entry) => key(entry.word) !== key(word));
+        this.records.push(record);
+      }
+    }
+    this.sorted = null;
+    this.prune();
+  }
   rename(previous, word) {
     const item = this.records.find(
       (item2) => key(item2.word) === key(previous)
@@ -15795,6 +15839,7 @@ var NoteDefinitionsPXM = class extends LegacyPlugin {
       recordCreation: (word) => {
         __ndw_recordTermTime(word, Date.now(), "created");
         creations.add(word);
+        void __ndw_recordSyncedCreation(this.app, word);
         return persistCreations();
       },
       renameCreation: (previous, word) => {
@@ -20372,6 +20417,75 @@ function __ndw_recordTermTime(word, at = Date.now(), source = "created") {
   return times[key];
 }
 
+const __NDW_RECENTS_PATH = "Attachments_all/nd-recents.json";
+let __ndwRecentsCache = null;
+let __ndwRecentsWriteTimer = null;
+
+async function __ndw_readRecents(app) {
+  if (__ndwRecentsCache) return __ndwRecentsCache;
+  const empty = { visits: [], creations: [] };
+  try {
+    const adapter = app?.vault?.adapter;
+    if (!adapter) return (__ndwRecentsCache = empty);
+    if (!(await adapter.exists(__NDW_RECENTS_PATH))) return (__ndwRecentsCache = empty);
+    const parsed = JSON.parse(await adapter.read(__NDW_RECENTS_PATH));
+    __ndwRecentsCache = {
+      visits: Array.isArray(parsed?.visits) ? parsed.visits : [],
+      creations: Array.isArray(parsed?.creations) ? parsed.creations : []
+    };
+  } catch {
+    __ndwRecentsCache = empty;
+  }
+  return __ndwRecentsCache;
+}
+
+function __ndw_writeRecentsSoon(app) {
+  if (__ndwRecentsWriteTimer) window.clearTimeout(__ndwRecentsWriteTimer);
+  __ndwRecentsWriteTimer = window.setTimeout(async () => {
+    __ndwRecentsWriteTimer = null;
+    try {
+      const adapter = app?.vault?.adapter;
+      if (!adapter || !__ndwRecentsCache) return;
+      await adapter.write(__NDW_RECENTS_PATH, JSON.stringify(__ndwRecentsCache, null, 2));
+    } catch (error) {
+      console.warn("[note-definitions] recents sync save failed", error);
+    }
+  }, 300);
+}
+
+async function __ndw_recordSyncedVisit(app, key, word) {
+  if (!app || !key) return;
+  const data = await __ndw_readRecents(app);
+  const now = Date.now();
+  data.visits = [{ key, word: String(word || ""), at: now }, ...data.visits.filter((item) => item?.key !== key)]
+    .filter((item) => item?.key && Number(item.at) > 0)
+    .sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0))
+    .slice(0, 200);
+  __ndw_writeRecentsSoon(app);
+}
+
+async function __ndw_readSyncedVisits(app) {
+  const data = await __ndw_readRecents(app);
+  return [...data.visits].sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0));
+}
+
+async function __ndw_recordSyncedCreation(app, word, at = Date.now()) {
+  if (!app || !word) return;
+  const data = await __ndw_readRecents(app);
+  at = Number(at) || Date.now();
+  const key = __ndw_norm(word);
+  data.creations = [{ word, at }, ...data.creations.filter((item) => __ndw_norm(item?.word) !== key)]
+    .filter((item) => item?.word && Number(item.at) > 0)
+    .sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0))
+    .slice(0, 1000);
+  __ndw_writeRecentsSoon(app);
+}
+
+async function __ndw_readSyncedCreations(app) {
+  const data = await __ndw_readRecents(app);
+  return data.creations;
+}
+
 function __ndw_cardStars() {
   return __ndw_cardStateMutable().stars;
 }
@@ -24707,6 +24821,16 @@ async function __ndw_openDictionaryProtocol(app, params) {
       }, 500);
     }));
     this.app.workspace.onLayoutReady(() => {
+      void __ndw_readSyncedCreations(this.app).then((items) => {
+        if (items.length) {
+          creations.merge(items);
+          void persistCreations();
+        }
+        const remoteKeys = new Set(items.map((item) => __ndw_norm(item?.word)));
+        for (const item of creations.snapshot()) {
+          if (!remoteKeys.has(__ndw_norm(item.word))) void __ndw_recordSyncedCreation(this.app, item.word, item.createdAt);
+        }
+      });
       this.registerEvent(this.app.workspace.on("file-open", (file) => {
         const entry = file?.path ? __ndwRememberCursorOverrides.get(file.path) : null;
         if (entry) entry.seenOpen = true;
