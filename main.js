@@ -19636,7 +19636,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       this.applyFilter();
     });
     const filter = toolbar.createEl("select", { attr: { "aria-label": "创建时间范围" } });
-    for (const [value, label] of [["0", "全部时间"], ["1", "近 1 天"], ["3", "近 3 天"], ["7", "近 7 天"], ["30", "近 30 天"]]) {
+    for (const [value, label] of [["0", "不限时间"], ["1", "近 1 天"], ["3", "近 3 天"], ["7", "近 7 天"], ["30", "近 30 天"]]) {
       const option = filter.createEl("option", { text: label, attr: { value } });
       option.selected = String(this.days) === value;
     }
