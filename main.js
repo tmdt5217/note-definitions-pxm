@@ -22438,15 +22438,45 @@ function __ndwFlashTermSelection(duration = 2600) {
   }, duration);
 }
 
+const __ndwRememberCursorOverrides = new Map();
+
 function __ndwSyncRememberCursor(app, file, line, ch, toCh = ch) {
   try {
     const plugin = app?.plugins?.plugins?.["remember-cursor-position-pxm"];
     if (!plugin || !file?.path) return;
     if (!plugin.db || typeof plugin.db !== "object") plugin.db = {};
+    if (!__ndwRememberCursorOverrides.has(file.path)) {
+      let original = null;
+      try { original = plugin.db[file.path] ? JSON.parse(JSON.stringify(plugin.db[file.path])) : null; } catch {}
+      __ndwRememberCursorOverrides.set(file.path, { original, touchedAt: Date.now(), seenOpen: false });
+    }
+    const entry = __ndwRememberCursorOverrides.get(file.path);
+    entry.touchedAt = Date.now();
     const from = { line: Math.max(0, Number(line) || 0), ch: Math.max(0, Number(ch) || 0) };
     const to = { line: from.line, ch: Math.max(from.ch, Number(toCh) || from.ch) };
     plugin.db[file.path] = { scroll: 0, cursor: { from, to }, lastModified: Date.now() };
   } catch {}
+}
+
+function __ndwRestoreRememberCursorOverrides(app, force = false) {
+  try {
+    const plugin = app?.plugins?.plugins?.["remember-cursor-position-pxm"];
+    if (!plugin || !__ndwRememberCursorOverrides.size) return 0;
+    const leaves = app.workspace?.getLeavesOfType?.("markdown") || [];
+    let restored = 0;
+    for (const [path, entry] of [...__ndwRememberCursorOverrides.entries()]) {
+      const open = leaves.some((leaf) => leaf?.view?.file?.path === path);
+      if (open) { entry.seenOpen = true; continue; }
+      if (!force && !entry.seenOpen && Date.now() - entry.touchedAt < 5000) continue;
+      if (!plugin.db || typeof plugin.db !== "object") plugin.db = {};
+      if (entry.original) plugin.db[path] = entry.original;
+      else delete plugin.db[path];
+      __ndwRememberCursorOverrides.delete(path);
+      restored += 1;
+    }
+    if (restored) void plugin.writeDb?.();
+    return restored;
+  } catch { return 0; }
 }
 
 function __ndwCancelRememberCursorRestore(app) {
@@ -24550,6 +24580,13 @@ async function __ndw_openDictionaryProtocol(app, params) {
       }, 500);
     }));
     this.app.workspace.onLayoutReady(() => {
+      this.registerEvent(this.app.workspace.on("file-open", (file) => {
+        const entry = file?.path ? __ndwRememberCursorOverrides.get(file.path) : null;
+        if (entry) entry.seenOpen = true;
+      }));
+      this.registerEvent(this.app.workspace.on("layout-change", () => __ndwRestoreRememberCursorOverrides(this.app)));
+      this.registerEvent(this.app.workspace.on("active-leaf-change", () => __ndwRestoreRememberCursorOverrides(this.app)));
+      this.registerInterval(window.setInterval(() => __ndwRestoreRememberCursorOverrides(this.app), 1000));
       window.setTimeout(() => void __ndw_refreshAllNoteTerms(this.app), 5000);
       window.setTimeout(() => void __ndwCleanupOrphanedNoteTerms(this.app), 30000);
       this.registerInterval(window.setInterval(() => void __ndwCleanupOrphanedNoteTerms(this.app), 60 * 1000));

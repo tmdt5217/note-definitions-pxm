@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.29
+# Note-Definitions_PXM 0.43.30
 
-- 与 Remember cursor position_PXM 协调：打开源笔记前写入目标光标，定位后取消其待执行的旧光标恢复，避免跳走。
+- 打开源笔记时临时覆盖 Remember cursor 的目标光标；文件关闭后恢复其原本保存的光标记录。
