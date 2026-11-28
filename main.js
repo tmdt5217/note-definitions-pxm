@@ -19619,8 +19619,8 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     });
     const sort = toolbar.createEl("select", { attr: { "aria-label": "词条排序" } });
     for (const [value, label] of [
-      ["created:desc", "进入ND时间 ▼"],
-      ["created:asc", "进入ND时间 ▲"],
+      ["created:desc", "创建时间 ▼"],
+      ["created:asc", "创建时间 ▲"],
       ["name:asc", "名称 A→Z"],
       ["name:desc", "名称 Z→A"]
     ]) {

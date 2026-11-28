@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.36
+# Note-Definitions_PXM 0.43.37
 
-- 移除概念卡片标题下方的说明文字。
+- 词条排序前两项改为“创建时间 ▼/▲”。
