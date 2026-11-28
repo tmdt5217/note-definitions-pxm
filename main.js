@@ -19754,7 +19754,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
       this.selected.clear();
       this.applyFilter();
     });
-    this.deleteButton = toolbar.createEl("button", { text: "删除选中", cls: "mod-warning" });
+    this.deleteButton = toolbar.createEl("button", { text: "删除", cls: "mod-warning" });
     this.deleteButton.addEventListener("click", () => this.deleteSelected());
     this.listEl = this.contentEl.createDiv({ cls: "ndw-all-terms-list" });
     this.applyFilter();
@@ -19861,7 +19861,7 @@ class __NdwAllTermsView extends __ndw_obsidian.ItemView {
     const count = this.selected.size;
     if (this.selectionCountEl) this.selectionCountEl.setText(count ? `已选 ${count} 条` : "");
     if (this.deleteButton) {
-      this.deleteButton.setText(count ? `删除选中 (${count})` : "删除选中");
+      this.deleteButton.setText(count ? `删除 (${count})` : "删除");
       this.deleteButton.disabled = count === 0;
     }
   }

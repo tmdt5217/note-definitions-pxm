@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.39
+# Note-Definitions_PXM 0.43.40
 
-- 移除“清除筛选”，保留“清空选择”。
+- “删除选中”按钮改名为“删除”。
