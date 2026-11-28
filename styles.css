@@ -4144,3 +4144,15 @@ body.is-mobile .ndw-all-terms-list {
   border: 0 !important;
   box-shadow: none !important;
 }
+
+/* Center the checkbox vertically on the term-title line */
+.ndw-term-check {
+  top: 16px !important;
+  right: 12px !important;
+}
+@media (max-width: 600px) {
+  .ndw-term-check {
+    top: 10px !important;
+    right: 9px !important;
+  }
+}

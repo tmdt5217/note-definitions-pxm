@@ -1,3 +1,3 @@
-# Note-Definitions_PXM 0.43.49
+# Note-Definitions_PXM 0.43.50
 
-- 词条勾选框缩小为原来的 4/5，对勾同步缩放。
+- 勾选框中心与词条标题文字的中线对齐。
